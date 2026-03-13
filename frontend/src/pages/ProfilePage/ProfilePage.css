@@ -1,0 +1,29 @@
+.profile-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-family: Arial, sans-serif;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px solid #e30613; /* rouge Djezzy */
+}
+
+.profile-info p {
+  margin: 8px 0;
+  font-size: 15px;
+  color: #333;
+}

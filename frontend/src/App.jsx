@@ -1,13 +1,14 @@
+// src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import CreateTicketPage from "./pages/CreateTicketPage/CreateTicketPage";
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Bypass login → directement CreateTicketPage */}
-        <Route path="/" element={<CreateTicketPage />} />
+        {/* Page par défaut → Profile */}
+        <Route path="/" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

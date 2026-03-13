@@ -67,13 +67,13 @@ export default function LoginPage() {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-400 transition-colors"
-          >
-            {loading ? "Connexion..." : "Se connecter"}
-          </button>
+<button
+  type="submit"
+  disabled={loading}
+  className="w-full bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-400 transition-colors"
+>
+  {loading ? "Connexion..." : "Se connecter"}
+</button>
 
           {error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
         </form>

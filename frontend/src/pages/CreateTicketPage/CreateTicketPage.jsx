@@ -84,13 +84,14 @@ export default function CreateTicketPage() {
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Pièces jointes</label>
-              <input
-                type="file"
-                className="w-full border rounded p-2 mt-1"
-              />
-            </div>
+<div>
+  <label className="text-sm font-medium">Pièces jointes</label>
+  <input
+    type="file"
+    className="w-full border rounded p-2 mt-1"
+    accept="*/*"  // <- allows all file types
+  />
+</div>
           </div>
 
         </div>

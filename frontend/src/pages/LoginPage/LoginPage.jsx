@@ -1,78 +1,22 @@
-// src/pages/LoginPage/LoginPage.jsx
-
-import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Login.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const response = await fetch("http://localhost:3001/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      // ✅ Store token + role
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-
-      // ✅ Redirect to Create Ticket page
-      navigate("/create-ticket");
-
-    } catch (err) {
-      setError("Email ou mot de passe incorrect.");
-    }
-
-    setLoading(false);
+  const handleLogin = () => {
+    localStorage.setItem("role", "employee"); 
+    navigate("/app");
   };
 
   return (
-    <div className="login-container">
-      <h2>Login</h2>
-
-      <form onSubmit={handleLogin}>
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <label>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        <button type="submit" disabled={loading}>
-          {loading ? "Connexion..." : "Se connecter"}
-        </button>
-
-        {error && <p className="error-message">{error}</p>}
-      </form>
+    <div className="flex flex-col items-center justify-center h-screen">
+      <h1 className="text-3xl font-bold mb-6">Connexion</h1>
+      <button
+        onClick={handleLogin}
+        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+      >
+        Se connecter
+      </button>
     </div>
   );
 }

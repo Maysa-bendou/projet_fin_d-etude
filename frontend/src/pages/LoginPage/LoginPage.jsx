@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Login.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -20,9 +19,7 @@ export default function LoginPage() {
     try {
       const response = await fetch("http://localhost:3001/api/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -32,13 +29,9 @@ export default function LoginPage() {
         throw new Error(data.message || "Login failed");
       }
 
-      // ✅ Store token + role
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
-
-      // ✅ Redirect to Create Ticket page
       navigate("/create-ticket");
-
     } catch (err) {
       setError("Email ou mot de passe incorrect.");
     }
@@ -47,32 +40,44 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-container">
-      <h2>Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Se connecter</h2>
 
-      <form onSubmit={handleLogin}>
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
 
-        <label>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+          <div>
+            <label className="block text-gray-700 mb-1">Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Connexion..." : "Se connecter"}
-        </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-400 transition-colors"
+          >
+            {loading ? "Connexion..." : "Se connecter"}
+          </button>
 
-        {error && <p className="error-message">{error}</p>}
-      </form>
+          {error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
+        </form>
+      </div>
     </div>
   );
 }

@@ -10,7 +10,6 @@ const menuItems = [
   { icon: "", label: "Dashboard", path: "/app" },            // default home page
   { icon: "", label: "Creer Ticket", path: "/app/create-ticket" },
   { icon: "", label: "Mes Tickets", path: "/app/mes-tickets" },
-  { icon: "", label: "Historique", path: "/app/historique" },
   { icon: "", label: "Profile", path: "/app/profile" },
   { icon: "", label: "Se deconnecter", path: "/" },         // back to login
 ];

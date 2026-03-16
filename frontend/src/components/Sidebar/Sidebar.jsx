@@ -9,11 +9,11 @@ import { MdOutlineMenuOpen } from "react-icons/md";
 import { FaHome } from "react-icons/fa";
 import { MdSpaceDashboard } from "react-icons/md";
 const menuItems = [
-  { icon: "MdSpaceDashboard", label: "Dashboard", path: "/app" },            // default home page
-  { icon: "", label: "Creer Ticket", path: "/app/create-ticket" },
-  { icon: "", label: "Mes Tickets", path: "/app/mes-tickets" },
-  { icon: "", label: "Profile", path: "/app/profile" },
-  { icon: "", label: "Se deconnecter", path: "/" },         // back to login
+  { icon: "MdSpaceDashboard", label: "Dashboard", path: "/employee" },            
+  { icon: "", label: "Creer Ticket", path: "/employee/create-ticket" },
+  { icon: "", label: "Mes Tickets", path: "/employee/mes-tickets" },
+  { icon: "", label: "Profile", path: "/employee/profile" },
+  { icon: "", label: "Se deconnecter", path: "/" },
 ];
 
 export default function Sidebar() {

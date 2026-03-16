@@ -7,6 +7,7 @@ import AccueilPage from "./pages/AccueilPage/AccueilPage";
 import CreateTicketPage from "./pages/CreateTicketPage/CreateTicketPage";
 import MesTicketsPage from "./pages/MesTicketsPage/MesTicketsPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import TicketDetailsPage from "./pages/TicketDetailsPage/TicketDetailsPage";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="create-ticket" element={<CreateTicketPage />} />
           <Route path="mes-tickets" element={<MesTicketsPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="ticket/:id" element={<TicketDetailsPage />} />
 
         </Route>
 

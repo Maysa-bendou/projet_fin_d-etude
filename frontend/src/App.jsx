@@ -20,6 +20,7 @@ import ProfilePage from "./pages/employe/ProfilePage/ProfilePage";
 import AccueilTechnicien from "./pages/technicien/AccueilTechnicien/AccueilTechnicien";
 import TicketsAssignesPage from "./pages/technicien/TicketsAssignesPage/TicketsAssignesPage";
 import TicketsServicePage from "./pages/technicien/TicketsServicePage/TicketsServicePage";
+import TicketsDetailsPage from "./pages/technicien/TicketsDetailsPage/TicketsDetailsPage";
 import HistoriqueTechnicien from "./pages/technicien/HistoriqueTechnicien/HistoriqueTechnicien";
 import ProfileTechnicien from "./pages/technicien/ProfileTechnicien/ProfileTechnicien";
 
@@ -58,6 +59,7 @@ export default function App() {
           <Route index element={<AccueilTechnicien />} />
           <Route path="tickets-assignes" element={<TicketsAssignesPage />} />
           <Route path="tickets-service" element={<TicketsServicePage />} />
+          <Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
           <Route path="historique" element={<HistoriqueTechnicien />} />
           <Route path="profile" element={<ProfileTechnicien />} />
 

@@ -31,7 +31,24 @@ export default function LoginPage() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
-     navigate("/app");
+    localStorage.setItem("token", data.token);
+localStorage.setItem("role", data.role);
+
+if (data.role === "employee") {
+  navigate("/employee");
+}
+else if (data.role === "technician") {
+  navigate("/technician");
+}
+else if (data.role === "chef_service") {
+  navigate("/chef");
+}
+else if (data.role === "manager") {
+  navigate("/manager");
+}
+else if (data.role === "admin") {
+  navigate("/admin");
+}
     } catch (err) {
       setError("Email ou mot de passe incorrect.");
     }

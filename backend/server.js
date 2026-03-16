@@ -25,42 +25,39 @@ app.get("/test-db", async (req, res) => {
 /* ============================= */
 
 app.post("/api/login", async (req, res) => {
+
   const { email, password } = req.body;
 
-  console.log("Email received:", email);
-  console.log("Password received:", password);
-
   try {
-    const userResult = await pool.query(
-      "SELECT * FROM public.users WHERE email = $1",
+
+    const result = await pool.query(
+      "SELECT * FROM users WHERE email = $1",
       [email]
     );
 
-    console.log("User found:", userResult.rows);
-
-    if (userResult.rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    const user = userResult.rows[0];
-
-    console.log("Password in DB:", user.password);
+    const user = result.rows[0];
 
     if (password !== user.password) {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    return res.json({
+    res.json({
       token: "dummy-token",
-      role: user.role,
+      role: user.role
     });
 
-  } catch (error) {
-    console.error("LOGIN ERROR:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
-});
+  } catch (err) {
 
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+
+  }
+
+});
 const PORT = 3001;
 
 app.listen(PORT, () => {

@@ -1,7 +1,7 @@
 import Sidebar from "../components/Sidebar/Sidebar";
 import { Outlet } from "react-router-dom";
 
-export default function MainLayout() {
+export default function EmployeeLayout() {
   return (
     <div className="flex">
 

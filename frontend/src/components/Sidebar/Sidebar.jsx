@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 
 import logo from "../../assets/Logo_Djezzy.png";
@@ -6,8 +7,9 @@ import { Link } from "react-router-dom";
 // icons
 import { MdOutlineMenuOpen } from "react-icons/md";
 import { FaHome } from "react-icons/fa";
+import { MdSpaceDashboard } from "react-icons/md";
 const menuItems = [
-  { icon: "", label: "Dashboard", path: "/app" },            // default home page
+  { icon: "MdSpaceDashboard", label: "Dashboard", path: "/app" },            // default home page
   { icon: "", label: "Creer Ticket", path: "/app/create-ticket" },
   { icon: "", label: "Mes Tickets", path: "/app/mes-tickets" },
   { icon: "", label: "Profile", path: "/app/profile" },

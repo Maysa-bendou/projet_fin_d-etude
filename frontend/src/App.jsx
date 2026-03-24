@@ -14,6 +14,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import AccueilPage from "./pages/employe/AccueilPage/AccueilPage";
 import CreateTicketPage from "./pages/employe/CreateTicketPage/CreateTicketPage";
 import MesTicketsPage from "./pages/employe/MesTicketsPage/MesTicketsPage";
+import TicketDetailsPage from "./pages/employe/TicketDetailsPage/TicketDetailsPage";
 import ProfilePage from "./pages/employe/ProfilePage/ProfilePage";
 
 /* TECHNICIEN */
@@ -49,6 +50,7 @@ export default function App() {
           <Route index element={<AccueilPage />} />
           <Route path="create-ticket" element={<CreateTicketPage />} />
           <Route path="mes-tickets" element={<MesTicketsPage />} />
+           <Route path="ticket/:id" element={<TicketDetailsPage />} />
           <Route path="profile" element={<ProfilePage />} />
 
         </Route>

@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function MesTicketsPage() {
+  const navigate = useNavigate(); 
   const services = [
     "IT Support",
     "Software",
@@ -10,7 +12,7 @@ export default function MesTicketsPage() {
     "Service Desk",
     "Password",
     "IT Network",
-    "Network",
+    "Network",+
     "IT Collaboration Systems",
     "Messaging",
     "IT Security",
@@ -177,8 +179,11 @@ export default function MesTicketsPage() {
                 <td className="p-3 text-gray-500">{t.maj}</td>
 
                 <td className="p-3">
-                  <button className="text-blue-500 hover:underline">
-                    Voir détails
+                  <button
+                    onClick={() => navigate(`/employee/ticket/${t.id}`)}
+                    className="text-blue-500 hover:underline"
+                  >
+                     Voir détails
                   </button>
                 </td>
               </tr>
@@ -187,5 +192,7 @@ export default function MesTicketsPage() {
         </table>
       </div>
     </div>
+   
   );
+ 
 }

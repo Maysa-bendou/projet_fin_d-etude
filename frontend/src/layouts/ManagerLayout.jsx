@@ -1,18 +1,18 @@
-
 import { Outlet } from "react-router-dom";
+import SidebarManager from "../components/Sidebar/SidebarManager";
 
 export default function ManagerLayout() {
-
   return (
-    <div className="flex">
+    <div className="flex h-screen bg-gray-50">
 
+      {/* Sidebar à gauche */}
+      <SidebarManager />
 
-
-      <main className="flex-1 p-6 bg-gray-100 min-h-screen">
+      {/* Contenu à droite */}
+      <main className="flex-1 overflow-y-auto p-6">
         <Outlet />
       </main>
 
     </div>
   );
-
 }

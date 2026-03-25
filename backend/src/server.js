@@ -9,6 +9,10 @@ app.use(express.json());
 const authRoutes = require("./routes/auth.routes");
 app.use("/api", authRoutes);
 
+// ✅ FIX HERE
+const ticketRoutes = require("./routes/ticket.routes");
+app.use("/api/tickets", ticketRoutes);
+
 const PORT = 3001;
 
 app.listen(PORT, () => {

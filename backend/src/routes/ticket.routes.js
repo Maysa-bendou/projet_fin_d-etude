@@ -65,4 +65,37 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// GET /api/tickets/my - fetch only tickets created by the logged-in employee
+router.get("/my/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await pool.query(
+      `
+      SELECT 
+        t.id,
+        t.title,
+        t.description,
+        t.category,
+        t.status,
+        t.priority,
+        t.impact,
+        t.urgency,
+        t.service_id,
+        t.created_at,
+        t.updated_at,
+        u.name || ' ' || u.surname AS technicien_name
+      FROM tickets t
+      LEFT JOIN users u ON t.assigned_to = u.id
+      WHERE t.created_by = $1
+      ORDER BY t.created_at DESC
+      `,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching employee tickets:", err);
+    res.status(500).json({ error: "Failed to fetch tickets" });
+  }
+});
+
 module.exports = router;

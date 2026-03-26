@@ -22,8 +22,8 @@ import TicketDetailsPage from "./pages/employe/TicketDetailsPage/TicketDetailsPa
 /* TECHNICIEN */
 import AccueilTechnicien from "./pages/technicien/AccueilTechnicien/AccueilTechnicien";
 import TicketsAssignesPage from "./pages/technicien/TicketsAssignesPage/TicketsAssignesPage";
-import TicketsServicePage from "./pages/technicien/TicketsServicePage/TicketsServicePage";
-import TicketsDetailsPage from "./pages/technicien/TicketsDetailsPage/TicketsDetailsPage";
+import TicketsServicePage from "./components/TicketsServicePage/TicketsServicePage";
+import TicketsDetailsPage from "./components/TicketsDetailsPage/TicketsDetailsPage";
 import HistoriqueTechnicien from "./pages/technicien/HistoriqueTechnicien/HistoriqueTechnicien";
 
 /* CHEF */
@@ -79,8 +79,8 @@ export default function App() {
         }>
           <Route index element={<AccueilTechnicien />} />
           <Route path="tickets-assignes" element={<TicketsAssignesPage />} />
-          <Route path="tickets-service" element={<TicketsServicePage />} />
-          <Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
+  <Route path="tickets-service" element={<TicketsServicePage />} />
+  <Route path="tickets-service/:id" element={<TicketsDetailsPage />} /> 
           <Route path="historique" element={<HistoriqueTechnicien />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
@@ -95,15 +95,17 @@ export default function App() {
           <Route path="profile" element={<ProfilePage />} /> {/* ✅ added */}
         </Route>
 
-        {/* ================= MANAGER ================= */}
-        <Route path="/manager" element={
-          <PrivateRoute allowedRoles={["manager"]}> {/* ✅ exact DB value */}
-            <ManagerLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<AccueilManager />} />
-          <Route path="profile" element={<ProfilePage />} /> {/* ✅ added */}
-        </Route>
+{/* ================= MANAGER ================= */}
+<Route path="/manager" element={
+  <PrivateRoute allowedRoles={["manager"]}>
+    <ManagerLayout />
+  </PrivateRoute>
+}>
+  <Route index element={<AccueilManager />} />
+  <Route path="profile" element={<ProfilePage />} />
+  <Route path="tickets-service" element={<TicketsServicePage />} />
+  <Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
+</Route>
 
         {/* ================= ADMIN ================= */}
         <Route path="/admin" element={

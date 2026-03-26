@@ -1,10 +1,22 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { MdDashboard, MdPerson, MdLogout, MdBarChart, MdPieChart, MdAssignment } from "react-icons/md";
-
 // ── Pages du manager ──────────────────────────────
+import { 
+  MdDashboard, 
+  MdPerson, 
+  MdLogout, 
+  MdBarChart, 
+  MdPieChart, 
+  MdAssignment,
+  MdBuild   // ✅ ADD THIS
+} from "react-icons/md";
+
 const menuItems = [
   { icon: MdDashboard,  label: "Vue globale",          path: "/manager" },
+
+  // ✅ NEW PAGE (THIS IS YOUR FIX)
+  { icon: MdBuild,      label: "Tickets du service",   path: "/manager/tickets-service" },
+
   { icon: MdBarChart,   label: "Suivi performances",   path: "/manager/performances" },
   { icon: MdPieChart,   label: "Répartition services", path: "/manager/repartition" },
   { icon: MdAssignment, label: "Gestion affectations", path: "/manager/affectations" },

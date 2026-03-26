@@ -1,6 +1,24 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+// ── Role detection (manager or technician) ────────────────────────────────
+const user = JSON.parse(localStorage.getItem("user") || "null");
+
+// Map DB role → route path (must match App.jsx)
+const rolePath = user?.role === "technician" || user?.role === "technicien"
+  ? "technician"
+  : user?.role === "manager"
+  ? "manager"
+  : user?.role === "chef_service"
+  ? "chef"
+  : user?.role === "employee"
+  ? "employee"
+  : user?.role === "admin"
+  ? "admin"
+  : "";
+
+const role = user?.role || "";
+
 // ── Mock ticket data (replace with API later) ──────────────────────────────
 const MOCK_TICKET = {
   id: "TK-1042",
@@ -62,10 +80,10 @@ export default function TicketsDetailsPage() {
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto flex flex-col gap-4">
 
-        {/* ── Breadcrumb ── */}
+        {/* ── Breadcrumb / Retour button ── */}
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <button
-            onClick={() => navigate("/technician/tickets-service")}
+            onClick={() => navigate(`/${rolePath}/tickets-service`)}
             className="hover:text-blue-600 transition-colors bg-transparent border-none cursor-pointer p-0"
           >
             ← Retour aux tickets
@@ -78,7 +96,9 @@ export default function TicketsDetailsPage() {
         <div className="bg-white rounded-xl border border-black/[0.08] p-5">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-xs text-gray-400 font-mono mb-1">#{ticket.id} · {ticket.createdAt}</p>
+              <p className="text-xs text-gray-400 font-mono mb-1">
+                #{ticket.id} · {ticket.createdAt}
+              </p>
               <h1 className="text-lg font-semibold text-gray-900">{ticket.title}</h1>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -104,6 +124,26 @@ export default function TicketsDetailsPage() {
               <option>Waiting on user</option>
               <option>Resolved</option>
             </select>
+          </div>
+
+          {/* Assign / Take ticket buttons */}
+          <div className="mt-3 flex gap-2">
+            {role === "manager" && (
+              <button
+                onClick={() => alert("Vous pouvez assigner ce ticket à un technicien")}
+                className="px-3 py-2 bg-purple-600 text-white rounded"
+              >
+                Assigner le ticket
+              </button>
+            )}
+            {role === "technician" && ticket.status !== "Resolved" && (
+              <button
+                onClick={() => setStatus("In progress")}
+                className="px-3 py-2 bg-green-600 text-white rounded"
+              >
+                Prendre le ticket
+              </button>
+            )}
           </div>
         </div>
 
@@ -161,99 +201,94 @@ export default function TicketsDetailsPage() {
           </div>
         </div>
 
-
         {/* ── Actions (Send solution / Request info) ── */}
-        <div className="bg-white rounded-xl border border-black/[0.08] overflow-hidden">
+        {role === "technician" && (
+          <div className="bg-white rounded-xl border border-black/[0.08] overflow-hidden mt-4">
 
-          {/* Tabs */}
-          <div className="flex border-b border-black/[0.08] bg-gray-50">
-            {[
-              { id: "solution", label: "Envoyer une solution" },
-              { id: "info", label: "Demander une info" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-3 text-[12px] font-medium border-b-2 transition-all bg-transparent cursor-pointer
-                  ${activeTab === tab.id
-                    ? "text-blue-700 border-blue-600 bg-white"
-                    : "text-gray-500 border-transparent hover:text-gray-800"
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="p-5 flex flex-col gap-3">
-
-            {/* Success banner */}
-            {sent && (
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[12px] text-green-700">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/>
-                  <path d="M5.5 8.5l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Message envoyé avec succès !
-              </div>
-            )}
-
-            {activeTab === "solution" && (
-              <>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-500 mb-1.5 block">
-                    Message de solution pour {ticket.employee.name} {ticket.employee.surname}
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={solution}
-                    onChange={(e) => setSolution(e.target.value)}
-                    placeholder="Décrivez la solution ici..."
-                    className="w-full text-[13px] px-3 py-2 rounded-lg border border-black/15 bg-gray-50 text-gray-800 resize-y leading-relaxed focus:outline-none focus:border-blue-400"
-                  />
-                </div>
+            {/* Tabs */}
+            <div className="flex border-b border-black/[0.08] bg-gray-50">
+              {[
+                { id: "solution", label: "Envoyer une solution" },
+                { id: "info", label: "Demander une info" },
+              ].map((tab) => (
                 <button
-                  onClick={handleSend}
-                  disabled={!solution.trim()}
-                  className="self-start flex items-center gap-1.5 text-[12px] font-medium px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 py-3 text-[12px] font-medium border-b-2 transition-all bg-transparent cursor-pointer
+                    ${activeTab === tab.id
+                      ? "text-blue-700 border-blue-600 bg-white"
+                      : "text-gray-500 border-transparent hover:text-gray-800"
+                    }`}
                 >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 8l12-6-5 12-2-5-5-1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-                  </svg>
-                  Envoyer la solution
+                  {tab.label}
                 </button>
-              </>
-            )}
+              ))}
+            </div>
 
-            {activeTab === "info" && (
-              <>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-500 mb-1.5 block">
-                    Demande d'information à {ticket.employee.name} {ticket.employee.surname}
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={infoMsg}
-                    onChange={(e) => setInfoMsg(e.target.value)}
-                    placeholder="Posez votre question ici..."
-                    className="w-full text-[13px] px-3 py-2 rounded-lg border border-black/15 bg-gray-50 text-gray-800 resize-y leading-relaxed focus:outline-none focus:border-blue-400"
-                  />
+            <div className="p-5 flex flex-col gap-3">
+
+              {/* Success banner */}
+              {sent && (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[12px] text-green-700">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/>
+                    <path d="M5.5 8.5l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Message envoyé avec succès !
                 </div>
-                <button
-                  onClick={handleSend}
-                  disabled={!infoMsg.trim()}
-                  className="self-start flex items-center gap-1.5 text-[12px] font-medium px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                    <path d="M2 8l12-6-5 12-2-5-5-1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
-                  </svg>
-                  Envoyer la demande
-                </button>
-              </>
-            )}
+              )}
 
+              {activeTab === "solution" && (
+                <>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-500 mb-1.5 block">
+                      Message de solution pour {ticket.employee.name} {ticket.employee.surname}
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={solution}
+                      onChange={(e) => setSolution(e.target.value)}
+                      placeholder="Décrivez la solution ici..."
+                      className="w-full text-[13px] px-3 py-2 rounded-lg border border-black/15 bg-gray-50 text-gray-800 resize-y leading-relaxed focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSend}
+                    disabled={!solution.trim()}
+                    className="self-start flex items-center gap-1.5 text-[12px] font-medium px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Envoyer la solution
+                  </button>
+                </>
+              )}
+
+              {activeTab === "info" && (
+                <>
+                  <div>
+                    <label className="text-[11px] font-medium text-gray-500 mb-1.5 block">
+                      Demande d'information à {ticket.employee.name} {ticket.employee.surname}
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={infoMsg}
+                      onChange={(e) => setInfoMsg(e.target.value)}
+                      placeholder="Posez votre question ici..."
+                      className="w-full text-[13px] px-3 py-2 rounded-lg border border-black/15 bg-gray-50 text-gray-800 resize-y leading-relaxed focus:outline-none focus:border-blue-400"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSend}
+                    disabled={!infoMsg.trim()}
+                    className="self-start flex items-center gap-1.5 text-[12px] font-medium px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Envoyer la demande
+                  </button>
+                </>
+              )}
+
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

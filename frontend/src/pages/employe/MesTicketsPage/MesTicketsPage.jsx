@@ -1,4 +1,3 @@
-// src/pages/MesTicketsPage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -38,39 +37,44 @@ export default function MesTicketsPage() {
   const [filterDate, setFilterDate] = useState("");
   const [searchText, setSearchText] = useState("");
 
-  // Fetch tickets from backend
   useEffect(() => {
     async function fetchTickets() {
       try {
-        const res = await fetch("http://localhost:3001/api/tickets");
+        // Get the logged-in user from localStorage
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (!user) {
+          navigate("/login");
+          return;
+        }
+
+        const res = await fetch(`http://localhost:3001/api/tickets/my/${user.id}`);
         if (!res.ok) throw new Error("Erreur lors de la récupération des tickets");
         const data = await res.json();
 
-        // Map DB fields to design fields
-const mapped = data.map((t) => ({
-  rawId: t.id,
-  titre: t.title,
-  service: t.service_id ? services[t.service_id - 1] : "N/A",
-  technicien: t.technicien_name || "Non assigné",
-  status:
-    t.status === "open"
-      ? "Ouvert"
-      : t.status === "in_progress"
-      ? "En cours"
-      : t.status === "resolved"
-      ? "Résolu"
-      : t.status === "closed"
-      ? "Fermé"
-      : t.status === "rejected"
-      ? "Rejeté"
-      : t.status,
-  dateCreation: t.created_at.split("T")[0],
-  maj: t.updated_at.split("T")[0] + " " + t.updated_at.split("T")[1].slice(0, 5),
-  urgence: t.urgency || "N/A",
-  priorite: t.priority,
-  impact: t.impact,
-  category: t.category,
-}));
+        const mapped = data.map((t) => ({
+          rawId: t.id,
+          titre: t.title,
+          service: t.service_id ? services[t.service_id - 1] : "N/A",
+          technicien: t.technicien_name || "Non assigné",
+          status:
+            t.status === "open"
+              ? "Ouvert"
+              : t.status === "in_progress"
+              ? "En cours"
+              : t.status === "resolved"
+              ? "Résolu"
+              : t.status === "closed"
+              ? "Fermé"
+              : t.status === "rejected"
+              ? "Rejeté"
+              : t.status,
+          dateCreation: t.created_at.split("T")[0],
+          maj: t.updated_at.split("T")[0] + " " + t.updated_at.split("T")[1].slice(0, 5),
+          urgence: t.urgency || "N/A",
+          priorite: t.priority,
+          impact: t.impact,
+          category: t.category,
+        }));
 
         setTicketsData(mapped);
       } catch (err) {
@@ -108,7 +112,6 @@ const mapped = data.map((t) => ({
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
-
         <select
           className="border rounded-lg px-3 py-2"
           value={filterStatus}
@@ -116,12 +119,9 @@ const mapped = data.map((t) => ({
         >
           <option value="">Tous les statuts</option>
           {Object.keys(statusStyle).map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
-
         <select
           className="border rounded-lg px-3 py-2"
           value={filterService}
@@ -129,19 +129,15 @@ const mapped = data.map((t) => ({
         >
           <option value="">Tous les services</option>
           {services.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
-
         <input
           type="date"
           className="border rounded-lg px-3 py-2"
           value={filterDate}
           onChange={(e) => setFilterDate(e.target.value)}
         />
-
         <button
           className="text-red-500 border px-3 py-2 rounded-lg"
           onClick={() => {
@@ -157,48 +153,47 @@ const mapped = data.map((t) => ({
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow border overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr className="text-left">
-              <th className="p-3">TITRE</th>
-              <th className="p-3">SERVICE</th>
-              <th className="p-3">TECHNICIEN</th>
-              <th className="p-3">STATUT</th>
-              <th className="p-3">DATE CRÉATION</th>
-              <th className="p-3">DERNIÈRE MAJ</th>
-              <th className="p-3">ACTION</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredTickets.map((t, idx) => (
-              <tr key={idx} className="border-t hover:bg-gray-50 transition">
-                <td className="p-3">{t.titre}</td>
-                <td className="p-3 text-gray-600">{t.service}</td>
-                <td className="p-3 text-gray-600">{t.technicien}</td>
-                <td className="p-3">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      statusStyle[t.status]
-                    }`}
-                  >
-                    {t.status}
-                  </span>
-                </td>
-                <td className="p-3 text-gray-500">{t.dateCreation}</td>
-                <td className="p-3 text-gray-500">{t.maj}</td>
-                <td className="p-3">
-                  <button
-                    onClick={() => navigate(`/employee/ticket/${t.rawId}`)}
-                    className="text-blue-500 hover:underline"
-                  >
-                    Voir détails
-                  </button>
-                </td>
+        {filteredTickets.length === 0 ? (
+          <p className="p-6 text-center text-gray-500">Aucun ticket trouvé.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr className="text-left">
+                <th className="p-3">TITRE</th>
+                <th className="p-3">SERVICE</th>
+                <th className="p-3">TECHNICIEN</th>
+                <th className="p-3">STATUT</th>
+                <th className="p-3">DATE CRÉATION</th>
+                <th className="p-3">DERNIÈRE MAJ</th>
+                <th className="p-3">ACTION</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredTickets.map((t, idx) => (
+                <tr key={idx} className="border-t hover:bg-gray-50 transition">
+                  <td className="p-3">{t.titre}</td>
+                  <td className="p-3 text-gray-600">{t.service}</td>
+                  <td className="p-3 text-gray-600">{t.technicien}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyle[t.status]}`}>
+                      {t.status}
+                    </span>
+                  </td>
+                  <td className="p-3 text-gray-500">{t.dateCreation}</td>
+                  <td className="p-3 text-gray-500">{t.maj}</td>
+                  <td className="p-3">
+                    <button
+                      onClick={() => navigate(`/employee/ticket/${t.rawId}`)}
+                      className="text-blue-500 hover:underline"
+                    >
+                      Voir détails
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

@@ -31,6 +31,9 @@ import AccueilChef from "./pages/chefService/AccueilChef/AccueilChef";
 
 /* MANAGER */
 import AccueilManager from "./pages/manager/AccueilManager/AccueilManager";
+import PerformancesPage from "./pages/manager/PerformancesPage/PerformancesPage";
+import RepartitionPage from "./pages/manager/RepartitionPage/RepartitionPage";
+import AffectationsPage from "./pages/manager/AffectationsPage/AffectationsPage";
 
 /* ADMIN */
 import AccueilAdmin from "./pages/admin/AccueilAdmin/AccueilAdmin";
@@ -105,6 +108,9 @@ export default function App() {
   <Route path="profile" element={<ProfilePage />} />
   <Route path="tickets-service" element={<TicketsServicePage />} />
   <Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
+  <Route path="performances" element={<PerformancesPage />} />
+  <Route path="repartition" element={<RepartitionPage />} />
+  <Route path="affectations" element={<AffectationsPage />} />
 </Route>
 
         {/* ================= ADMIN ================= */}

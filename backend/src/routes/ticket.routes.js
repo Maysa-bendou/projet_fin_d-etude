@@ -7,7 +7,7 @@ const pool = new Pool({
   user: "postgres",
   host: "localhost",
   database: "ticket_systeme",
-  password: "amml",
+  password: "maysab43",
   port: 5432,
 });
 
@@ -40,31 +40,26 @@ router.get("/", async (req, res) => {
 });
 
 // GET /api/tickets/:id - fetch single ticket with technician name
-router.get("/:id", async (req, res) => {
+router.get("/assigned/:techId", async (req, res) => {
   try {
-    const { id } = req.params;
-    const result = await pool.query(
-      `
+    const techId = parseInt(req.params.techId);
+
+    const result = await pool.query(`
       SELECT 
         t.*,
         u.name || ' ' || u.surname AS technicien_name
       FROM tickets t
       LEFT JOIN users u ON t.assigned_to = u.id
-      WHERE t.id = $1
-      `,
-      [id]
-    );
+      WHERE t.assigned_to = $1
+      ORDER BY t.created_at DESC
+    `, [techId]);
 
-    if (result.rows.length === 0)
-      return res.status(404).json({ error: "Ticket non trouvé" });
-
-    res.json(result.rows[0]);
+    res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
+    res.status(500).json({ error: "Failed to fetch technician tickets" });
   }
 });
-
 // GET /api/tickets/my - fetch only tickets created by the logged-in employee
 router.get("/my/:userId", async (req, res) => {
   try {
@@ -97,5 +92,20 @@ router.get("/my/:userId", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch tickets" });
   }
 });
+                 router.put("/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
 
+    const result = await pool.query(
+      "UPDATE tickets SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *",
+      [status, id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update status" });
+  }
+});
 module.exports = router;

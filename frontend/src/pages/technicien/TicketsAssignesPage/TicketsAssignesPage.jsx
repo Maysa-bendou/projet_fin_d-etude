@@ -49,15 +49,44 @@ export default function MesTicketsTechnicien() {
   useEffect(() => {
     async function fetchTickets() {
       try {
-        const res = await fetch("http://localhost:3001/api/tickets"); // check port
+        const user = JSON.parse(localStorage.getItem("user"));
+const res = await fetch(`http://localhost:3001/api/tickets/assigned/${user.id}`); // check port
         if (!res.ok) throw new Error("Erreur lors du fetch");
         const data = await res.json();
 
-        // Init statuts localement
-        const initialStatuts = Object.fromEntries(data.map(t => [t.id, t.statut]));
-        setStatuts(initialStatuts);
+        const statusFR = {
+          open: "Ouvert",
+          in_progress: "En cours",
+          resolved: "Résolu",
+          closed: "Fermé",
+          rejected: "Rejeté",
+        };
+        const statusEN = {
+  "Ouvert": "open",
+  "En cours": "in_progress",
+  "En attente": "waiting",
+  "Résolu": "resolved",
+  "Fermé": "closed",
+};
 
-        setTicketsData(data);
+const mapped = data.map(t => ({
+  id: t.id,
+  titre: t.title,               // ✅ title -> titre
+  description: t.description,
+  employe: t.employee_name,     // حسب ما ترجع من backend
+  technicien: t.technicien_name,
+  priorite: t.priority,
+  categorie: t.category,
+  statut: statusFR[t.status] || t.status,             // status -> statut
+  assigne: t.assigned_to,
+  slaDepasse: false             // temporaire
+}));
+        // Init statuts localement
+       const initialStatuts = Object.fromEntries(mapped.map(t => [t.id, t.statut]));
+setStatuts(initialStatuts);
+
+setTicketsData(mapped);
+        
         setLoading(false);
       } catch (err) {
         console.error(err);
@@ -69,13 +98,18 @@ export default function MesTicketsTechnicien() {
   }, []);
 
   // ── Changer statut ─────────────────────────────
-  function changerStatut(id, nouveauStatut) {
-    setStatuts(prev => ({ ...prev, [id]: nouveauStatut }));
-  }
+  async function changerStatut(id, nouveauStatut) {
+  setStatuts(prev => ({ ...prev, [id]: nouveauStatut }));
+
+  await fetch(`http://localhost:3001/api/tickets/${id}/status`, {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ status: statusEN[nouveauStatut] }),
+});
+}
 
   // ── Tickets assignés au technicien ─────────────
-  const myTickets = ticketsData.filter(t => t.technicien === currentUserName);
-
+const myTickets = ticketsData;
   // ── Tickets filtrés ───────────────────────────
   const filteredTickets = myTickets.filter(t => {
     const matchSearch = search === "" ||

@@ -143,24 +143,17 @@ export default function ProfilePage() {
           </div>
 
           {/* Technician-only Services */}
-          {user.role === "technician" && user.services?.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                <MdBuild className="text-blue-500" /> Services associés
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {user.services.map((s, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1.5 rounded-full text-sm bg-blue-50 text-blue-600 font-medium"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+         {user.role === "technician" && user.services && (
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+      <MdBuild className="text-blue-500" /> Service associé
+    </h3>
 
+    <span className="px-3 py-1.5 rounded-full text-sm bg-blue-50 text-blue-600 font-medium">
+      {user.services.name}
+    </span>
+  </div>
+)}
         </div>
 
         {/* Right Column: Quick Info */}

@@ -1,0 +1,7 @@
+[
+  { "id": 1, "name": "IT Support" },
+  { "id": 2, "name": "IT Network" },
+  { "id": 3, "name": "IT Security" },
+  { "id": 4, "name": "IT Collaboration Systems" },
+  { "id": 5, "name": "Service Desk" }
+]

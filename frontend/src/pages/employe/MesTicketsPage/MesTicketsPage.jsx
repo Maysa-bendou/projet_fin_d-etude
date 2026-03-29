@@ -48,35 +48,43 @@ export default function MesTicketsPage() {
         }
 
         const res = await fetch(`http://localhost:3001/api/tickets/my/${user.id}`);
+        
         if (!res.ok) throw new Error("Erreur lors de la récupération des tickets");
         const data = await res.json();
 
-        const mapped = data.map((t) => ({
-          rawId: t.id,
-          titre: t.title,
-          service: t.service_id ? services[t.service_id - 1] : "N/A",
-          technicien: t.technicien_name || "Non assigné",
-          status:
-            t.status === "open"
-              ? "Ouvert"
-              : t.status === "in_progress"
-              ? "En cours"
-              : t.status === "resolved"
-              ? "Résolu"
-              : t.status === "closed"
-              ? "Fermé"
-              : t.status === "rejected"
-              ? "Rejeté"
-              : t.status,
-          dateCreation: t.created_at.split("T")[0],
-          maj: t.updated_at.split("T")[0] + " " + t.updated_at.split("T")[1].slice(0, 5),
-          urgence: t.urgency || "N/A",
-          priorite: t.priority,
-          impact: t.impact,
-          category: t.category,
-        }));
+       const mapped = data.map((t) => {
+  const created = t.created_at || "";
+  const updated = t.updated_at || "";
 
-        setTicketsData(mapped);
+  return {
+    rawId: t.id,
+    titre: t.title,
+    service: t.service_id ? services[t.service_id - 1] : "N/A",
+    technicien: t.technicien_name || "Non assigné",
+    status:
+      t.status === "open"
+        ? "Ouvert"
+        : t.status === "in_progress"
+        ? "En cours"
+        : t.status === "resolved"
+        ? "Résolu"
+        : t.status === "closed"
+        ? "Fermé"
+        : t.status === "rejected"
+        ? "Rejeté"
+        : t.status,
+    dateCreation: created ? created.split("T")[0] : "N/A",
+    maj: updated
+      ? updated.split("T")[0] + " " + updated.split("T")[1]?.slice(0, 5)
+      : "N/A",
+    urgence: t.urgency || "N/A",
+    priorite: t.priority || "N/A",
+    impact: t.impact || "N/A",
+    category: t.category || "N/A",
+  };
+});
+
+        setTicketsData(data);
       } catch (err) {
         console.error(err);
         setError(err.message);

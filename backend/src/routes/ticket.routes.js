@@ -1,111 +1,113 @@
 const express = require("express");
 const router = express.Router();
-const { Pool } = require("pg");
+const { getMyTickets } = require("../controllers/ticket.controller");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-// PostgreSQL connection
-const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "ticket_systeme",
-  password: "maysab43",
-  port: 5432,
-});
 
-// GET /api/tickets - fetch all tickets with technician name
-router.get("/", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-        t.id,
-        t.title,
-        t.description,
-        t.category,
-        t.status,
-        t.priority,
-        t.impact,
-        t.urgency,
-        t.service_id,
-        t.created_at,
-        t.updated_at,
-        u.name || ' ' || u.surname AS technicien_name
-      FROM tickets t
-      LEFT JOIN users u ON t.assigned_to = u.id
-      ORDER BY t.id ASC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    console.error("Error fetching tickets:", err);
-    res.status(500).json({ error: "Failed to fetch tickets" });
-  }
-});
 
-// GET /api/tickets/:id - fetch single ticket with technician name
+
+
+// GET /api/tickets/my/:userId
+router.get("/my/:userId", getMyTickets);
 router.get("/assigned/:techId", async (req, res) => {
   try {
     const techId = parseInt(req.params.techId);
 
-    const result = await pool.query(`
-      SELECT 
-        t.*,
-        u.name || ' ' || u.surname AS technicien_name
-      FROM tickets t
-      LEFT JOIN users u ON t.assigned_to = u.id
-      WHERE t.assigned_to = $1
-      ORDER BY t.created_at DESC
-    `, [techId]);
+    const tickets = await prisma.tickets.findMany({
+      where: { assigned_to: techId },
+      include: {
+        users_tickets_created_byTousers: {
+          select: { name: true, surname: true },
+        },
+        services: { select: { name: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
 
-    res.json(result.rows);
+    res.json(tickets);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to fetch technician tickets" });
+    res.status(500).json({ error: "Erreur lors du fetch" });
   }
 });
-// GET /api/tickets/my - fetch only tickets created by the logged-in employee
-router.get("/my/:userId", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const result = await pool.query(
-      `
-      SELECT 
-        t.id,
-        t.title,
-        t.description,
-        t.category,
-        t.status,
-        t.priority,
-        t.impact,
-        t.urgency,
-        t.service_id,
-        t.created_at,
-        t.updated_at,
-        u.name || ' ' || u.surname AS technicien_name
-      FROM tickets t
-      LEFT JOIN users u ON t.assigned_to = u.id
-      WHERE t.created_by = $1
-      ORDER BY t.created_at DESC
-      `,
-      [userId]
-    );
-    res.json(result.rows);
+    const tickets = await prisma.tickets.findMany({
+      include: {
+        users_tickets_created_byTousers: { select: { name: true, surname: true } },
+        users_tickets_assigned_toTousers: { select: { name: true, surname: true } },
+        services: { select: { name: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    res.json(tickets);
   } catch (err) {
-    console.error("Error fetching employee tickets:", err);
-    res.status(500).json({ error: "Failed to fetch tickets" });
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 });
-                 router.put("/:id/status", async (req, res) => {
+router.put("/:id/status", async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
     const { status } = req.body;
 
-    const result = await pool.query(
-      "UPDATE tickets SET status=$1, updated_at=NOW() WHERE id=$2 RETURNING *",
-      [status, id]
-    );
+    const ticket = await prisma.tickets.update({
+      where: { id },
+      data: { status, updated_at: new Date() },
+    });
 
-    res.json(result.rows[0]);
+    res.json(ticket);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to update status" });
+  }
+});
+router.get("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const ticket = await prisma.tickets.findUnique({
+      where: { id },
+      include: {
+        users_tickets_created_byTousers: {
+          select: {
+            name: true,
+            surname: true,
+            email: true,
+            department: true,
+            role: true,
+          },
+        },
+        users_tickets_assigned_toTousers: {
+          select: { name: true, surname: true },
+        },
+        services: {
+          select: { name: true },
+        },
+      },
+    });
+
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    res.json({
+      id: ticket.id,
+      title: ticket.title,
+      description: ticket.description,
+      category: ticket.category,
+      status: ticket.status,
+      priority: ticket.priority,
+      createdAt: ticket.created_at,
+      updatedAt: ticket.updated_at,
+
+      employee: ticket.users_tickets_created_byTousers,
+      technician: ticket.users_tickets_assigned_toTousers,
+      service: ticket.services?.name,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 });
 module.exports = router;

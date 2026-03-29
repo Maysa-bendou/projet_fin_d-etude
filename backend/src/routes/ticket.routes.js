@@ -3,8 +3,51 @@ const router = express.Router();
 const { getMyTickets } = require("../controllers/ticket.controller");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+
+
+
+
+
 // GET /api/tickets/my/:userId
 router.get("/my/:userId", getMyTickets);
+router.get("/assigned/:techId", async (req, res) => {
+  try {
+    const techId = parseInt(req.params.techId);
+
+    const tickets = await prisma.tickets.findMany({
+      where: { assigned_to: techId },
+      include: {
+        users_tickets_created_byTousers: {
+          select: { name: true, surname: true },
+        },
+        services: { select: { name: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    res.json(tickets);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors du fetch" });
+  }
+});
+router.get("/", async (req, res) => {
+  try {
+    const tickets = await prisma.tickets.findMany({
+      include: {
+        users_tickets_created_byTousers: { select: { name: true, surname: true } },
+        users_tickets_assigned_toTousers: { select: { name: true, surname: true } },
+        services: { select: { name: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    res.json(tickets);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 router.put("/:id/status", async (req, res) => {
   try {
     const id = parseInt(req.params.id);

@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // ✅ useEffect was missing
 import { useNavigate, useParams } from "react-router-dom";
 
-// ── Role detection (manager or technician) ────────────────────────────────
+// ── Role detection ─────────────────────────────────────────────────────────
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
-// Map DB role → route path (must match App.jsx)
 const rolePath = user?.role === "technician" || user?.role === "technicien"
   ? "technician"
   : user?.role === "manager"
@@ -18,29 +17,6 @@ const rolePath = user?.role === "technician" || user?.role === "technicien"
   : "";
 
 const role = user?.role || "";
-
-// ── Mock ticket data (replace with API later) ──────────────────────────────
-const MOCK_TICKET = {
-  id: "TK-1042",
-  title: "VPN access failure after password reset",
-  description:
-    "Since resetting my password this morning, I can no longer connect to the company VPN. I need VPN access urgently — I have a deadline today and cannot access the shared drives remotely.",
-  category: "Network / VPN",
-  priority: "High",
-  status: "Open",
-  createdAt: "Today, 09:14",
-  employee: {
-    name: "Ali",
-    surname: "Benali",
-    email: "employe@djezzy.dz",
-    department: "Finance",
-    role: "employee",
-  },
-  timeline: [
-    { color: "#185fa5", title: "Ticket assigned to you", time: "2h ago" },
-    { color: "#888780", title: "Ticket created by employee", time: "3h ago" },
-  ],
-};
 
 // ── Badge helpers ──────────────────────────────────────────────────────────
 const PRIORITY_CLASS = {
@@ -61,13 +37,34 @@ export default function TicketsDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const ticket = MOCK_TICKET; // swap with fetch(`/api/tickets/${id}`) later
-
-  const [status, setStatus] = useState(ticket.status);
+  // ✅ All useState hooks must be declared before any early returns
+  const [ticket, setTicket] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState("");       // ✅ moved up, initialized to ""
   const [solution, setSolution] = useState("");
   const [infoMsg, setInfoMsg] = useState("");
   const [activeTab, setActiveTab] = useState("solution");
   const [sent, setSent] = useState(false);
+
+  // ✅ useEffect placed after all hooks, not in the middle
+  useEffect(() => {
+    async function fetchTicket() {
+      try {
+        const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
+        if (!res.ok) throw new Error("Erreur lors de la récupération du ticket");
+        const data = await res.json();
+        setTicket(data);
+        setStatus(data.status); // ✅ set status once data is fetched
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTicket();
+  }, [id]);
 
   const handleSend = () => {
     setSent(true);
@@ -76,11 +73,16 @@ export default function TicketsDetailsPage() {
     setInfoMsg("");
   };
 
+  // ✅ Conditional renders AFTER all hooks
+  if (loading) return <div className="p-6 text-gray-500">Chargement du ticket...</div>;
+  if (error)   return <div className="p-6 text-red-500">Erreur : {error}</div>;
+  if (!ticket) return <div className="p-6 text-gray-400">Ticket introuvable.</div>;
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-5xl mx-auto flex flex-col gap-4">
 
-        {/* ── Breadcrumb / Retour button ── */}
+        {/* ── Breadcrumb ── */}
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <button
             onClick={() => navigate(`/${rolePath}/tickets-service`)}
@@ -201,11 +203,9 @@ export default function TicketsDetailsPage() {
           </div>
         </div>
 
-        {/* ── Actions (Send solution / Request info) ── */}
+        {/* ── Actions ── */}
         {role === "technician" && (
           <div className="bg-white rounded-xl border border-black/[0.08] overflow-hidden mt-4">
-
-            {/* Tabs */}
             <div className="flex border-b border-black/[0.08] bg-gray-50">
               {[
                 { id: "solution", label: "Envoyer une solution" },
@@ -226,8 +226,6 @@ export default function TicketsDetailsPage() {
             </div>
 
             <div className="p-5 flex flex-col gap-3">
-
-              {/* Success banner */}
               {sent && (
                 <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[12px] text-green-700">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -285,7 +283,6 @@ export default function TicketsDetailsPage() {
                   </button>
                 </>
               )}
-
             </div>
           </div>
         )}

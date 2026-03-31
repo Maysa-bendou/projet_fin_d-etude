@@ -5,9 +5,6 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 
-
-
-
 // GET /api/tickets/my/:userId
 router.get("/my/:userId", getMyTickets);
 router.get("/assigned/:techId", async (req, res) => {
@@ -31,20 +28,41 @@ router.get("/assigned/:techId", async (req, res) => {
     res.status(500).json({ error: "Erreur lors du fetch" });
   }
 });
+// GET /api/tickets
 router.get("/", async (req, res) => {
   try {
     const tickets = await prisma.tickets.findMany({
       include: {
-        users_tickets_created_byTousers: { select: { name: true, surname: true } },
-        users_tickets_assigned_toTousers: { select: { name: true, surname: true } },
-        services: { select: { name: true } },
+        users_tickets_created_byTousers: true, // Employee info
+        users_tickets_assigned_toTousers: true, // Tech info
+        services: true,
       },
       orderBy: { created_at: "desc" },
     });
 
-    res.json(tickets);
+    // Map DB (snake_case) to Frontend (camelCase)
+    const formatted = tickets.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      category: t.category,
+      priority: t.priority,
+      status: t.status,
+      impact: t.impact,
+      urgency: t.urgency,
+      serviceId: t.service_id, // Important for filtering
+      sla: t.sla_due_date,
+      date_expiration: t.sla_due_date,
+      // Employee info
+      createdBy: t.users_tickets_created_byTousers?.name,
+      employee: t.users_tickets_created_byTousers, // Send full object for detail page
+      // Technician info
+      assignedTo: t.users_tickets_assigned_toTousers?.name,
+      technicienId: t.assigned_to
+    }));
+
+    res.json(formatted);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
@@ -110,4 +128,51 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
+// PUT /api/tickets/:id/assign
+router.put("/:id/assign", async (req, res) => {
+  const ticketId = parseInt(req.params.id);
+  const { assigned_to, technicienId, action, assigned_by } = req.body;
+
+  // Decide which field to use depending on frontend request
+  const techId = assigned_to || technicienId;
+
+  if (!techId) return res.status(400).json({ error: "Technician ID is required" });
+
+  try {
+    // Update ticket in DB
+    const updatedTicket = await prisma.tickets.update({
+      where: { id: ticketId },
+      data: {
+        assigned_to: techId,
+        status: action === "taken" ? "in_progress" : "open",
+      },
+    });
+
+    // Optional: insert history record
+    await prisma.ticket_assignments_history.create({
+      data: {
+        ticket_id: ticketId,
+        from_user_id: action === "assigned" ? assigned_by : null,
+        to_user_id: techId,
+        action: action || "taken",
+        reason: action === "taken" ? "Technician took charge" : "Manager assigned",
+      },
+    });
+
+    res.json({
+  id: updatedTicket.id,
+  title: updatedTicket.title,
+  description: updatedTicket.description,
+  status: updatedTicket.status,
+  assigned_to: updatedTicket.assigned_to,
+  createdAt: updatedTicket.created_at.toISOString(),
+  updatedAt: updatedTicket.updated_at.toISOString(),
+});
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Impossible d'assigner le ticket" });
+  }
+});
+
+
 module.exports = router;

@@ -4,17 +4,22 @@ import { useNavigate, useParams } from "react-router-dom";
 // ── Role detection ─────────────────────────────────────────────────────────
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
-const rolePath = user?.role === "technician" || user?.role === "technicien"
-  ? "technician"
-  : user?.role === "manager"
-  ? "manager"
-  : user?.role === "chef_service"
-  ? "chef"
-  : user?.role === "employee"
-  ? "employee"
-  : user?.role === "admin"
-  ? "admin"
-  : "";
+const rolePath =
+  user?.role === "technician" || user?.role === "technicien"
+    ? "technician"
+    : user?.role === "manager"
+    ? "manager"
+    : user?.role === "chef_service"
+    ? "chef"
+    : user?.role === "employee"
+    ? "employee"
+    : user?.role === "admin"
+    ? "admin"
+    : null;
+
+if (!rolePath) {
+  navigate("/login"); // si role invalide
+}
 
 const role = user?.role || "";
 
@@ -51,7 +56,7 @@ export default function TicketsDetailsPage() {
   useEffect(() => {
     async function fetchTicket() {
       try {
-        const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
+      const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
         if (!res.ok) throw new Error("Erreur lors de la récupération du ticket");
         const data = await res.json();
         setTicket(data);

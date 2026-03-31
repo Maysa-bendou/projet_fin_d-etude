@@ -289,7 +289,7 @@ const myTickets = ticketsData;
                 </td>
                 <td className="px-4 py-3">
                   <button
-                    onClick={() => navigate(`/technicien/ticket/${t.id}`)}
+                  onClick={() => navigate(`/technician/tickets-service/${t.id}`)}
                     className="text-blue-600 hover:underline text-xs font-medium"
                   >
                     Voir →

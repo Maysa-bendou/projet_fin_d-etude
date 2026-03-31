@@ -1,17 +1,17 @@
 import SidebarTechnicien from "../components/Sidebar/SidebarTechnicien";
 import { Outlet } from "react-router-dom";
-
+import TopNavbar from "../components/TopNavbar/TopNavbar";
 export default function TechnicianLayout() {
 
   return (
-    <div className="flex">
-
+    <div className="flex h-screen">
       <SidebarTechnicien />
-
-      <main className="flex-1 p-6 bg-gray-100 min-h-screen">
-        <Outlet />
-      </main>
-
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <TopNavbar />                        {/* ← ici */}
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 

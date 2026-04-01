@@ -1,6 +1,44 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+// ✅ Nouveau composant SlaBar pour l'affichage visuel
+const SlaBar = ({ slaDueDate }) => {
+  if (!slaDueDate) return <span className="text-gray-400 text-xs italic">N/A</span>;
+
+  const now = new Date().getTime();
+  const due = new Date(slaDueDate).getTime();
+  const diffMs = due - now;
+  const isExpired = diffMs <= 0;
+
+  // Calcul pour la progression (basé sur une fenêtre arbitraire de 24h pour le visuel)
+  const totalWindow = 24 * 60 * 60 * 1000; 
+  const percentage = isExpired ? 100 : Math.max(0, Math.min(100, ((totalWindow - diffMs) / totalWindow) * 100));
+
+  const hours = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
+  const minutes = Math.floor((Math.abs(diffMs) % (1000 * 60 * 60)) / (1000 * 60));
+
+  let barColor = "bg-green-500";
+  if (isExpired) barColor = "bg-red-500";
+  else if (hours < 2) barColor = "bg-red-400";
+  else if (hours < 6) barColor = "bg-orange-400";
+
+  return (
+    <div className="flex flex-col gap-1 min-w-[120px]">
+      <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${isExpired ? 100 : percentage}%` }}
+        ></div>
+      </div>
+      <span className={`text-[10px] font-bold uppercase ${isExpired ? "text-red-600" : "text-gray-500"}`}>
+        {isExpired 
+          ? `Dépassé de ${hours}h ${minutes}m` 
+          : `${hours}h ${minutes}m restantes`}
+      </span>
+    </div>
+  );
+};
+
 const TicketsServicePage = () => {
   const navigate = useNavigate();
 
@@ -11,49 +49,44 @@ const TicketsServicePage = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ New Filter States
+  const [dbEnums, setDbEnums] = useState({ statuts: [], categories: [] });
   const [filterStatus, setFilterStatus] = useState("Tous");
   const [filterCategory, setFilterCategory] = useState("Tous");
   const [filterAssignment, setFilterAssignment] = useState("Tous");
 
-  // Tooltip state
   const [tooltip, setTooltip] = useState({ visible: false, x: 0, y: 0 });
   const tooltipTimer = useRef(null);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     setLoading(true);
-    fetch("http://localhost:3001/api/tickets")
-      .then((res) => res.json())
-      .then((data) => {
-        const filtered = data.filter((t) => t.serviceId === serviceId);
-        setTickets(filtered);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching tickets:", err);
-        setLoading(false);
-      });
+    try {
+      const enumRes = await fetch("http://localhost:3001/api/tech/enums");
+      const enumData = await enumRes.json();
+      setDbEnums(enumData);
+
+      const res = await fetch("http://localhost:3001/api/tickets");
+      const data = await res.json();
+      
+      const filtered = data.filter((t) => (t.serviceId || t.service_id) === serviceId);
+      setTickets(filtered);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (serviceId) fetchData();
   }, [serviceId]);
 
-  // ✅ Extract unique categories for the dropdown
-  const categories = useMemo(() => {
-    const cats = tickets.map((t) => t.category || t.categorie || "N/A");
-    return ["Tous", ...new Set(cats)];
-  }, [tickets]);
-
-  // ✅ Logic for Category, Status, and Assignment filtering
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
       const matchesStatus = filterStatus === "Tous" || t.status === filterStatus;
-      
       const catValue = t.category || t.categorie || "N/A";
       const matchesCategory = filterCategory === "Tous" || catValue === filterCategory;
 
-      const isAssigned = !!(t.assignedTo || t.technicienId);
+      const isAssigned = !!(t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers);
       const matchesAssignment =
         filterAssignment === "Tous" ||
         (filterAssignment === "Assigné" && isAssigned) ||
@@ -138,7 +171,6 @@ const TicketsServicePage = () => {
           </p>
         </div>
 
-        {/* ✅ REFRESH BUTTON */}
         <button
           onClick={fetchData}
           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm transition-all"
@@ -152,7 +184,6 @@ const TicketsServicePage = () => {
 
       {/* ✅ FILTERS BAR */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {/* Status Filter */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Statut</label>
           <select
@@ -161,13 +192,12 @@ const TicketsServicePage = () => {
             className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
             <option value="Tous">Tous les statuts</option>
-            {Object.keys(statusStyle).map((s) => (
+            {dbEnums.statuts?.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </div>
 
-        {/* Category Filter */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Catégorie</label>
           <select
@@ -175,13 +205,13 @@ const TicketsServicePage = () => {
             onChange={(e) => setFilterCategory(e.target.value)}
             className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
           >
-            {categories.map((c) => (
+            <option value="Tous">Toutes les catégories</option>
+            {dbEnums.categories?.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
         </div>
 
-        {/* Assignment Filter */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Assignation</label>
           <select
@@ -213,61 +243,64 @@ const TicketsServicePage = () => {
           </thead>
 
           <tbody>
-            {filteredTickets.map((t) => (
-              <tr
-                key={t.id}
-                onClick={() => handleRowClick(t.id)}
-                onMouseEnter={handleMouseEnter}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                className="border-t border-gray-50 hover:bg-blue-50/60 cursor-pointer transition-colors duration-150 group"
-              >
-                <td className="p-4 font-medium text-gray-800 group-hover:text-blue-700">
-                  {t.title || "N/A"}
-                </td>
+            {filteredTickets.map((t) => {
+              const employee = t.employee || t.users_tickets_created_byTousers;
+              const technician = t.assignedTo || t.users_tickets_assigned_toTousers?.name;
 
-                <td className="p-4 text-gray-500 max-w-[200px] truncate">
-                  {t.description || "N/A"}
-                </td>
+              return (
+                <tr
+                  key={t.id}
+                  onClick={() => handleRowClick(t.id)}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={handleMouseLeave}
+                  className="border-t border-gray-50 hover:bg-blue-50/60 cursor-pointer transition-colors duration-150 group"
+                >
+                  <td className="p-4 font-medium text-gray-800 group-hover:text-blue-700">
+                    {t.title || "N/A"}
+                  </td>
 
-                <td className="p-4 text-center">
-                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    {t.category || t.categorie || "N/A"}
-                  </span>
-                </td>
+                  <td className="p-4 text-gray-500 max-w-[200px] truncate">
+                    {t.description || "N/A"}
+                  </td>
 
-                <td className="p-4 text-center">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${priorityStyle[t.priority] || "bg-gray-100 text-gray-500"}`}>
-                    {t.priority || "N/A"}
-                  </span>
-                </td>
+                  <td className="p-4 text-center">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      {t.category || t.categorie || "N/A"}
+                    </span>
+                  </td>
 
-                <td className="p-4 text-center">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[t.status] || "bg-gray-100 text-gray-500"}`}>
-                    {t.status || "N/A"}
-                  </span>
-                </td>
+                  <td className="p-4 text-center">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${priorityStyle[t.priority] || "bg-gray-100 text-gray-500"}`}>
+                      {t.priority || "N/A"}
+                    </span>
+                  </td>
 
-                {/* ✅ SLA COLUMN */}
-                <td className="p-4 text-center">
-                  <span className="text-gray-600 font-medium">
-                    {t.sla || t.sla_due_date ? new Date(t.sla || t.sla_due_date).toLocaleDateString('fr-FR') : "N/A"}
-                  </span>
-                </td>
+                  <td className="p-4 text-center">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle[t.status] || "bg-gray-100 text-gray-500"}`}>
+                      {t.status || "N/A"}
+                    </span>
+                  </td>
 
-                <td className="p-4 text-center text-gray-700">
-                  {t.employee?.name ? `${t.employee.name} ${t.employee.surname || ""}` : "N/A"}
-                </td>
+                  {/* ✅ SLA AVEC BARRE VISUELLE */}
+                  <td className="p-4 flex justify-center">
+                    <SlaBar slaDueDate={t.sla_due_date || t.sla} />
+                  </td>
 
-                <td className="p-4 text-center">
-                  {t.assignedTo ? (
-                    <span className="text-gray-700 font-medium">{t.assignedTo}</span>
-                  ) : (
-                    <span className="text-orange-400 italic text-xs font-medium">Non assigné</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  <td className="p-4 text-center text-gray-700">
+                    {employee?.name ? `${employee.name} ${employee.surname || ""}` : "N/A"}
+                  </td>
+
+                  <td className="p-4 text-center">
+                    {technician ? (
+                      <span className="text-gray-700 font-medium">{technician}</span>
+                    ) : (
+                      <span className="text-orange-400 italic text-xs font-medium">Non assigné</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 

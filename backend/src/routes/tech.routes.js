@@ -21,4 +21,5 @@ router.get("/users/service/:serviceId", getTechniciansByService);
 // Assign a ticket to a specific technician (using PUT as in your frontend fetch)
 router.put("/tickets/:id/assign", assignTicket);
 
+
 module.exports = router;

@@ -45,7 +45,7 @@ export default function SidebarManager() {
             <text x="14" y="16" textAnchor="middle"
               fill="white" fontSize="6" fontWeight="bold">DJEZZY</text>
             <text x="14" y="25" textAnchor="middle"
-              fill="white" fontSize="6">جاري</text>
+              fill="white" fontSize="6">جازي</text>
           </svg>
         </div>
         <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-bold text-red-600 text-base whitespace-nowrap">

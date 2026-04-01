@@ -22,8 +22,8 @@ import TicketDetailsPage from "./pages/employe/TicketDetailsPage/TicketDetailsPa
 /* TECHNICIEN */
 import AccueilTechnicien from "./pages/technicien/AccueilTechnicien/AccueilTechnicien";
 import TicketsAssignesPage from "./pages/technicien/TicketsAssignesPage/TicketsAssignesPage";
-import TicketsServicePage from "./components/TicketsServicePage/TicketsServicePage";
-import TicketsDetailsPage from "./components/TicketsDetailsPage/TicketsDetailsPage";
+import TicketsServicePage from "./pages/technicien/TicketsServicePage/TicketsServicePage";
+import TicketsDetailsPage from "./pages/technicien/TicketsDetailsPage/TicketsDetailsPage";
 import HistoriqueTechnicien from "./pages/technicien/HistoriqueTechnicien/HistoriqueTechnicien";
 import TicketDetailTechnicien from "./pages/technicien/TicketDetailTechnicien/TicketDetailTechnicien";
 /* CHEF */
@@ -34,6 +34,8 @@ import AccueilManager from "./pages/manager/AccueilManager/AccueilManager";
 import PerformancesPage from "./pages/manager/PerformancesPage/PerformancesPage";
 import RepartitionPage from "./pages/manager/RepartitionPage/RepartitionPage";
 import AffectationsPage from "./pages/manager/AffectationsPage/AffectationsPage";
+import TicketsService from "./pages/manager/TicketsServicePage/TicketsServicePage";
+import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPage";
 
 /* ADMIN */
 import AccueilAdmin from "./pages/admin/AccueilAdmin/AccueilAdmin";
@@ -82,8 +84,9 @@ export default function App() {
         }>
           <Route index element={<AccueilTechnicien />} />
           <Route path="tickets-assignes" element={<TicketsAssignesPage />} />
+<Route path="ticket-technicien/:id" element={<TicketDetailTechnicien />} />
   <Route path="tickets-service" element={<TicketsServicePage />} />
- <Route path="tickets-service/:id" element={<TicketDetailTechnicien />} />
+<Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
           <Route path="historique" element={<HistoriqueTechnicien />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
@@ -106,8 +109,8 @@ export default function App() {
 }>
   <Route index element={<AccueilManager />} />
   <Route path="profile" element={<ProfilePage />} />
-  <Route path="tickets-service" element={<TicketsServicePage />} />
-  <Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
+  <Route path="tickets-service" element={<TicketsService />} />
+  <Route path="tickets-service/:id" element={<TicketsDetails />} />
   <Route path="performances" element={<PerformancesPage />} />
   <Route path="repartition" element={<RepartitionPage />} />
   <Route path="affectations" element={<AffectationsPage />} />

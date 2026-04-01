@@ -324,14 +324,11 @@ export default function TopNavbar({ pageTitle = "" }) {
                     <User size={14} className="text-gray-400" />
                     Mon profil
                   </button>
-                  <button
-                    onClick={() => { navigate(`/${rolePath}/profile`); setProfileOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] text-gray-700 hover:bg-gray-50 transition bg-transparent border-none cursor-pointer text-left"
-                  >
-                    <Settings size={14} className="text-gray-400" />
-                    Paramètres
-                  </button>
+
+                  {/* Paramètres removed per request */}
+
                 </div>
+
 
                 <div className="border-t border-gray-100 py-1.5">
                   <button
@@ -342,6 +339,7 @@ export default function TopNavbar({ pageTitle = "" }) {
                     Se déconnecter
                   </button>
                 </div>
+
               </div>
             )}
           </div>

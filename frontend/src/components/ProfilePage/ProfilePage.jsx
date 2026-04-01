@@ -142,8 +142,8 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Technician-only Services */}
-         {user.role === "technician" && user.services && (
+{/* Service (Technician + Manager) */}
+{(user.role === "technician" || user.role === "manager") && user.services && (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
     <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
       <MdBuild className="text-blue-500" /> Service associé

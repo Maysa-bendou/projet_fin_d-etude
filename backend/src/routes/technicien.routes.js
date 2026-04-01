@@ -1,13 +1,43 @@
 const express = require("express");
 const router  = express.Router();
+const multer  = require("multer");
+const path    = require("path");
+const fs      = require("fs");
+
 const {
   getTicketDetailTech,
-  getAllTechniciens,
+  updateTicketStatus,
+  sendSolution,
+  confirmResolution,
   redirectTicket,
+  getServices,
+  getAllTechniciens,
+  getAssignedTickets,
+  getEnums,  
 } = require("../controllers/technicien.controller");
 
-router.get("/tickets/:id",        getTicketDetailTech);  // détail ticket
-router.get("/techniciens",        getAllTechniciens);     // liste techniciens
-router.put("/tickets/:id/redirect", redirectTicket);     // rediriger ticket
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, `../../uploads/tickets/${req.params.id}`);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+});
+const upload = multer({ storage });
+
+router.get("/tickets/:id",              getTicketDetailTech);
+router.put("/tickets/:id/status",       updateTicketStatus);
+router.post("/tickets/:id/send",        upload.array("files", 10), sendSolution);
+router.put("/tickets/:id/confirm",      confirmResolution);       // ← nouveau
+router.put("/tickets/:id/redirect",     redirectTicket);
+router.get("/services",                 getServices);
+router.get("/techniciens",              getAllTechniciens);
+router.get("/enums", getEnums);  
+router.get("/assigned/:techId",         getAssignedTickets);
+
+
+// routes pour enum
+router.get("/enums", getEnums);
 
 module.exports = router;

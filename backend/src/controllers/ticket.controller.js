@@ -9,46 +9,41 @@ const getMyTickets = async (req, res) => {
     const tickets = await prisma.tickets.findMany({
       where: { created_by: userId },
       include: {
-        users_tickets_assigned_toTousers: { select: { name: true, surname: true } },
-        services: { select: { name: true } },
+        users_tickets_assigned_toTousers: {
+          select: { name: true, surname: true }
+        },
+        services: {
+          select: { name: true }
+        }
       },
-      orderBy: { created_at: "desc" },
+      orderBy: { created_at: "desc" },   // déjà bon
     });
 
     const mapped = tickets.map((t) => ({
-      rawId: t.id,
-      titre: t.title,
-      service: t.services.length > 0 ? t.services.map(s => s.name).join(", ") : "N/A",
-      technicien:
-        t.users_tickets_assigned_toTousers.length > 0
-          ? t.users_tickets_assigned_toTousers.map(u => `${u.name} ${u.surname}`.trim()).join(", ")
-          : "Non assigné",
-      status:
-        t.status === "open"
-          ? "Ouvert"
-          : t.status === "in_progress"
-          ? "En cours"
-          : t.status === "resolved"
-          ? "Résolu"
-          : t.status === "closed"
-          ? "Fermé"
-          : t.status === "rejected"
-          ? "Rejeté"
-          : t.status,
-      dateCreation: t.created_at.toISOString().split("T")[0],
-      maj: t.updated_at.toISOString().split("T")[0] + " " + t.updated_at.toISOString().split("T")[1].slice(0, 5),
-      urgence: t.urgency || "N/A",
-      priorite: t.priority,
+      id: t.id,
+      title: t.title,
+      service: t.services?.name || "N/A",
+      technicien: t.users_tickets_assigned_toTousers 
+        ? `${t.users_tickets_assigned_toTousers.name || ''} ${t.users_tickets_assigned_toTousers.surname || ''}`.trim() 
+        : "Non assigné",
+      status: t.status,
+      priority: t.priority,
+      dateCreation: t.created_at ? t.created_at.toISOString().split("T")[0] : "N/A",
+      maj: t.updated_at 
+        ? t.updated_at.toISOString().split("T")[0] + " " + t.updated_at.toISOString().split("T")[1].slice(0, 5)
+        : "N/A",
+      urgency: t.urgency,
       impact: t.impact,
       category: t.category,
     }));
 
     res.json(mapped);
   } catch (err) {
-    console.error(err);
+    console.error("Erreur getMyTickets:", err);
     res.status(500).json({ error: "Erreur lors de la récupération des tickets" });
   }
 };
+
 module.exports = {
   getMyTickets,
 };

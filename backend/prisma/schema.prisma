@@ -48,7 +48,7 @@ model users {
   surname                                                                   String?                      @db.VarChar(100)
   email                                                                     String                       @unique @db.VarChar(255)
   password                                                                  String                       @db.VarChar(255)
-  role                                                                      user_role                    @default(employee)
+  role                                                                      user_role
   phone                                                                     String?                      @db.VarChar(20)
   department                                                                String?                      @db.VarChar(100)
   job_title                                                                 String?                      @db.VarChar(100)

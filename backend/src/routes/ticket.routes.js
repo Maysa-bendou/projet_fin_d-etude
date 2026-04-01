@@ -139,12 +139,8 @@ router.get("/techniciens", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////
 
-////////////////////////////////////////////
-//////////////////////////////////////////////
-/////////////////////////////////////////////////////
+
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -152,6 +148,7 @@ router.get("/:id", async (req, res) => {
     const ticket = await prisma.tickets.findUnique({
       where: { id },
       include: {
+        // This is the relation to the employee who created it
         users_tickets_created_byTousers: {
           select: {
             name: true,
@@ -159,14 +156,15 @@ router.get("/:id", async (req, res) => {
             email: true,
             department: true,
             role: true,
+            phone: true,   // ADDED
+            office: true,  // ADDED
+            job_title: true // ADDED (make sure this matches your DB column name)
           },
         },
         users_tickets_assigned_toTousers: {
-          select: { name: true, surname: true },
+          select: { name: true, surname: true, id: true },
         },
-        services: {
-          select: { name: true },
-        },
+        services: { select: { name: true } },
       },
     });
 
@@ -179,15 +177,18 @@ router.get("/:id", async (req, res) => {
       category: ticket.category,
       status: ticket.status,
       priority: ticket.priority,
+      impact: ticket.impact,     // Added
+      urgency: ticket.urgency,   // Added
+      type: ticket.type,         // Added
+      sla_due_date: ticket.sla_due_date, // Added
       createdAt: ticket.created_at,
-      updatedAt: ticket.updated_at,
-
+      
+      // Mapping the complex Prisma name to a simple "employee" object
       employee: ticket.users_tickets_created_byTousers,
       technician: ticket.users_tickets_assigned_toTousers,
       service: ticket.services?.name,
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
@@ -237,8 +238,8 @@ router.put("/:id/assign", async (req, res) => {
   }
 });
 
-//////////////////////////////////////////////////////
-///////////////////////////////////////////////////////
-///////////////////////////////////////////////
+
 
 module.exports = router;
+
+

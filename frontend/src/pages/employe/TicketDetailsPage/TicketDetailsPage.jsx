@@ -58,36 +58,45 @@ export default function TicketDetailsPage() {
     low:    { high: "medium",   medium: "low",    low: "low"    },
   };
 
-  useEffect(() => {
-    async function fetchTicket() {
-      try {
-        const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
-        if (!res.ok) throw new Error("Ticket non trouvé");
-        const data = await res.json();
+  const fetchTicket = async () => {
+    try {
+      const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
+      if (!res.ok) throw new Error("Ticket non trouvé");
+      const data = await res.json();
 
-        setTicket({
-          titre: data.title,
-          description: data.description,
-          statut: data.status,
-          priorite: data.priority || "Normale",
-          categorie: data.category || "N/A",
-          serviceIT: data.service || "N/A",
-          technicien: data.technician
-            ? `${data.technician.name || ""} ${data.technician.surname || ""}`.trim()
-            : "Non assigné",
-          impact: data.impact || "low",
-          urgence: data.urgency || "low",
-          type: data.type || "N/A",
-          dateCreation: data.createdAt ? data.createdAt.split("T")[0] : "N/A",
-          derniereMaj: data.updatedAt ? data.updatedAt.replace("T", " ").substring(0, 16) : "N/A",
-          sla_due_date: data.sla_due_date ? data.sla_due_date.split("T")[0] : "N/A",
-        });
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+      setTicket({
+        titre: data.title,
+        description: data.description,
+        statut: data.status,
+        priorite: data.priority || "Normale",
+        categorie: data.category || "N/A",
+        serviceIT: data.service || "N/A",
+        technicien: data.technician
+          ? `${data.technician.name || ""} ${data.technician.surname || ""}`.trim()
+          : "Non assigné",
+        impact: data.impact || "low",
+        urgence: data.urgency || "low",
+        type: data.type || "N/A",
+        dateCreation: data.createdAt ? data.createdAt.split("T")[0] : "N/A",
+        derniereMaj: data.updatedAt 
+  ? new Date(data.updatedAt).toLocaleString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }) 
+  : "N/A",
+        sla_due_date: data.sla_due_date ? data.sla_due_date.split("T")[0] : "N/A",
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchTicket();
   }, [id]);
 
@@ -105,26 +114,26 @@ export default function TicketDetailsPage() {
     if (!ticket) return;
     setUpdating(true);
     try {
+      // Si on réouvre un ticket fermé, on force le statut à "open"
+      const payload = {
+        title: ticket.titre,
+        description: ticket.description,
+        impact: ticket.impact,
+        urgency: ticket.urgence,
+        ...(ticket.statut === "closed" && { status: "open" })
+      };
+
       const response = await fetch(`http://localhost:3001/api/tickets/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: ticket.titre,
-          description: ticket.description,
-          impact: ticket.impact,
-          urgency: ticket.urgence,
-        }),
+        body: JSON.stringify(payload),
       });
+
       if (!response.ok) throw new Error("Erreur lors de la mise à jour");
-      const updatedData = await response.json();
-      
-      setTicket((prev) => ({ 
-        ...prev, 
-        derniereMaj: updatedData.updatedAt.replace("T", " ").substring(0, 16) 
-      }));
       
       setIsEditing(false);
-      alert("Ticket mis à jour avec succès.");
+      alert(ticket.statut === "closed" ? "Ticket réouvert et mis à jour." : "Ticket mis à jour avec succès.");
+      fetchTicket(); // Refresh pour voir le nouveau statut et date MAJ
     } catch (err) {
       alert(err.message);
     } finally {
@@ -171,7 +180,7 @@ export default function TicketDetailsPage() {
             </svg>
             Retour
           </button>
-          <span>/ Tickets /</span>
+          <span>/ Mes Tickets /</span>
           <span className="font-medium text-gray-600">#{id}</span>
         </div>
 
@@ -188,13 +197,34 @@ export default function TicketDetailsPage() {
             )}
             <Badge className={couleurStatut(ticket.statut)}>{ticket.statut}</Badge>
           </div>
+          
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 shadow-sm"
-            >
-              {isEditing ? "Annuler" : "Modifier"}
-            </button>
+            {isEditing ? (
+              <button 
+                onClick={() => setIsEditing(false)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 shadow-sm"
+              >
+                Annuler
+              </button>
+            ) : (
+              <>
+                {ticket.statut === "closed" ? (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md transition"
+                  >
+                    Réouvrir le ticket
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 shadow-sm"
+                  >
+                    Modifier
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -243,21 +273,17 @@ export default function TicketDetailsPage() {
             <MetaItem label="Catégorie"><Badge className="bg-purple-100 text-purple-800">{ticket.categorie}</Badge></MetaItem>
             <MetaItem label="Service IT"><Badge className="bg-blue-100 text-blue-800">{ticket.serviceIT}</Badge></MetaItem>
             <MetaItem label="Type"><p className="text-sm font-medium text-gray-800">{ticket.type}</p></MetaItem>
-            
-            <MetaItem label="Créé le">
-              <p className="text-sm font-medium text-gray-800">{ticket.dateCreation}</p>
-            </MetaItem>
-
-            {/* Date de mise à jour ajoutée ici, fixe jusqu'à l'enregistrement */}
-            <MetaItem label="Dernière MAJ">
-              <p className="text-sm font-medium text-indigo-600">{ticket.derniereMaj}</p>
-            </MetaItem>
-
+            <MetaItem label="Créé le"><p className="text-sm font-medium text-gray-800">{ticket.dateCreation}</p></MetaItem>
+            <MetaItem label="Dernière MAJ"><p className="text-sm font-medium text-indigo-600">{ticket.derniereMaj}</p></MetaItem>
             <MetaItem label="Priorité (Calculée)"><Badge className={couleurPriorite(ticket.priorite)}>{ticket.priorite}</Badge></MetaItem>
 
             {isEditing && (
-              <button onClick={handleUpdateTicket} disabled={updating} className="mt-4 w-full py-3 bg-indigo-600 text-white font-semibold rounded-2xl hover:bg-indigo-700 transition">
-                {updating ? "Mise à jour..." : "Enregistrer les modifications"}
+              <button 
+                onClick={handleUpdateTicket} 
+                disabled={updating} 
+                className="mt-4 w-full py-3 bg-indigo-600 text-white font-semibold rounded-2xl hover:bg-indigo-700 transition"
+              >
+                {updating ? "Enregistrement..." : "Enregistrer les modifications"}
               </button>
             )}
           </div>
@@ -282,11 +308,6 @@ export default function TicketDetailsPage() {
               <button onClick={() => setSolutionResponse("Oui")} className={`px-6 py-2 rounded-2xl text-sm font-medium transition-all ${solutionResponse === "Oui" ? "bg-green-600 text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700"}`}>Oui, résolu</button>
               <button onClick={() => setSolutionResponse("Non")} className={`px-6 py-2 rounded-2xl text-sm font-medium transition-all ${solutionResponse === "Non" ? "bg-red-500 text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"}`}>Non, problème persistant</button>
             </div>
-            {solutionResponse && (
-              <p className={`mt-3 text-sm font-medium ${solutionResponse === "Oui" ? "text-green-600" : "text-red-500"}`}>
-                {solutionResponse === "Oui" ? "✓ Vous avez confirmé la résolution." : "✗ Le technicien sera notifié."}
-              </p>
-            )}
           </div>
 
           <div className="bg-white rounded-3xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition">

@@ -182,6 +182,7 @@ router.get("/:id", async (req, res) => {
       type: ticket.type,         // Added
       sla_due_date: ticket.sla_due_date, // Added
       createdAt: ticket.created_at,
+      updatedAt: ticket.updated_at,
       
       // Mapping the complex Prisma name to a simple "employee" object
       employee: ticket.users_tickets_created_byTousers,
@@ -198,21 +199,21 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { title, description, impact, urgency } = req.body;
+    
+    // L'ERREUR ÉTAIT ICI : 'status' manquait dans la déstructuration
+    const { title, description, impact, urgency, status } = req.body; 
 
     if (!title || !description || !impact || !urgency) {
-      return res.status(400).json({ error: "All fields are required for update" });
+      return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Compute priority based on impact + urgency
     const PRIORITY_MATRIX = {
       high:   { high: "critical", medium: "high",   low: "medium" },
-      medium: { high: "high",     medium: "medium",  low: "low"    },
-      low:    { high: "medium",   medium: "low",     low: "low"    },
+      medium: { high: "high",     medium: "medium", low: "low"    },
+      low:    { high: "medium",   medium: "low",    low: "low"    },
     };
     const priority = PRIORITY_MATRIX[impact][urgency];
 
-    // Update only selected fields
     const updatedTicket = await prisma.tickets.update({
       where: { id },
       data: {
@@ -221,6 +222,7 @@ router.put("/:id", async (req, res) => {
         impact,
         urgency,
         priority,
+        status: status || undefined, // Maintenant 'status' est défini et ne fera plus planter le code
         updated_at: new Date(),
       },
     });
@@ -232,11 +234,12 @@ router.put("/:id", async (req, res) => {
       impact: updatedTicket.impact,
       urgency: updatedTicket.urgency,
       priority: updatedTicket.priority,
+      status: updatedTicket.status,
       updatedAt: updatedTicket.updated_at,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur lors de la mise à jour du ticket" });
+    console.error("Détail de l'erreur :", err); // Regardez votre terminal Node, l'erreur s'affichera ici
+    res.status(500).json({ error: "Erreur lors de la mise à jour" });
   }
 });
 

@@ -3,6 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 
 const TicketDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const sId = user.service_id;
 
   const [ticket, setTicket] = useState(null);
   const [technicians, setTechnicians] = useState([]);
@@ -15,10 +18,6 @@ const TicketDetailPage = () => {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
-
-  const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const sId = user.service_id;
 
   useEffect(() => {
     fetchTicket();
@@ -39,9 +38,7 @@ const TicketDetailPage = () => {
 
   const fetchTechnicians = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:3001/api/tech/users/service/${sId}`
-      );
+      const res = await fetch(`http://localhost:3001/api/tech/users/service/${sId}`);
       const data = await res.json();
       setTechnicians(data);
     } catch (err) {
@@ -50,11 +47,7 @@ const TicketDetailPage = () => {
   };
 
   const handleAssign = async () => {
-    if (!selectedTech) {
-      setModalMessage("Please select a technician first!");
-      setShowModal(true);
-      return;
-    }
+    if (!selectedTech) return;
     try {
       const res = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
         method: "PUT",
@@ -67,217 +60,214 @@ const TicketDetailPage = () => {
       });
 
       if (res.ok) {
-        setModalMessage(
-          isUpdating
-            ? `Ticket successfully reassigned to ${selectedTech.name}`
-            : `Ticket successfully assigned to ${selectedTech.name}`
-        );
-        setShowModal(true);
-      } else {
-        setModalMessage("Operation failed.");
+        setModalMessage(`Ticket assigned to ${selectedTech.name} ${selectedTech.surname}`);
         setShowModal(true);
       }
     } catch (err) {
-      setModalMessage("An error occurred.");
-      setShowModal(true);
+      console.error(err);
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    if (modalMessage.includes("successfully")) {
-      navigate("/manager/tickets-service");
-    }
+    navigate("/manager/tickets-service");
   };
 
-  if (loading) return <div className="p-20 text-center font-bold text-red-600">Loading...</div>;
+  const calculateSLA = () => {
+    if (!ticket?.sla_due_date) return { pct: 0, depasse: false, text: "N/A" };
+    const now = Date.now();
+    const due = new Date(ticket.sla_due_date).getTime();
+    const remaining = due - now;
+    const depasse = remaining <= 0;
+    const hours = Math.floor(Math.abs(remaining) / 3600000);
+    const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
+    return { 
+      depasse, 
+      text: depasse ? `+${hours}h ${minutes}m` : `${hours}h ${minutes}m`,
+      pct: Math.min(100, Math.max(0, (remaining / (24 * 3600 * 1000)) * 100))
+    };
+  };
 
-  const assignedTech = ticket?.technician || null;
+  if (loading) return <div className="p-20 text-center font-bold text-red-600">Chargement...</div>;
+
+  const t = ticket;
+  const employee = t?.employee || t?.users_tickets_created_byTousers;
+  const assignedTech = t?.technician || null;
   const isAssigned = !!assignedTech;
+  const sla = calculateSLA();
 
   return (
-    <div className="relative min-h-screen bg-gray-50 p-6 md:p-10 font-sans">
+    <div className="relative min-h-screen bg-[#F8FAFC] p-6 md:p-10 font-sans">
       
-      {/* --- MODAL (DJEEZY RED STYLE) --- */}
+      {/* MODAL (Invisible background) */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border-t-8 border-red-600 animate-in zoom-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10">
+          <div className="bg-white p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] max-w-sm w-full text-center border-t-8 border-red-600 animate-in zoom-in duration-300">
             <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+               </svg>
             </div>
-            <h3 className="text-xl font-black text-gray-900 mb-2 uppercase">{modalMessage}</h3>
-            <p className="text-red-600 font-bold mb-6 italic uppercase text-xs tracking-widest">Status : Open</p>
-            <button 
-              onClick={handleCloseModal}
-              className="w-full bg-black text-white py-4 rounded-xl font-black uppercase hover:bg-red-700 transition shadow-lg"
-            >
+            <h3 className="text-lg font-black mb-1 uppercase tracking-tight text-slate-900">{modalMessage}</h3>
+            <p className="text-red-600 font-black mb-6 italic uppercase text-[10px] tracking-[0.2em]">Status : Open</p>
+            <button onClick={handleCloseModal} className="w-full bg-black text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-red-600 transition shadow-lg">
               Confirm
             </button>
           </div>
         </div>
       )}
 
-      <div className={`max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 transition-all ${showModal ? 'opacity-20 blur-sm pointer-events-none' : ''}`}>
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* --- LEFT COLUMN: TICKET INFO & TECH SELECTION --- */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* TICKET DETAILS */}
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 mb-4">
-               <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded uppercase">Ticket Detail</span>
-               <span className="text-gray-300 font-bold"># {id}</span>
+        {/* --- COLONNE EMPLOYE --- */}
+        <div className="lg:col-span-4">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 sticky top-8">
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-white text-2xl font-black mb-4">
+                {employee?.name?.[0]}{employee?.surname?.[0]}
+              </div>
+              <h2 className="font-black text-slate-800 text-lg uppercase tracking-tighter">
+                {employee?.name} {employee?.surname}
+              </h2>
+              <p className="text-red-600 text-[10px] font-black uppercase mt-1">Requérant</p>
             </div>
-            <h1 className="text-3xl font-black text-gray-900 mb-4 uppercase italic tracking-tight">{ticket.title}</h1>
-            <p className="text-gray-500 leading-relaxed border-l-4 border-red-100 pl-6">{ticket.description}</p>
+            <div className="space-y-4 border-t border-slate-50 pt-6">
+              <ProfileItem label="Email" value={employee?.email} />
+              <ProfileItem label="Département" value={employee?.department} />
+              <ProfileItem label="Poste" value={employee?.job_title} />
+              <ProfileItem label="Contact" value={employee?.phone} />
+            </div>
+          </div>
+        </div>
+
+        {/* --- COLONNE TICKET --- */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 md:p-10">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{id}</span>
+                <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">{t.title}</h1>
+              </div>
+              <span className="px-4 py-2 rounded-xl text-[10px] font-black uppercase border bg-blue-50 text-blue-600 border-blue-100">
+                {t.status}
+              </span>
+            </div>
+
+            <div className="mb-10">
+              <h4 className="text-[10px] font-black text-red-600 uppercase mb-3 italic tracking-widest">Description de l'incident</h4>
+              <p className="text-slate-600 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 italic leading-relaxed">
+                "{t.description}"
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+              <SpecBox label="Priorité" value={t.priority} highlight />
+              <SpecBox label="Impact" value={t.impact} />
+              <SpecBox label="Urgence" value={t.urgency} />
+              <SpecBox label="Catégorie" value={t.category} />
+              <SpecBox label="Service" value={t.service} />
+              <SpecBox label="Date" value={new Date(t.createdAt).toLocaleDateString()} />
+            </div>
+
+            <div className="p-6 rounded-3xl border bg-slate-50 border-slate-100 mb-10">
+              <div className="flex justify-between text-[10px] font-black uppercase mb-3 text-slate-500">
+                <span>Temps de résolution (SLA)</span>
+                <span className={sla.depasse ? 'text-red-600 animate-pulse' : ''}>{sla.text}</span>
+              </div>
+              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div className={`h-full ${sla.depasse ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${100 - sla.pct}%` }}></div>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Expert Assigné</p>
+                  <p className="font-bold text-slate-800">{assignedTech ? `${assignedTech.name} ${assignedTech.surname}` : "En attente"}</p>
+                </div>
+                <button
+                  onClick={() => setShowList(!showList)}
+                  className="w-full md:w-auto px-8 py-3 bg-red-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition"
+                >
+                  {showList ? "Annuler" : "Modifier l'expert"}
+                </button>
+            </div>
           </div>
 
-          {/* TECHNICIAN SELECTION LIST (FULL INFO KEPT) */}
+          {/* SECTION MODIFIER L'EXPERT AVEC AFFICHAGE HORIZONTAL */}
           {showList && (
-            <div className="bg-white p-8 rounded-3xl shadow-xl border border-red-50 animate-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-lg font-black mb-8 text-gray-900 uppercase tracking-widest border-b-2 border-red-600 w-fit pb-1">
-                Select Technician
-              </h2>
+            <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 animate-in slide-in-from-bottom-4 duration-300">
+               <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest">Liste des techniciens disponibles</h4>
+               
+               {/* Grille de sélection des techniciens */}
+               <div className="flex flex-wrap gap-3 mb-6">
+                  {technicians.map(tech => (
+                    <div 
+                      key={tech.id} 
+                      onClick={() => setSelectedTech(tech)}
+                      className={`px-6 py-3 rounded-2xl cursor-pointer border-2 transition-all flex flex-col items-center ${selectedTech?.id === tech.id ? 'border-red-600 bg-red-50' : 'border-slate-50 hover:border-red-200 bg-slate-50/50'}`}
+                    >
+                      <p className="font-black uppercase text-[10px] text-slate-800">{tech.name} {tech.surname}</p>
+                    </div>
+                  ))}
+               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* SCROLLABLE LIST */}
-                <div className="max-h-[450px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                  {technicians.length > 0 ? (
-                    technicians.map((tech) => (
-                      <div
-                        key={tech.id}
-                        onClick={() => setSelectedTech(tech)}
-                        className={`p-5 rounded-2xl cursor-pointer border-2 transition-all ${
-                          selectedTech?.id === tech.id
-                            ? "border-red-600 bg-red-50"
-                            : "border-gray-50 bg-gray-50 hover:border-red-200"
-                        }`}
-                      >
-                        <p className={`font-black uppercase text-sm ${selectedTech?.id === tech.id ? "text-red-600" : "text-gray-900"}`}>
-                          {tech.name} {tech.surname}
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase mt-1 italic">{tech.job_title}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-400 italic">No technicians found.</p>
-                  )}
-                </div>
-
-                {/* TECHNICIAN FULL DETAILS (ALL DATA RESTORED) */}
-                <div className="bg-black text-white p-8 rounded-3xl flex flex-col justify-between shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                  
-                  {selectedTech ? (
-                    <>
-                      <div>
-                        <div className="w-10 h-1 bg-red-600 mb-6"></div>
-                        <h3 className="text-2xl font-black mb-8 uppercase italic leading-none">
-                          {selectedTech.name} <br/> 
-                          <span className="text-red-600">{selectedTech.surname}</span>
-                        </h3>
-                        
-                        <div className="space-y-4 text-sm font-bold tracking-wide">
-                          <div className="flex items-center gap-3 text-gray-300">
-                             <span className="text-red-600">Email:</span> {selectedTech.email}
-                          </div>
-                          <div className="flex items-center gap-3 text-gray-300">
-                             <span className="text-red-600">Phone:</span> {selectedTech.phone || "N/A"}
-                          </div>
-                          <div className="flex items-center gap-3 text-gray-300">
-                             <span className="text-red-600">Office:</span> {selectedTech.office || "N/A"}
-                          </div>
-                          <div className="flex items-center gap-3 text-gray-300 border-t border-gray-800 pt-4 mt-4">
-                             <span className="text-red-600">Role:</span> {selectedTech.job_title}
-                          </div>
+               {/* Affichage Horizontal des détails (remplace la boîte noire) */}
+               {selectedTech && (
+                 <div className="bg-slate-900 text-white p-6 rounded-2xl animate-in fade-in zoom-in duration-200">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                      
+                      {/* Infos Groupées */}
+                      <div className="flex flex-wrap items-center gap-x-8 gap-y-4 flex-1">
+                        <div>
+                          <p className="text-red-500 font-black text-[8px] uppercase tracking-widest mb-1">Expert Sélectionné</p>
+                          <p className="text-sm font-black uppercase italic">{selectedTech.name} {selectedTech.surname}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500 font-black text-[8px] uppercase tracking-widest mb-1">Email</p>
+                          <p className="text-xs font-bold">{selectedTech.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500 font-black text-[8px] uppercase tracking-widest mb-1">Contact</p>
+                          <p className="text-xs font-bold">{selectedTech.phone || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-500 font-black text-[8px] uppercase tracking-widest mb-1">Bureau / Rôle</p>
+                          <p className="text-xs font-bold">{selectedTech.office || "Local"} | {selectedTech.job_title}</p>
                         </div>
                       </div>
 
-                      <button
-                        onClick={handleAssign}
-                        className="mt-10 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-red-600/20"
+                      {/* Bouton de confirmation intégré */}
+                      <button 
+                        onClick={handleAssign} 
+                        className="whitespace-nowrap bg-red-600 text-white px-8 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-white hover:text-black transition-all shadow-lg"
                       >
-                        Confirm {isUpdating ? "Update" : "Assignment"}
+                        Confirmer l'expert
                       </button>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-600 text-center space-y-4">
-                      <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-800 flex items-center justify-center text-2xl font-black">?</div>
-                      <p className="text-[10px] uppercase font-black tracking-[0.3em]">Select a profile</p>
                     </div>
-                  )}
-                </div>
-              </div>
+                 </div>
+               )}
             </div>
           )}
         </div>
-
-        {/* --- RIGHT COLUMN: MANAGER ACTIONS (STAYS FIXED) --- */}
-        <div className="lg:col-span-1">
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 sticky top-10">
-            <h3 className="font-black text-gray-900 mb-8 uppercase tracking-[0.2em] text-xs border-b border-gray-50 pb-4 italic">Manager Controls</h3>
-
-            <div className="space-y-4">
-              {!isAssigned && (
-                <button
-                  onClick={() => setShowList(!showList)}
-                  className="w-full bg-red-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-red-700 transition shadow-lg shadow-red-600/20"
-                >
-                  {showList ? "Cancel Operation" : "Assign Ticket"}
-                </button>
-              )}
-
-              {isAssigned && !isUpdating && (
-                <button
-                  onClick={() => {
-                    setIsUpdating(true);
-                    setShowList(true);
-                  }}
-                  className="w-full bg-black text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-800 transition shadow-lg"
-                >
-                  Update Assignment
-                </button>
-              )}
-
-              {isAssigned && isUpdating && (
-                <button
-                  onClick={() => {
-                    setIsUpdating(false);
-                    setShowList(false);
-                    setSelectedTech(null);
-                  }}
-                  className="w-full bg-gray-100 text-gray-500 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition"
-                >
-                  Cancel Update
-                </button>
-              )}
-            </div>
-
-            {/* CURRENT ASSIGNMENT DISPLAY (RESTORED INFO) */}
-            {isAssigned && (
-              <div className="mt-10 pt-8 border-t-2 border-gray-50">
-                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-4">Currently Assigned To</p>
-                <div className="flex items-center gap-4 bg-gray-50 p-5 rounded-2xl border border-gray-100">
-                  <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center font-black italic text-xl">
-                    {assignedTech?.name?.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="font-black text-gray-900 uppercase text-sm">
-                      {assignedTech?.name || "Unknown"} {assignedTech?.surname || ""}
-                    </p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Verified Technician</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
       </div>
     </div>
   );
 };
+
+const ProfileItem = ({ label, value }) => (
+  <div className="border-b border-slate-50 pb-3 last:border-0">
+    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
+    <p className="text-xs font-bold text-slate-700">{value || "—"}</p>
+  </div>
+);
+
+const SpecBox = ({ label, value, highlight }) => (
+  <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
+    <p className="text-[8px] font-black text-slate-400 uppercase mb-2">{label}</p>
+    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${highlight ? 'bg-red-50 text-red-600' : 'text-slate-800 bg-slate-50'}`}>
+      {value || "N/A"}
+    </span>
+  </div>
+);
 
 export default TicketDetailPage;

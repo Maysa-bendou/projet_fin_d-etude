@@ -42,7 +42,7 @@ const getMyTickets = async (req, res) => {
     console.error("Erreur getMyTickets:", err);
     res.status(500).json({ error: "Erreur lors de la récupération des tickets" });
   }
-};
+}; 
 
 module.exports = {
   getMyTickets,

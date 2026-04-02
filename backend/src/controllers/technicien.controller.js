@@ -45,8 +45,10 @@ const getTicketDetailTech = async (req, res) => {
 
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
 
+    // ── Logique "Assigné par" ──────────────────────────────────────────────
     const firstAssignment = ticket.ticket_assignments_history[0];
     let assignedBy = { label: "Auto / Système", type: "auto" };
+
     if (firstAssignment?.users_ticket_assignments_history_assigned_byTousers) {
       const u = firstAssignment.users_ticket_assignments_history_assigned_byTousers;
       assignedBy = {
@@ -58,37 +60,39 @@ const getTicketDetailTech = async (req, res) => {
     }
 
     res.json({
-      id: ticket.id,
-      title: ticket.title,
-      description: ticket.description,
-      category: ticket.category,
-      type: ticket.type,
-      status: ticket.status,
-      priority: ticket.priority,
-      impact: ticket.impact,
-      urgency: ticket.urgency,
-      sla_due_date: ticket.sla_due_date,
-      createdAt: ticket.created_at,
-      updatedAt: ticket.updated_at,
-      solution: ticket.solution,
+      id:                    ticket.id,
+      title:                 ticket.title,
+      description:           ticket.description,
+      category:              ticket.category,
+      type:                  ticket.type,
+      status:                ticket.status,
+      priority:              ticket.priority,
+      impact:                ticket.impact,
+      urgency:               ticket.urgency,
+      sla_due_date:          ticket.sla_due_date,
+      createdAt:             ticket.created_at,
+      updatedAt:             ticket.updated_at,
+      solution:              ticket.solution,
       is_resolved_confirmed: ticket.is_resolved_confirmed,
-      employee: ticket.users_tickets_created_byTousers,
-      technician: ticket.users_tickets_assigned_toTousers,
-      service: ticket.services?.name ?? null,
-      serviceId: ticket.services?.id ?? null,
+      employee_confirm_note: ticket.employee_confirm_note, // ← NOUVEAU
+      employee:              ticket.users_tickets_created_byTousers,
+      technician:            ticket.users_tickets_assigned_toTousers,
+      service:               ticket.services?.name ?? null,
+      serviceId:             ticket.services?.id ?? null,
       assignedBy,
       comments: ticket.ticket_comments.map((c) => ({
-        id: c.id,
-        message: c.comment,
-        author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole: c.users?.role ?? "",
-        authorId: c.users?.id,
-        date: c.created_at,
+        id:          c.id,
+        message:     c.comment,
+        author:      `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
+        authorRole:  c.users?.role ?? "",
+        commentType: c.comment_type ?? "comment", // ← NOUVEAU
+        authorId:    c.users?.id,
+        date:        c.created_at,
       })),
       attachments: ticket.ticket_attachments.map((a) => ({
-        id: a.id,
-        fileName: a.file_name,
-        filePath: a.file_path,
+        id:         a.id,
+        fileName:   a.file_name,
+        filePath:   a.file_path,
         uploadedBy: `${a.users?.name ?? ""} ${a.users?.surname ?? ""}`.trim(),
         uploadedAt: a.uploaded_at,
       })),
@@ -104,7 +108,7 @@ const updateTicketStatus = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { status } = req.body;
-    const valid = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
+    const valid = ["open","in_progress","pending","pending_supplier","resolved","closed","rejected"];
     if (!valid.includes(status)) return res.status(400).json({ error: "Statut invalide" });
     const updated = await prisma.tickets.update({
       where: { id },
@@ -121,27 +125,31 @@ const updateTicketStatus = async (req, res) => {
 const sendSolution = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { message, technicianId, type } = req.body;
+    const { message, technicianId, type, askConfirmation } = req.body;
+
+    const existing = await prisma.tickets.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+    if (existing?.status === "closed") {
+      return res.status(403).json({ error: "Impossible d'agir sur un ticket fermé." });
+    }
 
     const comment = await prisma.ticket_comments.create({
       data: {
-        ticket_id: id,
-        user_id: parseInt(technicianId),
-        comment: message,
-        created_at: new Date(),
+        ticket_id:    id,
+        user_id:      parseInt(technicianId),
+        comment:      message,
+        created_at:   new Date(),
+        comment_type: type, // "solution" ou "info"
       },
     });
 
+    // Sauvegarder la solution dans le champ dédié
     if (type === "solution") {
       await prisma.tickets.update({
         where: { id },
-        data: { solution: message, status: "resolved", updated_at: new Date() },
-      });
-    }
-    if (type === "info") {
-      await prisma.tickets.update({
-        where: { id },
-        data: { status: "pending", updated_at: new Date() },
+        data: { solution: message, updated_at: new Date() },
       });
     }
 
@@ -149,9 +157,9 @@ const sendSolution = async (req, res) => {
     if (files.length > 0) {
       await prisma.ticket_attachments.createMany({
         data: files.map((f) => ({
-          ticket_id: id,
-          file_name: f.originalname,
-          file_path: f.path,
+          ticket_id:   id,
+          file_name:   f.originalname,
+          file_path:   f.path,
           uploaded_by: parseInt(technicianId),
           uploaded_at: new Date(),
         })),
@@ -165,14 +173,66 @@ const sendSolution = async (req, res) => {
   }
 };
 
-// ── PUT confirmer résolution ───────────────────────────────────────────────
-const confirmResolution = async (req, res) => {
+// ── PUT envoyer demande de confirmation (technicien → employé) ─────────────
+// Ne ferme PAS le ticket, juste un signal — l'employé confirme de son côté
+const sendConfirmRequest = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     await prisma.tickets.update({
       where: { id },
-      data: { is_resolved_confirmed: true, status: "closed", updated_at: new Date() },
+      data: { updated_at: new Date() },
     });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// ── PUT confirmer résolution (action côté EMPLOYÉ uniquement) ──────────────
+// L'employé confirme → solution enregistrée définitivement + ticket fermé
+const confirmResolution = async (req, res) => {
+  try {
+    const id         = parseInt(req.params.id);
+    const { note, employeeId } = req.body;
+
+    // Vérifier que le ticket a bien une solution avant de confirmer
+    const ticket = await prisma.tickets.findUnique({
+      where: { id },
+      select: { solution: true, status: true },
+    });
+
+    if (!ticket) return res.status(404).json({ error: "Ticket introuvable." });
+    if (ticket.status === "closed") {
+      return res.status(400).json({ error: "Ce ticket est déjà fermé." });
+    }
+
+    // Enregistrer la confirmation + fermer le ticket
+    await prisma.tickets.update({
+      where: { id },
+      data: {
+        is_resolved_confirmed: true,
+        status:                "closed",
+        updated_at:            new Date(),
+        // La solution du technicien reste dans le champ solution (inchangée)
+        // On enregistre la note/réponse de l'employé dans employee_confirm_note
+        employee_confirm_note: note ?? null,
+      },
+    });
+
+    // Créer un commentaire visible dans l'historique
+    if (employeeId) {
+      await prisma.ticket_comments.create({
+        data: {
+          ticket_id:    id,
+          user_id:      parseInt(employeeId),
+          comment:      note || "Résolution confirmée.",
+          comment_type: "confirm",
+          created_at:   new Date(),
+        },
+      });
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -186,6 +246,10 @@ const redirectTicket = async (req, res) => {
     const id = parseInt(req.params.id);
     const { newTechId, newServiceId, newCategory, note, assignedById } = req.body;
 
+    if (!newTechId && !newServiceId) {
+      return res.status(400).json({ error: "Veuillez sélectionner au moins un technicien ou un service." });
+    }
+
     const current = await prisma.tickets.findUnique({
       where: { id },
       select: { assigned_to: true, service_id: true },
@@ -194,10 +258,10 @@ const redirectTicket = async (req, res) => {
     await prisma.tickets.update({
       where: { id },
       data: {
-        ...(newTechId    && { assigned_to: parseInt(newTechId) }),
+        ...(newTechId    ? { assigned_to: parseInt(newTechId) } : { assigned_to: null }),
         ...(newServiceId && { service_id: parseInt(newServiceId) }),
         ...(newCategory  && { category: newCategory }),
-        status: "open",
+        status:     "open",
         updated_at: new Date(),
       },
     });
@@ -219,10 +283,11 @@ const redirectTicket = async (req, res) => {
     if (note && assignedById) {
       await prisma.ticket_comments.create({
         data: {
-          ticket_id:  id,
-          user_id:    parseInt(assignedById),
-          comment:    `[REDIRECTION] ${note}`,
-          created_at: new Date(),
+          ticket_id:    id,
+          user_id:      parseInt(assignedById),
+          comment:      `[REDIRECTION] ${note}`,
+          comment_type: "redirect",
+          created_at:   new Date(),
         },
       });
     }
@@ -272,14 +337,9 @@ const getAssignedTickets = async (req, res) => {
         status: { notIn: ["closed"] },
       },
       select: {
-        id: true,
-        title: true,
-        description: true,
-        priority: true,
-        category: true,
-        status: true,
-        created_at: true,
-        sla_due_date: true,
+        id: true, title: true, description: true,
+        priority: true, category: true, status: true,
+        created_at: true, sla_due_date: true,
         users_tickets_created_byTousers: {
           select: { name: true, surname: true },
         },
@@ -327,7 +387,6 @@ const getEnums = async (req, res) => {
       WHERE pg_type.typname = 'category_enum'
       ORDER BY enumsortorder;
     `;
-
     res.json({
       statuts:    statuts.map(r => r.enumlabel),
       priorites:  priorites.map(r => r.enumlabel),
@@ -344,6 +403,7 @@ module.exports = {
   getTicketDetailTech,
   updateTicketStatus,
   sendSolution,
+  sendConfirmRequest,
   confirmResolution,
   redirectTicket,
   getServices,

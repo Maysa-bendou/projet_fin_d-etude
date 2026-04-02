@@ -34,6 +34,7 @@ model tickets {
   created_at                       DateTime?                    @default(now()) @db.Timestamp(6)
   updated_at                       DateTime?                    @default(now()) @db.Timestamp(6)
   type                             request_type_enum?           @default(incident)
+  employee_confirm_note            String?
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]
   ticket_comments                  ticket_comments[]
@@ -48,7 +49,7 @@ model users {
   surname                                                                   String?                      @db.VarChar(100)
   email                                                                     String                       @unique @db.VarChar(255)
   password                                                                  String                       @db.VarChar(255)
-  role                                                                      user_role
+  role                                                                      user_role                    @default(employee)
   phone                                                                     String?                      @db.VarChar(20)
   department                                                                String?                      @db.VarChar(100)
   job_title                                                                 String?                      @db.VarChar(100)
@@ -98,13 +99,14 @@ model ticket_attachments {
 }
 
 model ticket_comments {
-  id         Int       @id @default(autoincrement())
-  ticket_id  Int?
-  user_id    Int?
-  comment    String
-  created_at DateTime? @default(now()) @db.Timestamp(6)
-  tickets    tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id           Int       @id @default(autoincrement())
+  ticket_id    Int?
+  user_id      Int?
+  comment      String
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  comment_type String?   @default("comment") @db.VarChar(50)
+  tickets      tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 enum category_enum {

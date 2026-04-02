@@ -192,6 +192,54 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
+
+// ----------------- Keep your existing GET route as is ----------------- //
+
+router.put("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { title, description, impact, urgency } = req.body;
+
+    if (!title || !description || !impact || !urgency) {
+      return res.status(400).json({ error: "All fields are required for update" });
+    }
+
+    // Compute priority based on impact + urgency
+    const PRIORITY_MATRIX = {
+      high:   { high: "critical", medium: "high",   low: "medium" },
+      medium: { high: "high",     medium: "medium",  low: "low"    },
+      low:    { high: "medium",   medium: "low",     low: "low"    },
+    };
+    const priority = PRIORITY_MATRIX[impact][urgency];
+
+    // Update only selected fields
+    const updatedTicket = await prisma.tickets.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        impact,
+        urgency,
+        priority,
+        updated_at: new Date(),
+      },
+    });
+
+    res.json({
+      id: updatedTicket.id,
+      title: updatedTicket.title,
+      description: updatedTicket.description,
+      impact: updatedTicket.impact,
+      urgency: updatedTicket.urgency,
+      priority: updatedTicket.priority,
+      updatedAt: updatedTicket.updated_at,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la mise à jour du ticket" });
+  }
+});
+
 // PUT /api/tickets/:id/assign
 router.put("/:id/assign", async (req, res) => {
   const ticketId = parseInt(req.params.id);

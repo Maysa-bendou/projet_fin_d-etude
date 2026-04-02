@@ -1,20 +1,43 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
+// --- Helpers de style ---
 function couleurStatut(statut) {
-  if (statut === "En cours") return "bg-yellow-100 text-yellow-700";
-  if (statut === "Résolu") return "bg-green-100 text-green-700";
-  if (statut === "En attente") return "bg-blue-100 text-blue-700";
-  if (statut === "Rejeté") return "bg-red-100 text-red-700";
-  if (statut === "Fermé") return "bg-gray-100 text-gray-700";
-  return "bg-gray-100 text-gray-600";
+  switch (statut) {
+    case "in_progress": return "bg-yellow-50 text-yellow-800";
+    case "resolved": return "bg-green-50 text-green-800";
+    case "open": return "bg-blue-50 text-blue-800";
+    case "rejected": return "bg-red-50 text-red-800";
+    case "closed": return "bg-gray-50 text-gray-600";
+    default: return "bg-gray-50 text-gray-600";
+  }
 }
 
 function couleurPriorite(priorite) {
-  if (priorite === "Haute") return "bg-red-100 text-red-700";
-  if (priorite === "Normale") return "bg-yellow-100 text-yellow-700";
-  if (priorite === "Basse") return "bg-green-100 text-green-700";
-  return "bg-gray-100 text-gray-600";
+  switch (priorite?.toLowerCase()) {
+    case "high": return "bg-red-50 text-red-800";
+    case "critical": return "bg-purple-50 text-purple-800 font-bold";
+    case "medium": return "bg-yellow-50 text-yellow-800";
+    case "low": return "bg-green-50 text-green-800";
+    default: return "bg-gray-50 text-gray-600";
+  }
+}
+
+function MetaItem({ label, children }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{label}</span>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function Badge({ children, className }) {
+  return (
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${className}`}>
+      {children}
+    </span>
+  );
 }
 
 export default function TicketDetailsPage() {
@@ -23,23 +46,17 @@ export default function TicketDetailsPage() {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [solutionResponse, setSolutionResponse] = useState("");
+  const [infoFiles, setInfoFiles] = useState(null);
+  const [updating, setUpdating] = useState(false);
+  const [sendingInfo, setSendingInfo] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const services = [
-    "IT Support",
-    "Software",
-    "Hardware",
-    "Access",
-    "Account",
-    "Service Desk",
-    "Password",
-    "IT Network",
-    "Network",
-    "IT Collaboration Systems",
-    "Messaging",
-    "IT Security",
-    "VPN",
-    "Security",
-  ];
+  const PRIORITY_MATRIX = {
+    high:   { high: "critical", medium: "high",   low: "medium" },
+    medium: { high: "high",     medium: "medium", low: "low"    },
+    low:    { high: "medium",   medium: "low",    low: "low"    },
+  };
 
   useEffect(() => {
     async function fetchTicket() {
@@ -48,142 +65,249 @@ export default function TicketDetailsPage() {
         if (!res.ok) throw new Error("Ticket non trouvé");
         const data = await res.json();
 
-        const formattedTicket = {
+        setTicket({
           titre: data.title,
           description: data.description,
-          statut:
-            data.status === "open"
-              ? "En attente"
-              : data.status === "in_progress"
-              ? "En cours"
-              : data.status === "resolved"
-              ? "Résolu"
-              : data.status === "closed"
-              ? "Fermé"
-              : data.status === "rejected"
-              ? "Rejeté"
-              : data.status,
+          statut: data.status,
           priorite: data.priority || "Normale",
           categorie: data.category || "N/A",
-          serviceIT: data.service_id ? services[data.service_id - 1] : "N/A",
-          technicien: data.technicien_name || "Non assigné",
-          impact: data.impact || "Toute l'entreprise",
-          urgence: data.urgency || "Moyenne",
-          dateCreation: data.created_at ? data.created_at.split("T")[0] : "N/A",
-          derniereMaj: data.updated_at
-            ? data.updated_at.replace("T", " ").substring(0, 16)
-            : "N/A",
-        };
-
-        setTicket(formattedTicket);
+          serviceIT: data.service || "N/A",
+          technicien: data.technician
+            ? `${data.technician.name || ""} ${data.technician.surname || ""}`.trim()
+            : "Non assigné",
+          impact: data.impact || "low",
+          urgence: data.urgency || "low",
+          type: data.type || "N/A",
+          dateCreation: data.createdAt ? data.createdAt.split("T")[0] : "N/A",
+          derniereMaj: data.updatedAt ? data.updatedAt.replace("T", " ").substring(0, 16) : "N/A",
+          sla_due_date: data.sla_due_date ? data.sla_due_date.split("T")[0] : "N/A",
+        });
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
-
     fetchTicket();
   }, [id]);
 
-  if (loading) return <div className="p-6">Chargement du ticket...</div>;
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
+  const handleFieldChange = (field, value) => {
+    setTicket(prev => {
+      const updated = { ...prev, [field]: value };
+      if (field === "impact" || field === "urgence") {
+        updated.priorite = PRIORITY_MATRIX[updated.impact][updated.urgence];
+      }
+      return updated;
+    });
+  };
+
+  const handleUpdateTicket = async () => {
+    if (!ticket) return;
+    setUpdating(true);
+    try {
+      const response = await fetch(`http://localhost:3001/api/tickets/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: ticket.titre,
+          description: ticket.description,
+          impact: ticket.impact,
+          urgency: ticket.urgence,
+        }),
+      });
+      if (!response.ok) throw new Error("Erreur lors de la mise à jour");
+      const updatedData = await response.json();
+      
+      setTicket((prev) => ({ 
+        ...prev, 
+        derniereMaj: updatedData.updatedAt.replace("T", " ").substring(0, 16) 
+      }));
+      
+      setIsEditing(false);
+      alert("Ticket mis à jour avec succès.");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleSendInfo = async () => {
+    if (!infoFiles) return alert("Veuillez sélectionner au moins un fichier.");
+    setSendingInfo(true);
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < infoFiles.length; i++) {
+        formData.append("files", infoFiles[i]);
+      }
+      const response = await fetch(`http://localhost:3001/api/tickets/${id}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Erreur lors de l'envoi des fichiers");
+      alert("Informations envoyées avec succès au technicien.");
+      setInfoFiles(null);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSendingInfo(false);
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Chargement du ticket...</div>;
+  if (error) return <div className="flex items-center justify-center h-64 text-red-500 text-sm">{error}</div>;
   if (!ticket) return null;
 
+  const initiales = ticket.technicien.split(" ").map((n) => n[0]).join("").toUpperCase();
+
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="bg-white border border-gray-200 text-gray-500 hover:text-red-600 px-4 py-2 rounded-lg text-sm transition-colors"
-        >
-          ← Retour
-        </button>
-        <h1 className="text-xl font-bold text-gray-800">Détails du ticket</h1>
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-white px-6 py-8">
+      {/* Header */}
+      <div className="max-w-6xl mx-auto mb-8">
+        <div className="flex items-center gap-3 mb-1 text-sm text-gray-500">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 hover:text-indigo-600 transition">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Retour
+          </button>
+          <span>/ Tickets /</span>
+          <span className="font-medium text-gray-600">#{id}</span>
+        </div>
+
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            {isEditing ? (
+              <input 
+                className="text-3xl font-bold text-gray-900 border-b-2 border-indigo-500 outline-none bg-transparent"
+                value={ticket.titre}
+                onChange={(e) => handleFieldChange("titre", e.target.value)}
+              />
+            ) : (
+              <h1 className="text-3xl font-bold text-gray-900">{ticket.titre}</h1>
+            )}
+            <Badge className={couleurStatut(ticket.statut)}>{ticket.statut}</Badge>
+          </div>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => isEditing ? setIsEditing(false) : setIsEditing(true)}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 shadow-sm"
+            >
+              {isEditing ? "Annuler" : "Modifier"}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: "260px 1fr" }}>
-        {/* GAUCHE */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-5 h-fit">
-
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Statut</p>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${couleurStatut(ticket.statut)}`}>
-              {ticket.statut}
-            </span>
-          </div>
-
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Priorité</p>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${couleurPriorite(ticket.priorite)}`}>
-              {ticket.priorite}
-            </span>
-          </div>
-
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Technicien</p>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-indigo-900 flex items-center justify-center">
-                <span className="text-white text-xs font-semibold">
-                  {ticket.technicien.split(" ").map(n => n[0]).join("")}
-                </span>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* LEFT COLUMN */}
+        <div className="flex flex-col gap-5">
+          <div className="bg-white rounded-3xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Technicien assigné</p>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">{initiales}</div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">{ticket.technicien}</p>
+                <p className="text-xs text-gray-500">Technicien IT</p>
               </div>
-              <span className="text-sm text-gray-700">{ticket.technicien}</span>
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Créé le</p>
-            <p className="text-sm font-medium text-gray-800">{ticket.dateCreation}</p>
-          </div>
+          <div className="bg-white rounded-3xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition flex flex-col gap-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Détails du ticket</p>
+            
+            <MetaItem label="Impact">
+              {isEditing ? (
+                <select value={ticket.impact} onChange={(e) => handleFieldChange("impact", e.target.value)} className="border rounded-lg p-1 text-sm w-full">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              ) : (
+                <p className="text-sm font-medium text-gray-800">{ticket.impact}</p>
+              )}
+            </MetaItem>
 
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Dernière MAJ</p>
-            <p className="text-sm font-medium text-gray-800">{ticket.derniereMaj}</p>
+            <MetaItem label="Urgence">
+              {isEditing ? (
+                <select value={ticket.urgence} onChange={(e) => handleFieldChange("urgence", e.target.value)} className="border rounded-lg p-1 text-sm w-full">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              ) : (
+                <p className="text-sm font-medium text-gray-800">{ticket.urgence}</p>
+              )}
+            </MetaItem>
+
+            <MetaItem label="Catégorie"><Badge className="bg-purple-100 text-purple-800">{ticket.categorie}</Badge></MetaItem>
+            <MetaItem label="Service IT"><Badge className="bg-blue-100 text-blue-800">{ticket.serviceIT}</Badge></MetaItem>
+            <MetaItem label="Type"><p className="text-sm font-medium text-gray-800">{ticket.type}</p></MetaItem>
+            
+            <MetaItem label="Créé le">
+              <p className="text-sm font-medium text-gray-800">{ticket.dateCreation}</p>
+            </MetaItem>
+
+            {/* Date de mise à jour ajoutée ici, fixe jusqu'à l'enregistrement */}
+            <MetaItem label="Dernière MAJ">
+              <p className="text-sm font-medium text-indigo-600">{ticket.derniereMaj}</p>
+            </MetaItem>
+
+            <MetaItem label="Priorité (Calculée)"><Badge className={couleurPriorite(ticket.priorite)}>{ticket.priorite}</Badge></MetaItem>
+
+            {isEditing && (
+              <button onClick={handleUpdateTicket} disabled={updating} className="mt-4 w-full py-3 bg-indigo-600 text-white font-semibold rounded-2xl hover:bg-indigo-700 transition">
+                {updating ? "Mise à jour..." : "Enregistrer les modifications"}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* DROITE */}
-        <div className="flex flex-col gap-4">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Titre</p>
-            <p className="text-base font-semibold text-gray-800 mb-4">{ticket.titre}</p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Description</p>
-            <p className="text-sm text-gray-500 leading-relaxed">{ticket.description}</p>
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-2 flex flex-col gap-5">
+          <div className="bg-white rounded-3xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Description</p>
+            {isEditing ? (
+              <textarea className="w-full p-3 border rounded-xl text-sm" rows={5} value={ticket.description} onChange={(e) => handleFieldChange("description", e.target.value)} />
+            ) : (
+              <p className="text-sm text-gray-700 leading-relaxed">{ticket.description}</p>
+            )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-4">Catégorie & Service</p>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Catégorie</p>
-                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium">{ticket.categorie}</span>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Service IT</p>
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">{ticket.serviceIT}</span>
-              </div>
+          <div className="bg-white rounded-3xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Solution proposée par le technicien</p>
+            <textarea disabled value="La solution du technicien est chargée ici..." rows={3} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-700 resize-none mb-4 cursor-default" />
+            <p className="text-xs text-gray-400 font-medium mb-2">La solution vous convient-elle ?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setSolutionResponse("Oui")} className={`px-6 py-2 rounded-2xl text-sm font-medium transition-all ${solutionResponse === "Oui" ? "bg-green-600 text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700"}`}>Oui, résolu</button>
+              <button onClick={() => setSolutionResponse("Non")} className={`px-6 py-2 rounded-2xl text-sm font-medium transition-all ${solutionResponse === "Non" ? "bg-red-500 text-white shadow-md" : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"}`}>Non, problème persistant</button>
             </div>
+            {solutionResponse && (
+              <p className={`mt-3 text-sm font-medium ${solutionResponse === "Oui" ? "text-green-600" : "text-red-500"}`}>
+                {solutionResponse === "Oui" ? "✓ Vous avez confirmé la résolution." : "✗ Le technicien sera notifié."}
+              </p>
+            )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-4">Priorité</p>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Impact</p>
-                <p className="text-sm font-medium text-gray-800">{ticket.impact}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Urgence</p>
-                <p className="text-sm font-medium text-gray-800">{ticket.urgence}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-2">Priorité</p>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${couleurPriorite(ticket.priorite)}`}>
-                  {ticket.priorite}
-                </span>
-              </div>
+          <div className="bg-white rounded-3xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Demande d'informations du technicien</p>
+            <textarea disabled value="Le technicien demande plus d'informations..." rows={3} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm text-gray-700 resize-none mb-4 cursor-default" />
+            <label className="block text-xs text-gray-400 font-medium mb-2">Joindre des fichiers</label>
+            <div className="border-2 border-dashed border-gray-200 rounded-2xl p-5 text-center hover:border-indigo-300 transition-colors cursor-pointer mb-4">
+              <input type="file" multiple onChange={(e) => setInfoFiles(e.target.files)} className="hidden" id="file-upload" />
+              <label htmlFor="file-upload" className="flex flex-col items-center gap-1 cursor-pointer">
+                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                <span className="text-sm text-gray-400">{infoFiles ? `${infoFiles.length} fichier(s) sélectionné(s)` : "Cliquez pour choisir des fichiers"}</span>
+              </label>
             </div>
+            
+            <button 
+              onClick={handleSendInfo}
+              disabled={sendingInfo || !infoFiles}
+              className={`w-full py-3 rounded-2xl font-bold transition shadow-lg ${!infoFiles ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+            >
+              {sendingInfo ? "Envoi en cours..." : "Envoyer les informations au technicien"}
+            </button>
           </div>
         </div>
       </div>

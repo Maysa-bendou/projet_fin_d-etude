@@ -182,6 +182,7 @@ router.get("/:id", async (req, res) => {
       type: ticket.type,         // Added
       sla_due_date: ticket.sla_due_date, // Added
       createdAt: ticket.created_at,
+      updatedAt: ticket.updated_at,
       
       // Mapping the complex Prisma name to a simple "employee" object
       employee: ticket.users_tickets_created_byTousers,
@@ -192,6 +193,56 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
+
+// ----------------- Keep your existing GET route as is ----------------- //
+
+router.put("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    
+    // L'ERREUR ÉTAIT ICI : 'status' manquait dans la déstructuration
+    const { title, description, impact, urgency, status } = req.body; 
+
+    if (!title || !description || !impact || !urgency) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const PRIORITY_MATRIX = {
+      high:   { high: "critical", medium: "high",   low: "medium" },
+      medium: { high: "high",     medium: "medium", low: "low"    },
+      low:    { high: "medium",   medium: "low",    low: "low"    },
+    };
+    const priority = PRIORITY_MATRIX[impact][urgency];
+
+    const updatedTicket = await prisma.tickets.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        impact,
+        urgency,
+        priority,
+        status: status || undefined, // Maintenant 'status' est défini et ne fera plus planter le code
+        updated_at: new Date(),
+      },
+    });
+
+    res.json({
+      id: updatedTicket.id,
+      title: updatedTicket.title,
+      description: updatedTicket.description,
+      impact: updatedTicket.impact,
+      urgency: updatedTicket.urgency,
+      priority: updatedTicket.priority,
+      status: updatedTicket.status,
+      updatedAt: updatedTicket.updated_at,
+    });
+  } catch (err) {
+    console.error("Détail de l'erreur :", err); // Regardez votre terminal Node, l'erreur s'affichera ici
+    res.status(500).json({ error: "Erreur lors de la mise à jour" });
+  }
+});
+
 // PUT /api/tickets/:id/assign
 router.put("/:id/assign", async (req, res) => {
   const ticketId = parseInt(req.params.id);

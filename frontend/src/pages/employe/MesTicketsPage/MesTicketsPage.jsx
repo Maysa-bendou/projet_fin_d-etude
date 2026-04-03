@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function MesTicketsPage() {
@@ -7,20 +7,18 @@ export default function MesTicketsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [searchText, setSearchText] = useState("");
+  // --- États pour le message flottant (Cursor Tooltip) ---
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [hoveredTicketId, setHoveredTicketId] = useState(null);
+
+  // --- États pour les options dynamiques (DB) ---
+  const [dbEnums, setDbEnums] = useState({ statuts: [], priorites: [], categories: [] });
+  const [dbServices, setDbServices] = useState([]);
+
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterService, setFilterService] = useState("");
-
-  // Liste des services (à synchroniser avec ta base si possible)
-  const services = [
-    "IT Support", "Software", "Hardware", "Access", "Account",
-    "Service Desk", "Password", "IT Network", "Network",
-    "IT Collaboration Systems", "Messaging", "IT Security", "VPN", "Security"
-  ];
-
-  const statusOptions = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
-  const priorityOptions = ["low", "medium", "high", "critical"];
+  const [filterCategory, setFilterCategory] = useState("");
 
   const statusStyle = {
     open: "bg-blue-100 text-blue-700",
@@ -32,118 +30,146 @@ export default function MesTicketsPage() {
     pending_supplier: "bg-orange-100 text-orange-700",
   };
 
-  useEffect(() => {
-    async function fetchTickets() {
-      try {
-        const user = JSON.parse(localStorage.getItem("user"));
-        if (!user?.id) {
-          navigate("/login");
-          return;
-        }
-
-        const res = await fetch(`http://localhost:3001/api/tickets/my/${user.id}`);
-
-        if (!res.ok) throw new Error("Erreur lors de la récupération des tickets");
-
-        const data = await res.json();
-
-        // On garde les données telles que renvoyées par le backend (pas de mapping lourd)
-        setTicketsData(data);
-      } catch (err) {
-        console.error(err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user?.id) {
+        navigate("/login");
+        return;
       }
-    }
 
-    fetchTickets();
+      const enumRes = await fetch("http://localhost:3001/api/tech/enums");
+      const enumData = await enumRes.json();
+      setDbEnums(enumData);
+
+      const serviceRes = await fetch("http://localhost:3001/api/tech/services");
+      const servicesData = await serviceRes.json();
+      setDbServices(servicesData);
+
+      const res = await fetch(`http://localhost:3001/api/tickets/my/${user.id}`);
+      if (!res.ok) throw new Error("Erreur lors de la récupération des tickets");
+      const data = await res.json();
+      setTicketsData(data);
+
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, [navigate]);
 
-  // Filtrage côté frontend
-  const filteredTickets = ticketsData
-    .filter((t) => {
-      if (!searchText) return true;
-      const search = searchText.toLowerCase();
-      return (
-        t.id?.toString().includes(search) ||
-        t.title?.toLowerCase().includes(search) ||
-        (t.dateCreation && t.dateCreation.includes(search))
-      );
-    })
-    .filter((t) => (filterStatus ? t.status === filterStatus : true))
-    .filter((t) => (filterPriority ? t.priority === filterPriority : true))
-    .filter((t) => (filterService ? t.service === filterService : true));
+  // Gérer le mouvement de la souris pour le tooltip
+  const handleMouseMove = (e) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+  };
+
+  // ✅ FILTRAGE + TRI DESCENDANT par date de création
+  const filteredTickets = useMemo(() => {
+    const filtered = ticketsData.filter((t) => {
+      const matchesStatus = !filterStatus || t.status === filterStatus;
+      const matchesPriority = !filterPriority || t.priority === filterPriority;
+      const matchesService = !filterService || t.service === filterService;
+      const matchesCategory = !filterCategory || t.category === filterCategory;
+      return matchesStatus && matchesPriority && matchesService && matchesCategory;
+    });
+
+    // Tri descendant (Plus récent en premier)
+    return filtered.sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation));
+  }, [ticketsData, filterStatus, filterPriority, filterService, filterCategory]);
 
   if (loading) return <p className="p-6">Chargement des tickets...</p>;
   if (error) return <p className="p-6 text-red-500">Erreur: {error}</p>;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Suivez et gérez vos tickets</h1>
+    <div className="p-6 relative">
+      {/* Tooltip flottant qui suit le curseur */}
+      {hoveredTicketId && (
+        <div 
+          className="fixed pointer-events-none z-50 bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg transform -translate-x-1/2 -translate-y-full mb-2"
+          style={{ left: mousePos.x, top: mousePos.y - 10 }}
+        >
+          Click pour voir detailes
+        </div>
+      )}
 
-      {/* Filtres */}
+      <h1 className="text-2xl font-semibold mb-6">Mes Tickets : suiver et gérez vos tickets</h1>
+      
       <div className="flex flex-wrap gap-3 mb-6 items-end">
-        <input
-          type="text"
-          placeholder="Rechercher par ID, titre ou date..."
-          className="border rounded-lg px-3 py-2 w-80"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Statut</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="">Tous les statuts</option>
+            {dbEnums.statuts?.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          className="border rounded-lg px-3 py-2"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="">Tous les statuts</option>
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>
-              {s === "open" ? "Ouvert" :
-               s === "in_progress" ? "En cours" :
-               s === "resolved" ? "Résolu" :
-               s === "closed" ? "Fermé" : s}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Catégorie</label>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="">Toutes les catégories</option>
+            {dbEnums.categories?.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          className="border rounded-lg px-3 py-2"
-          value={filterPriority}
-          onChange={(e) => setFilterPriority(e.target.value)}
-        >
-          <option value="">Toutes les priorités</option>
-          {priorityOptions.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Priorité</label>
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value)}
+            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="">Toutes les priorités</option>
+            {dbEnums.priorites?.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          className="border rounded-lg px-3 py-2"
-          value={filterService}
-          onChange={(e) => setFilterService(e.target.value)}
-        >
-          <option value="">Tous les services</option>
-          {services.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Service</label>
+          <select
+            value={filterService}
+            onChange={(e) => setFilterService(e.target.value)}
+            className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="">Tous les services</option>
+            {dbServices.map((s) => (
+              <option key={s.id} value={s.name}>{s.name}</option>
+            ))}
+          </select>
+        </div>
 
         <button
           className="text-red-500 border px-4 py-2 rounded-lg hover:bg-red-50"
           onClick={() => {
-            setSearchText("");
             setFilterStatus("");
             setFilterPriority("");
             setFilterService("");
+            setFilterCategory("");
           }}
         >
           Réinitialiser
         </button>
       </div>
 
-      {/* Tableau */}
       <div className="bg-white rounded-xl shadow border overflow-hidden">
         {filteredTickets.length === 0 ? (
           <p className="p-6 text-center text-gray-500">Aucun ticket trouvé.</p>
@@ -161,12 +187,14 @@ export default function MesTicketsPage() {
                 <th className="p-3">DERNIÈRE MAJ</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody onMouseMove={handleMouseMove}>
               {filteredTickets.map((t) => (
                 <tr
                   key={t.id}
                   onClick={() => navigate(`/employee/ticket/${t.id}`)}
-                  className="border-t hover:bg-gray-50 transition cursor-pointer"
+                  onMouseEnter={() => setHoveredTicketId(t.id)}
+                  onMouseLeave={() => setHoveredTicketId(null)}
+                  className="border-t hover:bg-gray-50 transition cursor-pointer relative"
                 >
                   <td className="p-3 font-medium">{t.id}</td>
                   <td className="p-3">{t.title}</td>

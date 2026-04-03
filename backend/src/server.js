@@ -17,6 +17,7 @@ app.use("/api/tickets", ticketRoutes);
 const technicienRoutes = require("./routes/technicien.routes");
 app.use("/api/tech", technicienRoutes);
 app.use("/api/tech", techRoutes);
+
 const path = require("path");
 
 // Après app.use(express.json()) :

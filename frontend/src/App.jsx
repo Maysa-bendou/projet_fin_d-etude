@@ -28,12 +28,12 @@ import HistoriqueTechnicien from "./pages/technicien/HistoriqueTechnicien/Histor
 import TicketDetailTechnicien from "./pages/technicien/TicketDetailTechnicien/TicketDetailTechnicien";
 /* CHEF */
 import AccueilChef from "./pages/chefService/AccueilChef/AccueilChef";
+import RepartitionPage from "./pages/chefService/RepartitionPage/RepartitionPage";
+import StatistiqueGlobal from "./pages/chefService/statistiqueGlobal/statistiqueGlobal";
 
 /* MANAGER */
 import AccueilManager from "./pages/manager/AccueilManager/AccueilManager";
 import PerformancesPage from "./pages/manager/PerformancesPage/PerformancesPage";
-import RepartitionPage from "./pages/manager/RepartitionPage/RepartitionPage";
-import AffectationsPage from "./pages/manager/AffectationsPage/AffectationsPage";
 import TicketsService from "./pages/manager/TicketsServicePage/TicketsServicePage";
 import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPage";
 
@@ -98,6 +98,8 @@ export default function App() {
           </PrivateRoute>
         }>
           <Route index element={<AccueilChef />} />
+          <Route path="repartition" element={<RepartitionPage />} />
+          <Route path="statistiques" element={<StatistiqueGlobal />} />
           <Route path="profile" element={<ProfilePage />} /> {/* ✅ added */}
         </Route>
 
@@ -112,8 +114,6 @@ export default function App() {
   <Route path="tickets-service" element={<TicketsService />} />
   <Route path="tickets-service/:id" element={<TicketsDetails />} />
   <Route path="performances" element={<PerformancesPage />} />
-  <Route path="repartition" element={<RepartitionPage />} />
-  <Route path="affectations" element={<AffectationsPage />} />
 </Route>
 
         {/* ================= ADMIN ================= */}

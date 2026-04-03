@@ -4,7 +4,6 @@ import {
   MdDashboard,
   MdAssignment,
   MdBuild,
-  MdHistory,
   MdPerson,
   MdLogout
 } from "react-icons/md";
@@ -13,7 +12,6 @@ const menuItems = [
   { icon: MdDashboard,  label: "Accueil",            path: "/technician" },
   { icon: MdAssignment, label: "Tickets assignés",   path: "/technician/tickets-assignes" },
   { icon: MdBuild,      label: "Tickets du service", path: "/technician/tickets-service" },
-  { icon: MdHistory,    label: "Historique",         path: "/technician/historique" },
   { icon: MdPerson,     label: "Profil",             path: "/technician/profile" },
 ];
 

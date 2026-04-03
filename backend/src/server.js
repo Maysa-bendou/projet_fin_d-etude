@@ -11,13 +11,23 @@ const profileRoutes = require("./routes/profile.routes");
 const ticketRoutes = require("./routes/ticket.routes");
 const techRoutes = require("./routes/tech.routes");
 
+
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/tickets", ticketRoutes);
 const technicienRoutes = require("./routes/technicien.routes");
 app.use("/api/tech", technicienRoutes);
 app.use("/api/tech", techRoutes);
+
+const managerRoutes = require("./routes/manager.routes");
+app.use("/api/manager", managerRoutes);
+
+const chefRoutes = require('./routes/chef.routes');
+app.use('/api', chefRoutes);
+
+
 const path = require("path");
+
 
 // Après app.use(express.json()) :
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

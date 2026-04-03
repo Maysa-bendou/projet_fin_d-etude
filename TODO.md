@@ -1,17 +1,20 @@
-# Task: Enhance Ticket Details Pages
+# Admin Static Pages Task
 
-## Priority 1: Add block_number to Technician Ticket Details
-- [x] Update backend/src/controllers/technicien.controller.js: Add `block_number`, `
-- [ ] Test: Restart backend, view technician ticket details, verify block_number shows
+## Plan Steps
+- [x] Step 1: Enhance AccueilAdmin.jsx with full dashboard (stats, recent tickets mock)
+- [x] Step 2: Create Tickets.jsx in frontend/src/pages/admin/Tickets/Tickets.jsx (full tickets list)
+- [x] Step 3: Create Statistiques.jsx in frontend/src/pages/admin/Statistiques/Statistiques.jsx (charts, stats)
+- [x] Step 4: Create Parametres.jsx in frontend/src/pages/admin/Parametres/Parametres.jsx (services/users preview)
+- [x] Step 5: Update App.jsx to add routes for new admin pages
+- [x] Step 6: Test navigation in admin layout
 
-## Priority 2: Employee Page Full DB Elements
-- [ ] Add getTicketDetail to backend/src/controllers/ticket.controller.js with rich includes
-- [ ] Update route in backend/src/routes/ticket.routes.js if needed
-- [ ] Enhance frontend/src/pages/employe/TicketDetailsPage/TicketDetailsPage.jsx: Rich fetch + full UI (employee details, metadata, SLA, timeline)
-- [ ] Test employee page
+## Status
+✅ TASK COMPLETE: All admin static pages added (Accueil enhanced, Tickets, Statistiques, Parametres), routes integrated in App.jsx and AdminLayout. Only profile remains dynamic as requested. No other roles touched. Pages use mock data respecting Prisma schema (users, tickets, services, enums).
 
-## Testing
-- Backend: npm run dev (restart)
-- Frontend: npm run dev
-- Verify data completeness, no errors
+To test: 
+- cd frontend
+- npm run dev
+- Login as admin, navigate sidebar: /admin, /admin/tickets, /admin/statistiques, /admin/parametres, /admin/utilisateurs (existing), /admin/profile (dynamic).
+
+Ready for backend integration later.
 

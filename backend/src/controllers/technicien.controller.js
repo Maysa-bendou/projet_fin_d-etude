@@ -43,7 +43,7 @@ const getTicketDetailTech = async (req, res) => {
       },
     });
 
-    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    if (!ticket) return res.status(404).json({ error: "Ticket non trouvé" });
 
     const firstAssignment = ticket.ticket_assignments_history[0];
     let assignedBy = { label: "Auto / Système", type: "auto" };
@@ -71,7 +71,9 @@ const getTicketDetailTech = async (req, res) => {
       createdAt: ticket.created_at,
       updatedAt: ticket.updated_at,
       solution: ticket.solution,
+      closing_note: ticket.closing_note,
       is_resolved_confirmed: ticket.is_resolved_confirmed,
+      confirmation_requested: ticket.confirmation_requested,
       employee: ticket.users_tickets_created_byTousers,
       technician: ticket.users_tickets_assigned_toTousers,
       service: ticket.services?.name ?? null,
@@ -80,6 +82,7 @@ const getTicketDetailTech = async (req, res) => {
       comments: ticket.ticket_comments.map((c) => ({
         id: c.id,
         message: c.comment,
+        comment_type: c.comment_type ?? "comment",
         author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
         authorRole: c.users?.role ?? "",
         authorId: c.users?.id,
@@ -99,7 +102,7 @@ const getTicketDetailTech = async (req, res) => {
   }
 };
 
-// ── PUT statut ─────────────────────────────────────────────────────────────
+// ── PUT statut (manuel uniquement) ────────────────────────────────────────
 const updateTicketStatus = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -123,11 +126,13 @@ const sendSolution = async (req, res) => {
     const id = parseInt(req.params.id);
     const { message, technicianId, type } = req.body;
 
+    // type is either "solution" or "info"
     const comment = await prisma.ticket_comments.create({
       data: {
         ticket_id: id,
         user_id: parseInt(technicianId),
         comment: message,
+        comment_type: type === "solution" ? "solution" : "info",
         created_at: new Date(),
       },
     });
@@ -135,13 +140,19 @@ const sendSolution = async (req, res) => {
     if (type === "solution") {
       await prisma.tickets.update({
         where: { id },
-        data: { solution: message, status: "resolved", updated_at: new Date() },
+        data: {
+          solution: message,
+          // status NOT changed automatically — technician does it manually
+          updated_at: new Date(),
+        },
       });
     }
+
     if (type === "info") {
+      // status NOT changed automatically — technician does it manually
       await prisma.tickets.update({
         where: { id },
-        data: { status: "pending", updated_at: new Date() },
+        data: { updated_at: new Date() },
       });
     }
 
@@ -165,14 +176,66 @@ const sendSolution = async (req, res) => {
   }
 };
 
-// ── PUT confirmer résolution ───────────────────────────────────────────────
-const confirmResolution = async (req, res) => {
+// ── PUT envoyer demande de confirmation à l'employé ────────────────────────
+// This only marks that the technician requested confirmation.
+// It does NOT close the ticket — closing is always manual.
+const requestConfirmation = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    const { technicianId } = req.body;
+
     await prisma.tickets.update({
       where: { id },
-      data: { is_resolved_confirmed: true, status: "closed", updated_at: new Date() },
+      data: { confirmation_requested: true, updated_at: new Date() },
     });
+
+    // Log it as a comment in the timeline
+    await prisma.ticket_comments.create({
+      data: {
+        ticket_id: id,
+        user_id: parseInt(technicianId),
+        comment: "Demande de confirmation de résolution envoyée à l'employé.",
+        comment_type: "confirm",
+        created_at: new Date(),
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// ── PUT fermer le ticket manuellement (technicien) ─────────────────────────
+// Called when technician closes manually (e.g. resolved by phone).
+// closing_note is required to explain why it's closed without employee confirmation.
+const closeTicketManually = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { technicianId, closingNote } = req.body;
+
+    await prisma.tickets.update({
+      where: { id },
+      data: {
+        status: "closed",
+        closing_note: closingNote ?? null,
+        updated_at: new Date(),
+      },
+    });
+
+    await prisma.ticket_comments.create({
+      data: {
+        ticket_id: id,
+        user_id: parseInt(technicianId),
+        comment: closingNote
+          ? `Ticket fermé manuellement. Note : ${closingNote}`
+          : "Ticket fermé manuellement par le technicien.",
+        comment_type: "comment",
+        created_at: new Date(),
+      },
+    });
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -197,7 +260,6 @@ const redirectTicket = async (req, res) => {
         ...(newTechId    && { assigned_to: parseInt(newTechId) }),
         ...(newServiceId && { service_id: parseInt(newServiceId) }),
         ...(newCategory  && { category: newCategory }),
-        status: "open",
         updated_at: new Date(),
       },
     });
@@ -216,16 +278,31 @@ const redirectTicket = async (req, res) => {
       },
     });
 
-    if (note && assignedById) {
-      await prisma.ticket_comments.create({
-        data: {
-          ticket_id:  id,
-          user_id:    parseInt(assignedById),
-          comment:    `[REDIRECTION] ${note}`,
-          created_at: new Date(),
-        },
-      });
-    }
+    // Always save the redirect as a comment with type "redirect"
+    const tech = newTechId ? await prisma.users.findUnique({
+      where: { id: parseInt(newTechId) },
+      select: { name: true, surname: true },
+    }) : null;
+
+    const svc = newServiceId ? await prisma.services.findUnique({
+      where: { id: parseInt(newServiceId) },
+      select: { name: true },
+    }) : null;
+
+    let redirectMsg = `Redirigé vers ${tech ? `${tech.name} ${tech.surname}` : "N/A"}`;
+    if (svc) redirectMsg += ` / service ${svc.name}`;
+    if (newCategory) redirectMsg += ` / catégorie ${newCategory}`;
+    if (note) redirectMsg += `\nRaison : ${note}`;
+
+    await prisma.ticket_comments.create({
+      data: {
+        ticket_id:  id,
+        user_id:    parseInt(assignedById),
+        comment:    redirectMsg,
+        comment_type: "redirect",
+        created_at: new Date(),
+      },
+    });
 
     res.json({ success: true });
   } catch (err) {
@@ -265,29 +342,17 @@ const getAllTechniciens = async (req, res) => {
 const getAssignedTickets = async (req, res) => {
   try {
     const techId = parseInt(req.params.techId);
-
     const tickets = await prisma.tickets.findMany({
-      where: {
-        assigned_to: techId,
-        status: { notIn: ["closed"] },
-      },
+      where: { assigned_to: techId, status: { notIn: ["closed"] } },
       select: {
-        id: true,
-        title: true,
-        description: true,
-        priority: true,
-        category: true,
-        status: true,
-        created_at: true,
-        sla_due_date: true,
-        users_tickets_created_byTousers: {
-          select: { name: true, surname: true },
-        },
+        id: true, title: true, description: true,
+        priority: true, category: true, status: true,
+        created_at: true, sla_due_date: true,
+        users_tickets_created_byTousers: { select: { name: true, surname: true } },
       },
       orderBy: { created_at: "desc" },
     });
-
-    const formatted = tickets.map(t => ({
+    res.json(tickets.map(t => ({
       id:            t.id,
       title:         t.title,
       description:   t.description,
@@ -297,37 +362,21 @@ const getAssignedTickets = async (req, res) => {
       created_at:    t.created_at,
       sla_due_date:  t.sla_due_date,
       employee_name: `${t.users_tickets_created_byTousers?.name ?? ""} ${t.users_tickets_created_byTousers?.surname ?? ""}`.trim(),
-    }));
-
-    res.json(formatted);
+    })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
 
-// ── GET enums depuis PostgreSQL ────────────────────────────────────────────
+// ── GET enums ──────────────────────────────────────────────────────────────
 const getEnums = async (req, res) => {
   try {
-    const statuts = await prisma.$queryRaw`
-      SELECT enumlabel FROM pg_enum
-      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
-      WHERE pg_type.typname = 'ticket_status_enum'
-      ORDER BY enumsortorder;
-    `;
-    const priorites = await prisma.$queryRaw`
-      SELECT enumlabel FROM pg_enum
-      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
-      WHERE pg_type.typname = 'priority_enum'
-      ORDER BY enumsortorder;
-    `;
-    const categories = await prisma.$queryRaw`
-      SELECT enumlabel FROM pg_enum
-      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
-      WHERE pg_type.typname = 'category_enum'
-      ORDER BY enumsortorder;
-    `;
-
+    const [statuts, priorites, categories] = await Promise.all([
+      prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'ticket_status_enum' ORDER BY enumsortorder`,
+      prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'priority_enum' ORDER BY enumsortorder`,
+      prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'category_enum' ORDER BY enumsortorder`,
+    ]);
     res.json({
       statuts:    statuts.map(r => r.enumlabel),
       priorites:  priorites.map(r => r.enumlabel),
@@ -339,12 +388,12 @@ const getEnums = async (req, res) => {
   }
 };
 
-// ── Exports ────────────────────────────────────────────────────────────────
 module.exports = {
   getTicketDetailTech,
   updateTicketStatus,
   sendSolution,
-  confirmResolution,
+  requestConfirmation,
+  closeTicketManually,
   redirectTicket,
   getServices,
   getAllTechniciens,

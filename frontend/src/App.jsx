@@ -38,7 +38,11 @@ import TicketsService from "./pages/manager/TicketsServicePage/TicketsServicePag
 import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPage";
 
 /* ADMIN */
+import GestionUtilisateurs from "./pages/admin/GestionUtilisateurs/GestionUtilisateurs";
 import AccueilAdmin from "./pages/admin/AccueilAdmin/AccueilAdmin";
+import TicketsAdmin from "./pages/admin/Tickets/Tickets";
+import StatistiquesAdmin from "./pages/admin/Statistiques/Statistiques";
+import ParametresAdmin from "./pages/admin/Parametres/Parametres";
 
 // ✅ Blocks access if not logged in or wrong role
 function PrivateRoute({ children, allowedRoles }) {
@@ -123,6 +127,10 @@ export default function App() {
           </PrivateRoute>
         }>
           <Route index element={<AccueilAdmin />} />
+          <Route path="utilisateurs" element={<GestionUtilisateurs />} />
+          <Route path="tickets" element={<TicketsAdmin />} />
+          <Route path="statistiques" element={<StatistiquesAdmin />} />
+          <Route path="parametres" element={<ParametresAdmin />} />
           <Route path="profile" element={<ProfilePage />} /> {/* ✅ added */}
         </Route>
 

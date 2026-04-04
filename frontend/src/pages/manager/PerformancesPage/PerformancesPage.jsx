@@ -90,11 +90,13 @@ export default function PerformancesPage() {
     fetchStats();
   }, [user.id]);
 
-  const sortedMonthlyStats = useMemo(() => {
-    if (!stats?.monthlyStats) return [];
-    const order = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
-    return [...stats.monthlyStats].sort((a, b) => order.indexOf(a.month) - order.indexOf(b.month));
-  }, [stats]);
+const sortedMonthlyStats = useMemo(() => {
+  if (!stats?.monthlyStats) return [];
+  // Must match the "months" array in your Node.js backend exactly
+  const order = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  
+  return [...stats.monthlyStats].sort((a, b) => order.indexOf(a.month) - order.indexOf(b.month));
+}, [stats]);
 
   const avgMonthly = useMemo(() => {
     if (!sortedMonthlyStats.length) return 0;
@@ -255,8 +257,55 @@ export default function PerformancesPage() {
         </Card>
       </div>
 
-      <SectionLabel>Tendances Temporelles</SectionLabel>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+<SectionLabel>Tendances Temporelles</SectionLabel>
+<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+  
+  {/* NEW: Monthly Curve Chart */}
+  <div className="monthly-chart-wrap">
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <p style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a', margin: 0 }}>Evolution Mensuelle des Tickets</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <span className="monthly-stat-badge">Total: {stats.totalTickets}</span>
+        <span className="monthly-stat-badge avg">Moy: {avgMonthly}/mois</span>
+      </div>
+    </div>
+    
+    <ResponsiveContainer width="100%" height={280}>
+      <AreaChart data={sortedMonthlyStats}>
+        <defs>
+          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dbeafe" />
+        <XAxis 
+          dataKey="month" 
+          axisLine={false} 
+          tickLine={false} 
+          tick={{ fontSize: 11, fill: '#1e40af', fontWeight: 500 }} 
+        />
+        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+        <Tooltip content={<MonthlyTooltip />} />
+        
+        {/* The Curve */}
+        <Area 
+          type="monotone" 
+          dataKey="value" 
+          stroke="#2563eb" 
+          strokeWidth={3} 
+          fillOpacity={1} 
+          fill="url(#colorValue)" 
+          dot={<CustomDot />}
+          activeDot={{ r: 8 }}
+          label={<CustomLabel />}
+        />
+        
+        {/* Optional: Average line */}
+        <ReferenceLine y={avgMonthly} stroke="#94a3b8" strokeDasharray="3 3" label={{ position: 'right', value: 'Moyenne', fill: '#94a3b8', fontSize: 10 }} />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
 
         <Card title="Priorités">
           <ResponsiveContainer width="100%" height={250}>
@@ -271,8 +320,9 @@ export default function PerformancesPage() {
             </PieChart>
           </ResponsiveContainer>
         </Card>
+</div>
+
       </div>
-    </div>
   );
 }
 

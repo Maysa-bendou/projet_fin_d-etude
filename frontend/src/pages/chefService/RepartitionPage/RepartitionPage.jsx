@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, AreaChart, Area
+  PieChart, Pie, Cell, Legend, AreaChart, Area, ReferenceLine // <--- Added this
 } from 'recharts';
 import {
   MdTrendingUp, MdTimer, MdCheckCircle, MdFileDownload, MdPeople,
@@ -21,6 +21,38 @@ const getDynamicColor = (name, index) => {
     'medium': '#d97706', 'low': '#16a34a', 'incident': '#e11d48', 'demande': '#0ea5e9'
   };
   return map[name?.toLowerCase()] || ['#2563eb', '#7c3aed', '#0891b2', '#db2777', '#4b5563'][index % 5];
+};
+const CustomDot = (props) => {
+  const { cx, cy, value } = props;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={5} fill="#2563eb" stroke="#fff" strokeWidth={2} />
+    </g>
+  );
+};
+
+// ── Custom label above dot ───────────────────────────────────────────────────
+const CustomLabel = (props) => {
+  const { x, y, value } = props;
+  return (
+    <text x={x} y={y - 10} fill="#2563eb" fontSize={11} fontWeight={700} textAnchor="middle">
+      {value}
+    </text>
+  );
+};
+
+// ── Monthly tooltip ──────────────────────────────────────────────────────────
+const MonthlyTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: '#1e3a8a', borderRadius: 10, padding: '10px 16px',
+      boxShadow: '0 4px 20px rgba(37,99,235,0.3)', color: '#fff'
+    }}>
+      <p style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>{label}</p>
+      <p style={{ fontSize: 20, fontWeight: 700 }}>{payload[0].value} <span style={{ fontSize: 12, fontWeight: 400 }}>tickets</span></p>
+    </div>
+  );
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -67,6 +99,18 @@ export default function RepartitionPage() {
       fetchStats();
     }
   }, [selectedServiceId]);
+
+  const sortedMonthlyStats = useMemo(() => {
+    if (!stats?.monthlyStats) return [];
+    // Must match the "months" array in your Node.js backend exactly
+    const order = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+    
+    return [...stats.monthlyStats].sort((a, b) => order.indexOf(a.month) - order.indexOf(b.month));
+  }, [stats]);
+  const avgMonthly = useMemo(() => {
+    if (!sortedMonthlyStats.length) return 0;
+    return Math.round(sortedMonthlyStats.reduce((s, m) => s + m.value, 0) / sortedMonthlyStats.length);
+  }, [sortedMonthlyStats]);
 
   const exportPDF = () => {
     if (!stats) return;
@@ -221,24 +265,88 @@ export default function RepartitionPage() {
         </Card>
       </div>
 
-      <SectionLabel>Tendances Temporelles</SectionLabel>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<SectionLabel>Tendances Temporelles</SectionLabel>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        <Card title="Répartition par Priorité">
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={stats.priorityStats} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                {stats.priorityStats?.map((entry, index) => (
-                  <Cell key={index} fill={getDynamicColor(entry.name)} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend iconType="circle" />
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
+  {/* CARD 1: Monthly Curve Chart */}
+  <Card title="Evolution Mensuelle des Tickets">
+    {/* Header Info (Total & Average) */}
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: -10 }}>
+      <p style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a', margin: 0 }}>Flux Mensuel</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-wider border border-blue-100">
+          Total: {stats.totalTickets}
+        </span>
+        <span className="px-2 py-1 bg-gray-50 text-gray-500 rounded text-[10px] font-bold uppercase tracking-wider border border-gray-100">
+          Moy: {avgMonthly}/mois
+        </span>
       </div>
     </div>
+    
+    <ResponsiveContainer width="100%" height={280}>
+      <AreaChart data={sortedMonthlyStats}>
+        <defs>
+          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dbeafe" />
+        <XAxis 
+          dataKey="month" 
+          axisLine={false} 
+          tickLine={false} 
+          tick={{ fontSize: 11, fill: '#1e40af', fontWeight: 500 }} 
+        />
+        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+        <Tooltip content={<MonthlyTooltip />} />
+        
+        <Area 
+          type="monotone" 
+          dataKey="value" 
+          stroke="#2563eb" 
+          strokeWidth={3} 
+          fillOpacity={1} 
+          fill="url(#colorValue)" 
+          dot={<CustomDot />}
+          activeDot={{ r: 8 }}
+          label={<CustomLabel />}
+        />
+        
+        {/* Average reference line - ensure ReferenceLine is imported in Recharts */}
+        <ReferenceLine 
+          y={avgMonthly} 
+          stroke="#94a3b8" 
+          strokeDasharray="3 3" 
+          label={{ position: 'right', value: 'Moyenne', fill: '#94a3b8', fontSize: 10 }} 
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  </Card>
+
+  {/* CARD 2: Répartition par Priorité */}
+  <Card title="Répartition par Priorité">
+    <ResponsiveContainer width="100%" height={320}>
+      <PieChart>
+        <Pie 
+          data={stats.priorityStats} 
+          innerRadius={70} 
+          outerRadius={90} 
+          paddingAngle={5} 
+          dataKey="value"
+        >
+          {stats.priorityStats?.map((entry, index) => (
+            <Cell key={index} fill={getDynamicColor(entry.name)} />
+          ))}
+        </Pie>
+        <Tooltip />
+        <Legend iconType="circle" verticalAlign="bottom" height={36} />
+      </PieChart>
+    </ResponsiveContainer>
+  </Card>
+
+</div>
+      </div>
   );
 }
 

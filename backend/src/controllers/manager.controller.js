@@ -124,23 +124,46 @@ const getManagerStats = async (req, res) => {
       percentage: totalTickets > 0 ? Math.round((t._count.id / totalTickets) * 100) : 0
     }));
 
-    // 9. Monthly Stats (Last 6 Months)
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+// 9. Monthly Stats (Full Year for the current year)
+const currentYear = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
 
-    const monthlyRaw = await prisma.tickets.findMany({
-      where: { service_id: sId, created_at: { gte: sixMonthsAgo } },
-      select: { created_at: true }
-    });
+const startOfYear = new Date(currentYear, 0, 1); // January 1st
+const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59); // December 31st
 
-    const months = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
-    const monthlyGroups = {};
-    monthlyRaw.forEach(t => {
-      const m = months[new Date(t.created_at).getMonth()];
-      monthlyGroups[m] = (monthlyGroups[m] || 0) + 1;
-    });
 
-    const monthlyStats = Object.keys(monthlyGroups).map(k => ({ month: k, value: monthlyGroups[k] }));
+
+const monthlyRaw = await prisma.tickets.findMany({
+  where: { 
+    service_id: sId, 
+    created_at: {
+      gte: startOfYear,
+      lte: endOfYear
+    }
+  },
+  select: { created_at: true }
+});
+
+const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+
+// 1. Initialize the object with 0 for every month of the year
+const monthlyGroups = {};
+months.forEach(m => {
+  monthlyGroups[m] = 0;
+});
+
+// 2. Fill in the actual data from the database
+monthlyRaw.forEach(t => {
+  const monthIndex = new Date(t.created_at).getMonth();
+  const monthName = months[monthIndex];
+  monthlyGroups[monthName]++;
+});
+
+// 3. Convert to array for the chart
+// Result format: [{ month: "Janvier", count: 5 }, { month: "Février", count: 12 }, ...]
+const monthlyStats = months.map(monthName => ({
+  month: monthName,
+  value: monthlyGroups[monthName]
+}));
 
     // Response
     res.json({

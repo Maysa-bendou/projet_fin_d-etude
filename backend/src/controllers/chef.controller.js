@@ -171,23 +171,33 @@ const chefController = {
         }
       });
 
-      // ✅ 5. Monthly Evolution (Sorted Jan -> Dec)
-      const monthsOrder = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+// 5. Monthly Stats (CRITICAL FIX: Use sFilter here)
+      const currentYear = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+      const startOfYear = new Date(currentYear, 0, 1);
+      const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+
       const monthlyRaw = await prisma.tickets.findMany({
-        where: { service_id: sFilter },
+        where: { 
+          service_id: sFilter, // FIX: sId changed to sFilter
+          created_at: { gte: startOfYear, lte: endOfYear }
+        },
         select: { created_at: true }
       });
-      
-      const monthlyMap = {};
+
+      const monthsNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+      const monthlyGroups = {};
+      monthsNames.forEach(m => { monthlyGroups[m] = 0; });
+
       monthlyRaw.forEach(t => {
-        const m = monthsOrder[new Date(t.created_at).getMonth()];
-        monthlyMap[m] = (monthlyMap[m] || 0) + 1;
+        const mIndex = new Date(t.created_at).getMonth();
+        const mName = monthsNames[mIndex];
+        monthlyGroups[mName]++;
       });
 
-      const monthlyStats = Object.keys(monthlyMap)
-        .map(k => ({ month: k, value: monthlyMap[k] }))
-        .sort((a, b) => monthsOrder.indexOf(a.month) - monthsOrder.indexOf(b.month));
-
+      const monthlyStats = monthsNames.map(m => ({
+        month: m,
+        value: monthlyGroups[m]
+      }));
       res.json({
         serviceName,
         totalTickets,

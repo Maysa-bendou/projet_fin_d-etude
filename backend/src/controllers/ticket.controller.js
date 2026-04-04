@@ -1,5 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 
 // Get tickets created by a specific user
 const getMyTickets = async (req, res) => {

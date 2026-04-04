@@ -11,10 +11,8 @@ import {
 } from "react-icons/md";
 
 const menuItems = [
-  { icon: MdDashboard,          label: "Accueil",       path: "/admin" },
-  { icon: MdPeople,             label: "Utilisateurs",  path: "/admin/utilisateurs" },
-  { icon: MdConfirmationNumber, label: "Tickets",       path: "/admin/tickets" },
-  { icon: MdBarChart,           label: "Statistiques",  path: "/admin/statistiques" },
+  { icon: MdPeople,             label: "Gestion des utilisateurs",  path: "/admin/utilisateurs" },
+{ icon: MdConfirmationNumber, label: "Départements",    path: "/admin/departements" },
   { icon: MdSettings,           label: "Paramètres",    path: "/admin/parametres" },
   { icon: MdPerson,             label: "Profil",        path: "/admin/profile" },
 ];

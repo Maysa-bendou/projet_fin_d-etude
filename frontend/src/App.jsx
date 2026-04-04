@@ -38,11 +38,12 @@ import TicketsService from "./pages/manager/TicketsServicePage/TicketsServicePag
 import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPage";
 
 /* ADMIN */
-import GestionUtilisateurs from "./pages/admin/GestionUtilisateurs/GestionUtilisateurs";
+import UsersPage from "./pages/admin/GestionUtilisateurs/UsersPage";
 import AccueilAdmin from "./pages/admin/AccueilAdmin/AccueilAdmin";
 import TicketsAdmin from "./pages/admin/Tickets/Tickets";
-import StatistiquesAdmin from "./pages/admin/Statistiques/Statistiques";
+import departement from "./pages/admin/Departements/Departements";
 import ParametresAdmin from "./pages/admin/Parametres/Parametres";
+import Departements from "./pages/admin/Departements/Departements";
 
 // ✅ Blocks access if not logged in or wrong role
 function PrivateRoute({ children, allowedRoles }) {
@@ -122,16 +123,16 @@ export default function App() {
 
         {/* ================= ADMIN ================= */}
         <Route path="/admin" element={
-          <PrivateRoute allowedRoles={["admin"]}> {/* ✅ exact DB value */}
+          <PrivateRoute allowedRoles={["admin"]}> 
             <AdminLayout />
           </PrivateRoute>
         }>
-          <Route index element={<AccueilAdmin />} />
-          <Route path="utilisateurs" element={<GestionUtilisateurs />} />
+          <Route index element={<UsersPage />}/>
+          <Route path="utilisateurs" element={<UsersPage />} />
           <Route path="tickets" element={<TicketsAdmin />} />
-          <Route path="statistiques" element={<StatistiquesAdmin />} />
+<Route path="departements" element={<Departements />} />
           <Route path="parametres" element={<ParametresAdmin />} />
-          <Route path="profile" element={<ProfilePage />} /> {/* ✅ added */}
+          <Route path="profile" element={<ProfilePage />} /> 
         </Route>
 
         {/* Catch all unknown routes → login */}

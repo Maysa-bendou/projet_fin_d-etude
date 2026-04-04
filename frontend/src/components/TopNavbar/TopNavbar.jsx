@@ -157,43 +157,7 @@ export default function TopNavbar({ pageTitle = "" }) {
         {/* ── Droite : search + notif + profil ── */}
         <div className="flex items-center gap-2 ml-auto">
 
-          {/* ── Barre de recherche ── */}
-          <div ref={searchRef} className="relative">
-            {/* Collapsed state — icon only */}
-            {!searchOpen && (
-              <button
-                onClick={openSearch}
-                className="flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition bg-transparent border-none cursor-pointer"
-                title="Rechercher"
-              >
-                <Search size={18} />
-              </button>
-            )}
-
-            {/* Expanded state */}
-            {searchOpen && (
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 w-64 transition-all">
-                <Search size={15} className="text-gray-400 shrink-0" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Rechercher un ticket, employé..."
-                  className="flex-1 text-[13px] bg-transparent outline-none text-gray-800 placeholder-gray-400"
-                  onKeyDown={e => e.key === "Escape" && setSearchOpen(false)}
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer p-0"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+        
 
           {/* ── Notifications ── */}
           <div ref={notifRef} className="relative">

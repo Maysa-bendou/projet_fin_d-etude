@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model departments {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(100)
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users[]
+}
+
 model services {
   id                                                                              Int                          @id @default(autoincrement())
   name                                                                            String                       @unique @db.VarChar(100)
@@ -16,6 +25,57 @@ model services {
   users                                                                           users[]
 }
 
+model sla_config {
+  id             Int    @id @default(autoincrement())
+  priority       String @unique @db.VarChar(50)
+  duration_hours Int
+}
+
+model ticket_assignments_history {
+  id                                                            Int       @id @default(autoincrement())
+  ticket_id                                                     Int?
+  from_user_id                                                  Int?
+  to_user_id                                                    Int?
+  from_service_id                                               Int?
+  to_service_id                                                 Int?
+  action                                                        String?   @db.VarChar(50)
+  reason                                                        String?
+  created_at                                                    DateTime? @default(now()) @db.Timestamp(6)
+  assigned_by                                                   Int?
+  users_ticket_assignments_history_assigned_byTousers           users?    @relation("ticket_assignments_history_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  services_ticket_assignments_history_from_service_idToservices services? @relation("ticket_assignments_history_from_service_idToservices", fields: [from_service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_ticket_assignments_history_from_user_idTousers          users?    @relation("ticket_assignments_history_from_user_idTousers", fields: [from_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tickets                                                       tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  services_ticket_assignments_history_to_service_idToservices   services? @relation("ticket_assignments_history_to_service_idToservices", fields: [to_service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_ticket_assignments_history_to_user_idTousers            users?    @relation("ticket_assignments_history_to_user_idTousers", fields: [to_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ticket_attachments {
+  id              Int              @id @default(autoincrement())
+  ticket_id       Int?
+  file_name       String?          @db.VarChar(255)
+  file_path       String?
+  uploaded_by     Int?
+  uploaded_at     DateTime?        @default(now()) @db.Timestamp(6)
+  comment_id      Int?
+  ticket_comments ticket_comments? @relation(fields: [comment_id], references: [id], onUpdate: NoAction)
+  tickets         tickets?         @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?           @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ticket_comments {
+  id                 Int                  @id @default(autoincrement())
+  ticket_id          Int?
+  user_id            Int?
+  comment            String
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  comment_type       String?              @default("comment") @db.VarChar(50)
+  ticket_attachments ticket_attachments[]
+  tickets            tickets?             @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users?               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model tickets {
   id                               Int                          @id @default(autoincrement())
   title                            String                       @db.VarChar(255)
@@ -42,7 +102,9 @@ model tickets {
   solution_date_resolved           DateTime?                    @db.Timestamptz(6)
   confirmation_requested           Boolean?                     @default(false)
   closing_note                     String?
+
   notifications                    notifications[]
+
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]
   ticket_comments                  ticket_comments[]
@@ -78,6 +140,7 @@ model users {
   departments                                                               departments?                 @relation(fields: [department_id], references: [id], onUpdate: NoAction)
   services                                                                  services?                    @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
+
 
 model ticket_assignments_history {
   id                                                            Int       @id @default(autoincrement())
@@ -153,6 +216,7 @@ model notifications {
   @@index([user_id], map: "idx_notifications_user_id")
 }
 
+
 enum category_enum {
   hardware
   software
@@ -173,6 +237,19 @@ enum priority_enum {
   medium
   high
   critical
+}
+
+enum request_type_enum {
+  incident
+  service_request
+  change
+  problem
+}
+
+enum sla_duree {
+  jours    @map("3_jours")
+  semaine  @map("1_semaine")
+  semaines @map("2_semaines")
 }
 
 enum ticket_status_enum {
@@ -197,17 +274,4 @@ enum user_role {
   chef_service
   manager
   admin
-}
-
-enum request_type_enum {
-  incident
-  service_request
-  change
-  problem
-}
-
-enum sla_duree {
-  jours    @map("3_jours")
-  semaine  @map("1_semaine")
-  semaines @map("2_semaines")
 }

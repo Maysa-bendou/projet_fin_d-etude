@@ -1,155 +1,131 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { Ticket, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
+import axios from 'axios';
 
-// ── Fausses données pour tester ──────────────────
-const fakeUser = {
-  prenom: "Ali",
-  nom: "Benali",
-};
+const AccueilPage = () => {
+  const [stats, setStats] = useState({ total: 0, resolved: 0, open: 0, rejected: 0 });
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-const fakeStats = {
-  total: 11,
-  enCours: 3,
-  resolus: 7,
-  enAttente: 1,
-};
+  useEffect(() => {
+    const fetchEmployeeDashboard = async () => {
+      try {
+        const token = localStorage.getItem('token');
+const response = await axios.get('http://localhost:3001/api/accueil/dashboard', {
+  headers: { Authorization: `Bearer ${token}` }
+});
 
-const dernierTicket = {
-  id: "IM000007",
-  titre: "File d'attente SM9 vide côté utilisateur",
-  statut: "En cours",
-  priorite: "Haute",
-  categorie: "Logiciels",
-  service: "IT Support",
-  date: "2026-03-15",
-};
+        if (response.data.type === 'employee') {
+          setStats(response.data.stats);
+          setTickets(response.data.tickets);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des données:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-export default function AccueilPage() {
-  const navigate = useNavigate();
+    fetchEmployeeDashboard();
+  }, []);
 
-  return (
-    <div className="p-6">
+  // Helper to format dates from PostgreSQL/Prisma format
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
 
-      {/* ── Bienvenue + bouton ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">
-            Bonjour, {fakeUser.prenom} {fakeUser.nom} 👋
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Bienvenue sur votre espace DJEZZY IT Support
-          </p>
-        </div>
-        <button
-          onClick={() => navigate("/employee/create-ticket")}
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          + Créer un ticket
-        </button>
+  // Filter logic for the search bar
+  const filteredTickets = tickets.filter(t => 
+    t.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const StatCard = ({ title, value, icon: Icon, color }) => (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+      <div className={`p-3 rounded-lg ${color}`}>
+        <Icon className="text-white" size={24} />
       </div>
-
-      {/* ── Cartes stats colorées ── */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-
-        {/* Total */}
-        <div className="relative bg-orange-500 rounded-2xl p-5 overflow-hidden">
-          {/* Cercles décoratifs */}
-          <div className="absolute -right-3 -top-3 w-20 h-20 rounded-full bg-white/20" />
-          <div className="absolute right-4 top-5 w-12 h-12 rounded-full bg-white/15" />
-          <p className="text-xs text-white/80 mb-2 relative z-10">Total Tickets</p>
-          <p className="text-4xl font-semibold text-white relative z-10">{fakeStats.total}</p>
-        </div>
-
-        {/* En cours */}
-        <div className="relative bg-lime-500 rounded-2xl p-5 overflow-hidden">
-          <div className="absolute -right-3 -top-3 w-20 h-20 rounded-full bg-white/20" />
-          <div className="absolute right-4 top-5 w-12 h-12 rounded-full bg-white/15" />
-          <p className="text-xs text-white/80 mb-2 relative z-10">En cours</p>
-          <p className="text-4xl font-semibold text-white relative z-10">{fakeStats.enCours}</p>
-        </div>
-
-        {/* Résolus */}
-        <div className="relative bg-teal-700 rounded-2xl p-5 overflow-hidden">
-          <div className="absolute -right-3 -top-3 w-20 h-20 rounded-full bg-white/20" />
-          <div className="absolute right-4 top-5 w-12 h-12 rounded-full bg-white/15" />
-          <p className="text-xs text-white/80 mb-2 relative z-10">Résolus</p>
-          <p className="text-4xl font-semibold text-white relative z-10">{fakeStats.resolus}</p>
-        </div>
-
-        {/* En attente */}
-        <div className="relative bg-gray-500 rounded-2xl p-5 overflow-hidden">
-          <div className="absolute -right-3 -top-3 w-20 h-20 rounded-full bg-white/20" />
-          <div className="absolute right-4 top-5 w-12 h-12 rounded-full bg-white/15" />
-          <p className="text-xs text-white/80 mb-2 relative z-10">En attente</p>
-          <p className="text-4xl font-semibold text-white relative z-10">{fakeStats.enAttente}</p>
-        </div>
-
-      </div>
-
-      {/* ── Bas de page : dernier ticket + carte créer ── */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: "1fr 320px" }}>
-
-        {/* Dernier ticket créé */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <p className="text-sm font-semibold text-gray-800 mb-4">
-            Dernier ticket créé
-          </p>
-
-          <div className="bg-gray-50 rounded-xl p-4">
-
-            {/* ID + statut + priorité */}
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-mono text-xs text-gray-400">
-                {dernierTicket.id}
-              </span>
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                {dernierTicket.statut}
-              </span>
-              <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                {dernierTicket.priorite}
-              </span>
-            </div>
-
-            {/* Titre */}
-            <p className="text-sm font-medium text-gray-800 mb-3">
-              {dernierTicket.titre}
-            </p>
-
-            {/* Infos + bouton */}
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-gray-400">
-                {dernierTicket.categorie} · {dernierTicket.service} · {dernierTicket.date}
-              </p>
-              <button
-                onClick={() => navigate(`/employee/ticket/${dernierTicket.id}`)}
-                className="text-blue-600 text-xs font-medium hover:underline"
-              >
-                Voir →
-              </button>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Carte créer ticket */}
-        <div className="bg-blue-900 rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <p className="text-xs text-white/70 mb-2">
-              Vous avez un problème ?
-            </p>
-            <p className="text-base font-medium text-white leading-relaxed">
-              Créez un ticket et notre équipe IT vous aide rapidement
-            </p>
-          </div>
-          <button
-            onClick={() => navigate("/employee/create-ticket")}
-            className="mt-6 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
-          >
-            + Créer un ticket
-          </button>
-        </div>
-
+      <div>
+        <p className="text-sm text-gray-500 font-medium">{title}</p>
+        <p className="text-2xl font-bold text-gray-800">{value}</p>
       </div>
     </div>
   );
-}
+
+  if (loading) return <div className="p-10 text-center font-bold text-blue-600">Chargement de vos tickets...</div>;
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="mb-8 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Mon Espace Support</h1>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <StatCard title="Total Créés" value={stats.total} icon={Ticket} color="bg-blue-500" />
+        <StatCard title="Résolus" value={stats.resolved} icon={CheckCircle} color="bg-green-500" />
+        <StatCard title="Ouverts" value={stats.open} icon={Clock} color="bg-yellow-500" />
+        <StatCard title="Rejetés" value={stats.rejected} icon={XCircle} color="bg-red-500" />
+      </div>
+
+      {/* Table Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="font-semibold text-gray-700">Mes Demandes de Support</h2>
+          <input 
+            type="text" 
+            placeholder="Rechercher un ticket..." 
+            className="border rounded-md px-3 py-1 text-sm outline-none focus:ring-2 ring-blue-100 transition-all w-64"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-600 text-sm">
+              <tr>
+                <th className="p-4 font-medium">Titre</th>
+                <th className="p-4 font-medium">Catégorie</th>
+                <th className="p-4 font-medium text-center">Priorité</th>
+                <th className="p-4 font-medium">Créé le</th>
+                <th className="p-4 font-medium">Mis à jour</th>
+                <th className="p-4 font-medium">Solution</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredTickets.length > 0 ? (
+                filteredTickets.map((t) => (
+                  <tr key={t.id} className="hover:bg-blue-50/30 transition">
+                    <td className="p-4 text-sm font-semibold text-gray-800">{t.title}</td>
+                    <td className="p-4 text-sm text-gray-600 capitalize">{t.category}</td>
+                    <td className="p-4 text-center">
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                        t.priority === 'high' || t.priority === 'critical' 
+                        ? 'bg-red-100 text-red-600' 
+                        : 'bg-blue-100 text-blue-600'
+                      }`}>
+                        {t.priority}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-gray-500">{formatDate(t.created_at)}</td>
+                    <td className="p-4 text-sm text-gray-500">{formatDate(t.updated_at)}</td>
+                    <td className="p-4 text-sm text-gray-600 italic max-w-xs truncate">
+                      {t.solution || <span className="text-gray-300">En attente...</span>}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="p-10 text-center text-gray-400">Aucun ticket trouvé.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AccueilPage;

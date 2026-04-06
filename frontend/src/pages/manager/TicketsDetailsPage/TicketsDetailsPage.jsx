@@ -74,19 +74,21 @@ const TicketDetailPage = () => {
   };
 
   const calculateSLA = () => {
-    if (!ticket?.sla_due_date) return { pct: 0, depasse: false, text: "N/A" };
-    const now = Date.now();
-    const due = new Date(ticket.sla_due_date).getTime();
-    const remaining = due - now;
-    const depasse = remaining <= 0;
-    const hours = Math.floor(Math.abs(remaining) / 3600000);
-    const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
-    return { 
-      depasse, 
-      text: depasse ? `+${hours}h ${minutes}m` : `${hours}h ${minutes}m`,
-      pct: Math.min(100, Math.max(0, (remaining / (24 * 3600 * 1000)) * 100))
-    };
+  if (!ticket?.sla_date_limite) return { pct: 0, depasse: false, text: "N/A" };
+  const now = Date.now();
+  const due = new Date(ticket.sla_date_limite).getTime();
+  const debut = ticket.sla_date_debut ? new Date(ticket.sla_date_debut).getTime() : due - 24 * 3600000;
+  const remaining = due - now;
+  const totalMs = due - debut;
+  const depasse = remaining <= 0;
+  const hours = Math.floor(Math.abs(remaining) / 3600000);
+  const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
+  return {
+    depasse,
+    text: depasse ? `+${hours}h ${minutes}m` : `${hours}h ${minutes}m`,
+    pct: Math.min(100, Math.max(0, (remaining / totalMs) * 100)),
   };
+};
 
   if (loading) return <div className="p-20 text-center font-bold text-red-600">Chargement...</div>;
 

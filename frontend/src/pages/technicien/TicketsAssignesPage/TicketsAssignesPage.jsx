@@ -169,7 +169,7 @@ export default function TicketsAssignesPage() {
         categorie:   categoryFR[t.category]  ?? t.category,
         statut:      statusFR[t.status]      ?? t.status,
         createdAt:   t.created_at,
-        slaDueDate:  t.sla_due_date,
+       slaDueDate: t.sla_date_limite,
       }));
 
       setTicketsData(mapped);

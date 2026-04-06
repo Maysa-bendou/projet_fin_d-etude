@@ -27,12 +27,13 @@ const getTicketDetailTech = async (req, res) => {
             },
           },
         },
-        ticket_comments: {
-          orderBy: { created_at: "asc" },
-          include: {
-            users: { select: { id: true, name: true, surname: true, role: true } },
-          },
-        },
+       ticket_comments: {
+  orderBy: { created_at: "asc" },
+  include: {
+    users: { select: { id: true, name: true, surname: true, role: true } },
+    ticket_attachments: true,  // ← ajouter
+  },
+},
         ticket_attachments: {
           orderBy: { uploaded_at: "asc" },
           include: {
@@ -66,7 +67,8 @@ const getTicketDetailTech = async (req, res) => {
       priority: ticket.priority,
       impact: ticket.impact,
       urgency: ticket.urgency,
-      sla_due_date: ticket.sla_due_date,
+     sla_date_limite: ticket.sla_date_limite,
+sla_date_debut:  ticket.sla_date_debut,
       createdAt: ticket.created_at,
       updatedAt: ticket.updated_at,
       solution: ticket.solution,
@@ -79,14 +81,24 @@ const getTicketDetailTech = async (req, res) => {
       serviceId: ticket.services?.id ?? null,
       assignedBy,
       comments: ticket.ticket_comments.map((c) => ({
-        id: c.id,
-        message: c.comment,
-        comment_type: c.comment_type ?? "comment",
-        author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole: c.users?.role ?? "",
-        authorId: c.users?.id,
-        date: c.created_at,
-      })),
+  id: c.id,
+  message: c.comment,
+  comment_type: c.comment_type ?? "comment",
+  author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
+  authorRole: c.users?.role ?? "",
+  authorId: c.users?.id,
+  date: c.created_at,
+files: c.ticket_attachments.map(a => {
+  const relativePath = a.file_path
+    ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
+    : null;
+  return {
+    fileName: a.file_name,
+    filePath: relativePath,
+  };
+}),
+
+})),
       attachments: ticket.ticket_attachments.map((a) => ({
         id: a.id,
         fileName: a.file_name,
@@ -105,14 +117,51 @@ const getTicketDetailTech = async (req, res) => {
 const updateTicketStatus = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { status } = req.body;
+    const { status, technicianId } = req.body; // ← ajouter technicianId
+
     const valid = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
     if (!valid.includes(status)) return res.status(400).json({ error: "Statut invalide" });
-    const updated = await prisma.tickets.update({
+
+    const STATUTS_FERMES = ["resolved", "closed", "rejected"];
+    let sla_statut = undefined;
+
+    if (STATUTS_FERMES.includes(status)) {
+      const ticketActuel = await prisma.tickets.findUnique({
+        where: { id },
+        select: { sla_date_limite: true },
+      });
+      const now = new Date();
+      sla_statut = ticketActuel.sla_date_limite && now <= ticketActuel.sla_date_limite
+        ? "respecte" : "depasse";
+    }
+
+    const STATUS_FR = {
+      open: "Ouvert", in_progress: "En cours", pending: "En attente",
+      pending_supplier: "Att. fournisseur", resolved: "Résolu",
+      closed: "Fermé", rejected: "Rejeté",
+    };
+
+    const now = new Date();
+
+    await prisma.tickets.update({
       where: { id },
-      data: { status, updated_at: new Date() },
+      data: { status, ...(sla_statut && { sla_statut }), updated_at: now },
     });
-    res.json({ success: true, status: updated.status });
+
+    // ← ajouter ce bloc
+    if (technicianId) {
+      await prisma.ticket_comments.create({
+        data: {
+          ticket_id: id,
+          user_id: parseInt(technicianId),
+          comment: `Statut changé en : ${STATUS_FR[status] ?? status}`,
+          comment_type: "status",
+          created_at: now,
+        },
+      });
+    }
+
+    res.json({ success: true, status, sla_statut });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -125,7 +174,6 @@ const sendSolution = async (req, res) => {
     const id = parseInt(req.params.id);
     const { message, technicianId, type } = req.body;
 
-    // type is either "solution" or "info"
     const comment = await prisma.ticket_comments.create({
       data: {
         ticket_id: id,
@@ -136,39 +184,46 @@ const sendSolution = async (req, res) => {
       },
     });
 
-    if (type === "solution") {
-      await prisma.tickets.update({
-        where: { id },
-        data: {
-          solution: message,
-          // status NOT changed automatically — technician does it manually
-          updated_at: new Date(),
-        },
-      });
-    }
-
-    if (type === "info") {
-      // status NOT changed automatically — technician does it manually
+   if (type === "solution") {
+  await prisma.tickets.update({
+    where: { id },
+    data: { 
+      solution: message,
+      confirmation_requested: false,
+      is_resolved_confirmed: false,
+      updated_at: new Date() 
+    },
+  });
+}else {
       await prisma.tickets.update({
         where: { id },
         data: { updated_at: new Date() },
       });
     }
 
-    const files = req.files ?? [];
-    if (files.length > 0) {
-      await prisma.ticket_attachments.createMany({
-        data: files.map((f) => ({
-          ticket_id: id,
-          file_name: f.originalname,
-          file_path: f.path,
-          uploaded_by: parseInt(technicianId),
-          uploaded_at: new Date(),
-        })),
-      });
-    }
+   const files = req.files ?? [];
+if (files.length > 0) {
+  await prisma.ticket_attachments.createMany({
+    data: files.map((f) => ({
+      ticket_id: id,
+      comment_id: comment.id,  // ← lier au commentaire
+      file_name: f.originalname,
+      file_path: f.path,
+      uploaded_by: parseInt(technicianId),
+      uploaded_at: new Date(),
+    })),
+  });
+}
 
-    res.json({ success: true, commentId: comment.id, filesUploaded: files.length });
+    res.json({
+      success: true,
+      commentId: comment.id,
+      filesUploaded: files.length,
+      files: files.map(f => ({
+        fileName: f.originalname,
+        filePath: f.path,
+      })),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors de l'envoi" });
@@ -214,16 +269,21 @@ const closeTicketManually = async (req, res) => {
     const id = parseInt(req.params.id);
     const { technicianId, closingNote } = req.body;
 
+    const ticketActuel = await prisma.tickets.findUnique({
+      where: { id },
+      select: { sla_date_limite: true },
+    });
+    const now = new Date();
+    const sla_statut = ticketActuel.sla_date_limite && now <= ticketActuel.sla_date_limite
+      ? "respecte"
+      : "depasse";
+
     await prisma.tickets.update({
       where: { id },
-      data: {
-        status: "closed",
-        closing_note: closingNote ?? null,
-        updated_at: new Date(),
-      },
+      data: { status: "closed", closing_note: closingNote ?? null, sla_statut, updated_at: now },
     });
 
-    await prisma.ticket_comments.create({
+    const comment = await prisma.ticket_comments.create({
       data: {
         ticket_id: id,
         user_id: parseInt(technicianId),
@@ -231,17 +291,31 @@ const closeTicketManually = async (req, res) => {
           ? `Ticket fermé manuellement. Note : ${closingNote}`
           : "Ticket fermé manuellement par le technicien.",
         comment_type: "comment",
-        created_at: new Date(),
+        created_at: now,
       },
     });
 
-    res.json({ success: true });
+    // ── Sauvegarder les pièces jointes ──────────────────
+    const files = req.files ?? [];
+    if (files.length > 0) {
+      await prisma.ticket_attachments.createMany({
+        data: files.map((f) => ({
+          ticket_id:   id,
+          comment_id:  comment.id,
+          file_name:   f.originalname,
+          file_path:   f.path,
+          uploaded_by: parseInt(technicianId),
+          uploaded_at: now,
+        })),
+      });
+    }
+
+    res.json({ success: true, sla_statut });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
-
 // ── PUT rediriger ──────────────────────────────────────────────────────────
 const redirectTicket = async (req, res) => {
   try {
@@ -342,11 +416,12 @@ const getAssignedTickets = async (req, res) => {
   try {
     const techId = parseInt(req.params.techId);
     const tickets = await prisma.tickets.findMany({
-      where: { assigned_to: techId, status: { notIn: ["closed"] } },
+     where: { assigned_to: techId },
       select: {
         id: true, title: true, description: true,
         priority: true, category: true, status: true,
-        created_at: true, sla_due_date: true,
+        created_at: true, sla_date_limite: true,
+sla_date_debut:  true,
         users_tickets_created_byTousers: { select: { name: true, surname: true } },
       },
       orderBy: { created_at: "desc" },
@@ -359,7 +434,8 @@ const getAssignedTickets = async (req, res) => {
       category:      t.category,
       status:        t.status,
       created_at:    t.created_at,
-      sla_due_date:  t.sla_due_date,
+    sla_date_limite: t.sla_date_limite,
+sla_date_debut:  t.sla_date_debut,
       employee_name: `${t.users_tickets_created_byTousers?.name ?? ""} ${t.users_tickets_created_byTousers?.surname ?? ""}`.trim(),
     })));
   } catch (err) {

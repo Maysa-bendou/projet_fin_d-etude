@@ -62,24 +62,21 @@ const TicketDetailPage = () => {
 
   // --- SLA DYNAMIC CALCULATION ---
   const calculateSLA = () => {
-    if (!t.sla_due_date) return { pct: 0, depasse: false, text: "N/A" };
-
-    const now = Date.now();
-    const due = new Date(t.sla_due_date).getTime();
-    const total = 24 * 3600 * 1000; 
-    const remaining = due - now;
-    const depasse = remaining <= 0;
-    
-    const pct = Math.min(100, Math.max(0, (remaining / total) * 100));
-    const hours = Math.floor(Math.abs(remaining) / 3600000);
-    const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
-
-    let text = depasse 
-      ? `+${hours}h ${minutes}m dépassé` 
-      : `${hours}h ${minutes}m restantes`;
-    
-    return { pct, depasse, text };
+  if (!t.sla_date_limite) return { pct: 0, depasse: false, text: "N/A" };
+  const now = Date.now();
+  const due = new Date(t.sla_date_limite).getTime();
+  const debut = t.sla_date_debut ? new Date(t.sla_date_debut).getTime() : due - 24 * 3600000;
+  const remaining = due - now;
+  const totalMs = due - debut;
+  const depasse = remaining <= 0;
+  const hours = Math.floor(Math.abs(remaining) / 3600000);
+  const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
+  return {
+    depasse,
+    text: depasse ? `+${hours}h ${minutes}m dépassé` : `${hours}h ${minutes}m restantes`,
+    pct: Math.min(100, Math.max(0, (remaining / totalMs) * 100)),
   };
+};
 
   const sla = calculateSLA();
 
@@ -178,7 +175,7 @@ const TicketDetailPage = () => {
                     {sla.text}
                   </p>
                   <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-tighter">
-                    Limite : {new Date(t.sla_due_date).toLocaleString()}
+                 Limite : {t.sla_date_limite ? new Date(t.sla_date_limite).toLocaleString("fr-DZ") : "N/A"}
                   </p>
                 </div>
               </div>

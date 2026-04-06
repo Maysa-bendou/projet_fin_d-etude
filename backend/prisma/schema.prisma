@@ -40,6 +40,8 @@ model tickets {
   sla_date_limite                  DateTime?                    @db.Timestamptz(6)
   sla_statut                       String?                      @default("en_cours")
   solution_date_resolved           DateTime?                    @db.Timestamptz(6)
+  confirmation_requested           Boolean?                     @default(false)
+  closing_note                     String?
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]
   ticket_comments                  ticket_comments[]
@@ -95,25 +97,28 @@ model ticket_assignments_history {
 }
 
 model ticket_attachments {
-  id          Int       @id @default(autoincrement())
-  ticket_id   Int?
-  file_name   String?   @db.VarChar(255)
-  file_path   String?
-  uploaded_by Int?
-  uploaded_at DateTime? @default(now()) @db.Timestamp(6)
-  tickets     tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users       users?    @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id              Int              @id @default(autoincrement())
+  ticket_id       Int?
+  file_name       String?          @db.VarChar(255)
+  file_path       String?
+  uploaded_by     Int?
+  uploaded_at     DateTime?        @default(now()) @db.Timestamp(6)
+  comment_id      Int?
+  ticket_comments ticket_comments? @relation(fields: [comment_id], references: [id], onUpdate: NoAction)
+  tickets         tickets?         @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users?           @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model ticket_comments {
-  id           Int       @id @default(autoincrement())
-  ticket_id    Int?
-  user_id      Int?
-  comment      String
-  created_at   DateTime? @default(now()) @db.Timestamp(6)
-  comment_type String?   @default("comment") @db.VarChar(50)
-  tickets      tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users        users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                 Int                  @id @default(autoincrement())
+  ticket_id          Int?
+  user_id            Int?
+  comment            String
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  comment_type       String?              @default("comment") @db.VarChar(50)
+  ticket_attachments ticket_attachments[]
+  tickets            tickets?             @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              users?               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model departments {
@@ -123,6 +128,12 @@ model departments {
   created_at  DateTime? @default(now()) @db.Timestamp(6)
   updated_at  DateTime? @default(now()) @db.Timestamp(6)
   users       users[]
+}
+
+model sla_config {
+  id             Int    @id @default(autoincrement())
+  priority       String @unique @db.VarChar(50)
+  duration_hours Int
 }
 
 enum category_enum {

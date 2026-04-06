@@ -47,3 +47,15 @@ export const ACT_LABEL = {
   comment:          "Note ajoutée",
 };
 
+export const ACT_META = {
+  assigned:         { dot: "bg-blue-400",   label: "Ticket assigné",       icon: "user-check"   },
+  solution:         { dot: "bg-blue-500",   label: "Solution",             icon: "clock"        },
+  info:             { dot: "bg-amber-500",  label: "Demande d'info",       icon: "alert-circle" },
+  confirm:          { dot: "bg-green-500",  label: "Confirmation",         icon: "check-circle" },
+  emp_reply:        { dot: "bg-gray-400",   label: "Réponse employé",      icon: "trending-up"  },
+  confirmed:        { dot: "bg-green-600",  label: "Résolution confirmée", icon: "check-circle" },
+  rejected_confirm: { dot: "bg-red-500",    label: "Solution refusée",     icon: "x-circle"     },
+  redirect:         { dot: "bg-pink-500",   label: "Redirection",          icon: "corner-up-right" },
+  status:           { dot: "bg-purple-400", label: "Changement statut",    icon: "calendar"     },
+  comment:          { dot: "bg-gray-300",   label: "Note interne",         icon: "align-left"   },
+};

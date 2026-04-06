@@ -8,12 +8,13 @@ const {
   getTicketDetailTech,
   updateTicketStatus,
   sendSolution,
-  confirmResolution,
+  requestConfirmation,
+  closeTicketManually,
   redirectTicket,
   getServices,
   getAllTechniciens,
   getAssignedTickets,
-  getEnums,  
+  getEnums,
 } = require("../controllers/technicien.controller");
 
 const storage = multer.diskStorage({
@@ -26,18 +27,15 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.get("/tickets/:id",              getTicketDetailTech);
-router.put("/tickets/:id/status",       updateTicketStatus);
-router.post("/tickets/:id/send",        upload.array("files", 10), sendSolution);
-router.put("/tickets/:id/confirm",      confirmResolution);       // ← nouveau
-router.put("/tickets/:id/redirect",     redirectTicket);
-router.get("/services",                 getServices);
-router.get("/techniciens",              getAllTechniciens);
-router.get("/enums", getEnums);  
-router.get("/assigned/:techId",         getAssignedTickets);
-
-
-// routes pour enum
-router.get("/enums", getEnums);
+router.get("/tickets/:id",                  getTicketDetailTech);
+router.put("/tickets/:id/status",           updateTicketStatus);
+router.post("/tickets/:id/send",            upload.array("files", 10), sendSolution);
+router.put("/tickets/:id/request-confirm",  requestConfirmation);  // sends confirmation card to employee
+router.put("/tickets/:id/close-manual",     closeTicketManually);  // manual close by technician
+router.put("/tickets/:id/redirect",         redirectTicket);
+router.get("/services",                     getServices);
+router.get("/techniciens",                  getAllTechniciens);
+router.get("/assigned/:techId",             getAssignedTickets);
+router.get("/enums",                        getEnums);
 
 module.exports = router;

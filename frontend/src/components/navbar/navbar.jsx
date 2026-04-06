@@ -10,15 +10,6 @@ export default function Navbar() {
       shadow-sm h-16 shrink-0
     ">
 
-      {/* Barre de recherche */}
-      <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2 w-64">
-        <FaSearch size={14} className="text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search..."
-          className="bg-transparent text-sm text-gray-600 outline-none w-full"
-        />
-      </div>
 
       {/* Cloche notification */}
       <div className="relative cursor-pointer">

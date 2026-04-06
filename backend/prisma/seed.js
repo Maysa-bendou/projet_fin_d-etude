@@ -28,7 +28,12 @@ async function main() {
   const history = JSON.parse(fs.readFileSync("prisma/seed/ticket_assignments_history.json", "utf-8"));
   await prisma.ticket_assignments_history.createMany({ data: history });
 
+  // SLA Config
+  const slaConfig = JSON.parse(fs.readFileSync("prisma/seed/sla_config.json", "utf-8"));
+  await prisma.sla_config.createMany({ data: slaConfig, skipDuplicates: true });
+
   console.log("Database seeded successfully!");
+
 }
 
 main()

@@ -1,5 +1,4 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../prismaClient");
 
 // ── GET détail ticket technicien ───────────────────────────────────────────
 const getTicketDetailTech = async (req, res) => {
@@ -28,12 +27,13 @@ const getTicketDetailTech = async (req, res) => {
             },
           },
         },
-        ticket_comments: {
-          orderBy: { created_at: "asc" },
-          include: {
-            users: { select: { id: true, name: true, surname: true, role: true } },
-          },
-        },
+       ticket_comments: {
+  orderBy: { created_at: "asc" },
+  include: {
+    users: { select: { id: true, name: true, surname: true, role: true } },
+    ticket_attachments: true,  // ← ajouter
+  },
+},
         ticket_attachments: {
           orderBy: { uploaded_at: "asc" },
           include: {
@@ -43,7 +43,7 @@ const getTicketDetailTech = async (req, res) => {
       },
     });
 
-    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    if (!ticket) return res.status(404).json({ error: "Ticket non trouvé" });
 
     const firstAssignment = ticket.ticket_assignments_history[0];
     let assignedBy = { label: "Auto / Système", type: "auto" };
@@ -67,24 +67,38 @@ const getTicketDetailTech = async (req, res) => {
       priority: ticket.priority,
       impact: ticket.impact,
       urgency: ticket.urgency,
-      sla_due_date: ticket.sla_due_date,
+     sla_date_limite: ticket.sla_date_limite,
+sla_date_debut:  ticket.sla_date_debut,
       createdAt: ticket.created_at,
       updatedAt: ticket.updated_at,
       solution: ticket.solution,
+      closing_note: ticket.closing_note,
       is_resolved_confirmed: ticket.is_resolved_confirmed,
+      confirmation_requested: ticket.confirmation_requested,
       employee: ticket.users_tickets_created_byTousers,
       technician: ticket.users_tickets_assigned_toTousers,
       service: ticket.services?.name ?? null,
       serviceId: ticket.services?.id ?? null,
       assignedBy,
       comments: ticket.ticket_comments.map((c) => ({
-        id: c.id,
-        message: c.comment,
-        author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole: c.users?.role ?? "",
-        authorId: c.users?.id,
-        date: c.created_at,
-      })),
+  id: c.id,
+  message: c.comment,
+  comment_type: c.comment_type ?? "comment",
+  author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
+  authorRole: c.users?.role ?? "",
+  authorId: c.users?.id,
+  date: c.created_at,
+files: c.ticket_attachments.map(a => {
+  const relativePath = a.file_path
+    ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
+    : null;
+  return {
+    fileName: a.file_name,
+    filePath: relativePath,
+  };
+}),
+
+})),
       attachments: ticket.ticket_attachments.map((a) => ({
         id: a.id,
         fileName: a.file_name,
@@ -99,18 +113,55 @@ const getTicketDetailTech = async (req, res) => {
   }
 };
 
-// ── PUT statut ─────────────────────────────────────────────────────────────
+// ── PUT statut (manuel uniquement) ────────────────────────────────────────
 const updateTicketStatus = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { status } = req.body;
+    const { status, technicianId } = req.body; // ← ajouter technicianId
+
     const valid = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
     if (!valid.includes(status)) return res.status(400).json({ error: "Statut invalide" });
-    const updated = await prisma.tickets.update({
+
+    const STATUTS_FERMES = ["resolved", "closed", "rejected"];
+    let sla_statut = undefined;
+
+    if (STATUTS_FERMES.includes(status)) {
+      const ticketActuel = await prisma.tickets.findUnique({
+        where: { id },
+        select: { sla_date_limite: true },
+      });
+      const now = new Date();
+      sla_statut = ticketActuel.sla_date_limite && now <= ticketActuel.sla_date_limite
+        ? "respecte" : "depasse";
+    }
+
+    const STATUS_FR = {
+      open: "Ouvert", in_progress: "En cours", pending: "En attente",
+      pending_supplier: "Att. fournisseur", resolved: "Résolu",
+      closed: "Fermé", rejected: "Rejeté",
+    };
+
+    const now = new Date();
+
+    await prisma.tickets.update({
       where: { id },
-      data: { status, updated_at: new Date() },
+      data: { status, ...(sla_statut && { sla_statut }), updated_at: now },
     });
-    res.json({ success: true, status: updated.status });
+
+    // ← ajouter ce bloc
+    if (technicianId) {
+      await prisma.ticket_comments.create({
+        data: {
+          ticket_id: id,
+          user_id: parseInt(technicianId),
+          comment: `Statut changé en : ${STATUS_FR[status] ?? status}`,
+          comment_type: "status",
+          created_at: now,
+        },
+      });
+    }
+
+    res.json({ success: true, status, sla_statut });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -128,51 +179,81 @@ const sendSolution = async (req, res) => {
         ticket_id: id,
         user_id: parseInt(technicianId),
         comment: message,
+        comment_type: type === "solution" ? "solution" : "info",
         created_at: new Date(),
       },
     });
 
-    if (type === "solution") {
+   if (type === "solution") {
+  await prisma.tickets.update({
+    where: { id },
+    data: { 
+      solution: message,
+      confirmation_requested: false,
+      is_resolved_confirmed: false,
+      updated_at: new Date() 
+    },
+  });
+}else {
       await prisma.tickets.update({
         where: { id },
-        data: { solution: message, status: "resolved", updated_at: new Date() },
-      });
-    }
-    if (type === "info") {
-      await prisma.tickets.update({
-        where: { id },
-        data: { status: "pending", updated_at: new Date() },
+        data: { updated_at: new Date() },
       });
     }
 
-    const files = req.files ?? [];
-    if (files.length > 0) {
-      await prisma.ticket_attachments.createMany({
-        data: files.map((f) => ({
-          ticket_id: id,
-          file_name: f.originalname,
-          file_path: f.path,
-          uploaded_by: parseInt(technicianId),
-          uploaded_at: new Date(),
-        })),
-      });
-    }
+   const files = req.files ?? [];
+if (files.length > 0) {
+  await prisma.ticket_attachments.createMany({
+    data: files.map((f) => ({
+      ticket_id: id,
+      comment_id: comment.id,  // ← lier au commentaire
+      file_name: f.originalname,
+      file_path: f.path,
+      uploaded_by: parseInt(technicianId),
+      uploaded_at: new Date(),
+    })),
+  });
+}
 
-    res.json({ success: true, commentId: comment.id, filesUploaded: files.length });
+    res.json({
+      success: true,
+      commentId: comment.id,
+      filesUploaded: files.length,
+      files: files.map(f => ({
+        fileName: f.originalname,
+        filePath: f.path,
+      })),
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors de l'envoi" });
   }
 };
 
-// ── PUT confirmer résolution ───────────────────────────────────────────────
-const confirmResolution = async (req, res) => {
+// ── PUT envoyer demande de confirmation à l'employé ────────────────────────
+// This only marks that the technician requested confirmation.
+// It does NOT close the ticket — closing is always manual.
+const requestConfirmation = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    const { technicianId } = req.body;
+
     await prisma.tickets.update({
       where: { id },
-      data: { is_resolved_confirmed: true, status: "closed", updated_at: new Date() },
+      data: { confirmation_requested: true, updated_at: new Date() },
     });
+
+    // Log it as a comment in the timeline
+    await prisma.ticket_comments.create({
+      data: {
+        ticket_id: id,
+        user_id: parseInt(technicianId),
+        comment: "Demande de confirmation de résolution envoyée à l'employé.",
+        comment_type: "confirm",
+        created_at: new Date(),
+      },
+    });
+
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -180,6 +261,61 @@ const confirmResolution = async (req, res) => {
   }
 };
 
+// ── PUT fermer le ticket manuellement (technicien) ─────────────────────────
+// Called when technician closes manually (e.g. resolved by phone).
+// closing_note is required to explain why it's closed without employee confirmation.
+const closeTicketManually = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { technicianId, closingNote } = req.body;
+
+    const ticketActuel = await prisma.tickets.findUnique({
+      where: { id },
+      select: { sla_date_limite: true },
+    });
+    const now = new Date();
+    const sla_statut = ticketActuel.sla_date_limite && now <= ticketActuel.sla_date_limite
+      ? "respecte"
+      : "depasse";
+
+    await prisma.tickets.update({
+      where: { id },
+      data: { status: "closed", closing_note: closingNote ?? null, sla_statut, updated_at: now },
+    });
+
+    const comment = await prisma.ticket_comments.create({
+      data: {
+        ticket_id: id,
+        user_id: parseInt(technicianId),
+        comment: closingNote
+          ? `Ticket fermé manuellement. Note : ${closingNote}`
+          : "Ticket fermé manuellement par le technicien.",
+        comment_type: "comment",
+        created_at: now,
+      },
+    });
+
+    // ── Sauvegarder les pièces jointes ──────────────────
+    const files = req.files ?? [];
+    if (files.length > 0) {
+      await prisma.ticket_attachments.createMany({
+        data: files.map((f) => ({
+          ticket_id:   id,
+          comment_id:  comment.id,
+          file_name:   f.originalname,
+          file_path:   f.path,
+          uploaded_by: parseInt(technicianId),
+          uploaded_at: now,
+        })),
+      });
+    }
+
+    res.json({ success: true, sla_statut });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
 // ── PUT rediriger ──────────────────────────────────────────────────────────
 const redirectTicket = async (req, res) => {
   try {
@@ -197,7 +333,6 @@ const redirectTicket = async (req, res) => {
         ...(newTechId    && { assigned_to: parseInt(newTechId) }),
         ...(newServiceId && { service_id: parseInt(newServiceId) }),
         ...(newCategory  && { category: newCategory }),
-        status: "open",
         updated_at: new Date(),
       },
     });
@@ -216,16 +351,31 @@ const redirectTicket = async (req, res) => {
       },
     });
 
-    if (note && assignedById) {
-      await prisma.ticket_comments.create({
-        data: {
-          ticket_id:  id,
-          user_id:    parseInt(assignedById),
-          comment:    `[REDIRECTION] ${note}`,
-          created_at: new Date(),
-        },
-      });
-    }
+    // Always save the redirect as a comment with type "redirect"
+    const tech = newTechId ? await prisma.users.findUnique({
+      where: { id: parseInt(newTechId) },
+      select: { name: true, surname: true },
+    }) : null;
+
+    const svc = newServiceId ? await prisma.services.findUnique({
+      where: { id: parseInt(newServiceId) },
+      select: { name: true },
+    }) : null;
+
+    let redirectMsg = `Redirigé vers ${tech ? `${tech.name} ${tech.surname}` : "N/A"}`;
+    if (svc) redirectMsg += ` / service ${svc.name}`;
+    if (newCategory) redirectMsg += ` / catégorie ${newCategory}`;
+    if (note) redirectMsg += `\nRaison : ${note}`;
+
+    await prisma.ticket_comments.create({
+      data: {
+        ticket_id:  id,
+        user_id:    parseInt(assignedById),
+        comment:    redirectMsg,
+        comment_type: "redirect",
+        created_at: new Date(),
+      },
+    });
 
     res.json({ success: true });
   } catch (err) {
@@ -265,29 +415,18 @@ const getAllTechniciens = async (req, res) => {
 const getAssignedTickets = async (req, res) => {
   try {
     const techId = parseInt(req.params.techId);
-
     const tickets = await prisma.tickets.findMany({
-      where: {
-        assigned_to: techId,
-        status: { notIn: ["closed"] },
-      },
+     where: { assigned_to: techId },
       select: {
-        id: true,
-        title: true,
-        description: true,
-        priority: true,
-        category: true,
-        status: true,
-        created_at: true,
-        sla_due_date: true,
-        users_tickets_created_byTousers: {
-          select: { name: true, surname: true },
-        },
+        id: true, title: true, description: true,
+        priority: true, category: true, status: true,
+        created_at: true, sla_date_limite: true,
+sla_date_debut:  true,
+        users_tickets_created_byTousers: { select: { name: true, surname: true } },
       },
       orderBy: { created_at: "desc" },
     });
-
-    const formatted = tickets.map(t => ({
+    res.json(tickets.map(t => ({
       id:            t.id,
       title:         t.title,
       description:   t.description,
@@ -295,39 +434,24 @@ const getAssignedTickets = async (req, res) => {
       category:      t.category,
       status:        t.status,
       created_at:    t.created_at,
-      sla_due_date:  t.sla_due_date,
+    sla_date_limite: t.sla_date_limite,
+sla_date_debut:  t.sla_date_debut,
       employee_name: `${t.users_tickets_created_byTousers?.name ?? ""} ${t.users_tickets_created_byTousers?.surname ?? ""}`.trim(),
-    }));
-
-    res.json(formatted);
+    })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
 
-// ── GET enums depuis PostgreSQL ────────────────────────────────────────────
+// ── GET enums ──────────────────────────────────────────────────────────────
 const getEnums = async (req, res) => {
   try {
-    const statuts = await prisma.$queryRaw`
-      SELECT enumlabel FROM pg_enum
-      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
-      WHERE pg_type.typname = 'ticket_status_enum'
-      ORDER BY enumsortorder;
-    `;
-    const priorites = await prisma.$queryRaw`
-      SELECT enumlabel FROM pg_enum
-      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
-      WHERE pg_type.typname = 'priority_enum'
-      ORDER BY enumsortorder;
-    `;
-    const categories = await prisma.$queryRaw`
-      SELECT enumlabel FROM pg_enum
-      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
-      WHERE pg_type.typname = 'category_enum'
-      ORDER BY enumsortorder;
-    `;
-
+    const [statuts, priorites, categories] = await Promise.all([
+      prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'ticket_status_enum' ORDER BY enumsortorder`,
+      prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'priority_enum' ORDER BY enumsortorder`,
+      prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'category_enum' ORDER BY enumsortorder`,
+    ]);
     res.json({
       statuts:    statuts.map(r => r.enumlabel),
       priorites:  priorites.map(r => r.enumlabel),
@@ -339,12 +463,12 @@ const getEnums = async (req, res) => {
   }
 };
 
-// ── Exports ────────────────────────────────────────────────────────────────
 module.exports = {
   getTicketDetailTech,
   updateTicketStatus,
   sendSolution,
-  confirmResolution,
+  requestConfirmation,
+  closeTicketManually,
   redirectTicket,
   getServices,
   getAllTechniciens,

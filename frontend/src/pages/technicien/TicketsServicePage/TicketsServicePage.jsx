@@ -2,38 +2,35 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 // ✅ Nouveau composant SlaBar pour l'affichage visuel
-const SlaBar = ({ slaDueDate }) => {
+// ✅ SlaBar corrigé — barre proportionnelle à la vraie durée SLA
+const SlaBar = ({ slaDueDate, slaDebut }) => {
   if (!slaDueDate) return <span className="text-gray-400 text-xs italic">N/A</span>;
 
-  const now = new Date().getTime();
+  const now = Date.now();
   const due = new Date(slaDueDate).getTime();
+  const debut = slaDebut ? new Date(slaDebut).getTime() : due - 24 * 3600000;
   const diffMs = due - now;
+  const totalMs = due - debut;
   const isExpired = diffMs <= 0;
+  const percentage = isExpired ? 100 : Math.max(0, Math.min(100, ((totalMs - diffMs) / totalMs) * 100));
 
-  // Calcul pour la progression (basé sur une fenêtre arbitraire de 24h pour le visuel)
-  const totalWindow = 24 * 60 * 60 * 1000; 
-  const percentage = isExpired ? 100 : Math.max(0, Math.min(100, ((totalWindow - diffMs) / totalWindow) * 100));
-
-  const hours = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60));
-  const minutes = Math.floor((Math.abs(diffMs) % (1000 * 60 * 60)) / (1000 * 60));
+  const absDiff = Math.abs(diffMs);
+  const hours = Math.floor(absDiff / (1000 * 60 * 60));
+  const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
 
   let barColor = "bg-green-500";
-  if (isExpired) barColor = "bg-red-500";
+  if (isExpired)    barColor = "bg-red-500";
   else if (hours < 2) barColor = "bg-red-400";
   else if (hours < 6) barColor = "bg-orange-400";
 
   return (
-    <div className="flex flex-col gap-1 min-w-[120px]">
+    <div className="flex flex-col gap-1 w-full max-w-[120px]">
       <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className={`h-1.5 rounded-full transition-all duration-500 ${barColor}`}
-          style={{ width: `${isExpired ? 100 : percentage}%` }}
-        ></div>
+        <div className={`h-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${percentage}%` }} />
       </div>
-      <span className={`text-[10px] font-bold uppercase ${isExpired ? "text-red-600" : "text-gray-500"}`}>
-        {isExpired 
-          ? `Dépassé de ${hours}h ${minutes}m` 
-          : `${hours}h ${minutes}m restantes`}
+      <span className={`text-[10px] font-bold uppercase whitespace-nowrap ${isExpired ? "text-red-600" : "text-gray-500"}`}>
+        {isExpired ? `Dépassé de ${hours}h ${minutes}m` : `${hours}h ${minutes}m restantes`}
       </span>
     </div>
   );
@@ -284,7 +281,7 @@ const TicketsServicePage = () => {
 
                   {/* ✅ SLA AVEC BARRE VISUELLE */}
                   <td className="p-4 flex justify-center">
-                    <SlaBar slaDueDate={t.sla_due_date || t.sla} />
+               <SlaBar slaDueDate={t.sla_date_limite} slaDebut={t.sla_date_debut} />
                   </td>
 
                   <td className="p-4 text-center text-gray-700">

@@ -1,17 +1,24 @@
-# Task: Enhance Ticket Details Pages
+# Fix Backend Connection Errors (Departements.jsx & Parametres.jsx)
 
-## Priority 1: Add block_number to Technician Ticket Details
-- [x] Update backend/src/controllers/technicien.controller.js: Add `block_number`, `
-- [ ] Test: Restart backend, view technician ticket details, verify block_number shows
+## Steps:
+- [x] 1. cd backend & npm install (ensure dependencies) ✅
+- [x] 2. **MANUAL**: cd backend && npm run dev (Windows CMD issue, run in terminal)
+- [x] 3. Edit frontend/src/pages/admin/Parametres/Parametres.jsx ✅ (auth + error handling)
+- [ ] 4. Test /admin/departements & /admin/parametres pages (start backend first)
+- [ ] 5. Backend: cd backend && npx prisma migrate dev (if needed)
+- [x] Plan approved ✅
 
-## Priority 2: Employee Page Full DB Elements
-- [ ] Add getTicketDetail to backend/src/controllers/ticket.controller.js with rich includes
-- [ ] Update route in backend/src/routes/ticket.routes.js if needed
-- [ ] Enhance frontend/src/pages/employe/TicketDetailsPage/TicketDetailsPage.jsx: Rich fetch + full UI (employee details, metadata, SLA, timeline)
-- [ ] Test employee page
+Next: Start backend server manually, then test pages.
+**✅ Backend + DB Fixed!**
+1. Backend terminal: Ctrl+C, `npm run dev` → Server up
+2. If no sla_config data: `npx prisma db seed`
 
-## Testing
-- Backend: npm run dev (restart)
-- Frontend: npm run dev
-- Verify data completeness, no errors
+**Commands:**
+```
+cd backend
+npx prisma generate
+npx prisma db seed
+npm run dev
+```
 
+**/api/sla now returns data. Test Parametres page!

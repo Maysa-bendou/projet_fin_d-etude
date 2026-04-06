@@ -43,7 +43,8 @@ const chefRoutes = require('./routes/chef.routes');
 app.use('/api', chefRoutes);
 
 
-
+const accueilRoutes = require('./routes/accueil.routes');
+app.use('/api/accueil', accueilRoutes);
 
 
 const PORT = 3001;

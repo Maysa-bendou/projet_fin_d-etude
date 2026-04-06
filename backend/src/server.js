@@ -43,11 +43,7 @@ const chefRoutes = require('./routes/chef.routes');
 app.use('/api', chefRoutes);
 
 
-const path = require("path");
 
-
-// Après app.use(express.json()) :
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 
 const PORT = 3001;

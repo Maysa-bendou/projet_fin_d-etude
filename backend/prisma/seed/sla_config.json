@@ -1,0 +1,18 @@
+[
+  {
+    "priority": "low",
+    "duration_hours": 72
+  },
+  {
+    "priority": "medium",
+    "duration_hours": 48
+  },
+  {
+    "priority": "high",
+    "duration_hours": 24
+  },
+  {
+    "priority": "critical",
+    "duration_hours": 4
+  }
+]

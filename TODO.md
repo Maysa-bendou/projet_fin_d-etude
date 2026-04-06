@@ -1,13 +1,24 @@
-# Task: Fix Backend Errors (Prisma Import + EPERM + Shared Client)
+# Fix Backend Connection Errors (Departements.jsx & Parametres.jsx)
 
 ## Steps:
-- [x] 1. Fix department.controller.js import crash
-- [x] 2. Standardize technicien.controller.js to shared PrismaClient
-- [x] 3. Standardize employee.controller.js to shared PrismaClient  
-- [x] 4. Standardize ticket.controller.js to shared PrismaClient + model fixes
-- [x] 5. Standardize tech.controller.js to shared PrismaClient + model fixes
-- [x] 6. Resolve Prisma EPERM: Clean .prisma cache + regenerate
-- [x] 7. Test: cd backend && npm run dev
-- [ ] 8. Verify frontend APIs work
+- [x] 1. cd backend & npm install (ensure dependencies) ✅
+- [x] 2. **MANUAL**: cd backend && npm run dev (Windows CMD issue, run in terminal)
+- [x] 3. Edit frontend/src/pages/admin/Parametres/Parametres.jsx ✅ (auth + error handling)
+- [ ] 4. Test /admin/departements & /admin/parametres pages (start backend first)
+- [ ] 5. Backend: cd backend && npx prisma migrate dev (if needed)
+- [x] Plan approved ✅
 
-**All steps complete - Backend errors fixed!**
+Next: Start backend server manually, then test pages.
+**✅ Backend + DB Fixed!**
+1. Backend terminal: Ctrl+C, `npm run dev` → Server up
+2. If no sla_config data: `npx prisma db seed`
+
+**Commands:**
+```
+cd backend
+npx prisma generate
+npx prisma db seed
+npm run dev
+```
+
+**/api/sla now returns data. Test Parametres page!

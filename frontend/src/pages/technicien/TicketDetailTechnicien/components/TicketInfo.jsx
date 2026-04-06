@@ -1,28 +1,25 @@
 import { 
   User, Mail, Building2, Briefcase, Phone, DoorOpen, Hash, 
-  Tag, Layers, AlertTriangle, FileText, Calendar, Clock 
+  Tag, Layers, AlertTriangle, FileText, Calendar, Clock ,
+   Lock, Circle
 } from "lucide-react";
 import UserTooltip from "./utils/UserTooltip";
 import { PRIORITY_CLASS, PRIORITY_FR, IMPACT_FR, URGENCY_FR, CATEGORY_FR, TYPE_FR, STATUS_CLASS, STATUS_FR } from "./constants";
 
-function getSLAInfo(createdAt, priority, slaDueDate) {
-  const deadline = slaDueDate
-    ? new Date(slaDueDate)
-    : (() => {
-        const h = { high:4, critical:2, medium:24, low:72 }[priority] ?? 24;
-        return new Date(new Date(createdAt).getTime() + h * 3600000);
-      })();
+function getSLAInfo(slaDateLimite, slaDateDebut) {
+  if (!slaDateLimite) return null;
+  const deadline = new Date(slaDateLimite);
+  const debut = slaDateDebut ? new Date(slaDateDebut) : null;
   const ms = deadline - new Date();
-  const h  = { high:4, critical:2, medium:24, low:72 }[priority] ?? 24;
+  const totalMs = debut ? deadline - debut : 24 * 3600000;
   return {
-    deadline, hours: h,
+    deadline,
     diffH:   Math.floor(Math.abs(ms) / 3600000),
     diffM:   Math.floor((Math.abs(ms) % 3600000) / 60000),
-    pct:     Math.max(0, Math.min(100, (ms / (h * 3600000)) * 100)),
+    pct:     Math.max(0, Math.min(100, (ms / totalMs) * 100)),
     expired: ms < 0,
   };
 }
-
 export default function TicketInfo({ 
   ticket, 
   status, 
@@ -34,7 +31,7 @@ export default function TicketInfo({
   const emp = ticket.employee ?? {};
   const ini = `${emp.name?.[0] ?? "?"} ${emp.surname?.[0] ?? ""}`;
   const empName = `${emp.name ?? ""} ${emp.surname ?? ""}`.trim();
-  const sla = ticket.createdAt ? getSLAInfo(ticket.createdAt, ticket.priority, ticket.sla_due_date) : null;
+const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut);
   const fmtDate = (d) => new Date(d).toLocaleDateString("fr-DZ");
 
   return (
@@ -141,7 +138,7 @@ export default function TicketInfo({
                 style={{ width: sla.expired ? "100%" : `${sla.pct}%` }}/>
             </div>
             <p className="text-[10px] text-gray-400">
-              Limite : {sla.deadline.toLocaleString("fr-DZ")} · SLA : {sla.hours}h
+             Limite : {sla.deadline.toLocaleString("fr-DZ")}
             </p>
           </div>
         )}
@@ -161,7 +158,7 @@ export default function TicketInfo({
               onChange={e => handleStatusChange(e.target.value)}
               className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 cursor-pointer focus:outline-none focus:border-blue-400"
             >
-              {Object.entries(STATUS_FR).filter(([v]) => v !== "closed").map(([val, lbl]) => (
+              {Object.entries(STATUS_FR).map(([val, lbl]) => (
                 <option key={val} value={val}>{lbl}</option>
               ))}
             </select>

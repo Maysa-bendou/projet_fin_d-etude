@@ -1,83 +1,89 @@
 const prisma = require("../prismaClient");
 
-/**
- * PUT /api/tickets/:id/confirm-reply
- * Body: { employeeId, confirmed: true | false }
- * Called when employee clicks "Oui, résolu" or "Non, toujours un problème"
- */
 const employeeConfirmReply = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { employeeId, confirmed } = req.body;
 
     if (confirmed === undefined) {
-      return res.status(400).json({ error: "confirmed (boolean) est requis" });
+      return res.status(400).json({ error: "confirmed requis" });
     }
 
-    // Update ticket fields
-    await prisma.tickets.update({
-      where: { id },
-      data: {
-        is_resolved_confirmed: confirmed ? true : false,
-        // If employee says yes → resolve; if no → re-open so tech can send new solution
-        status: confirmed ? "resolved" : "in_progress",
-        // Reset confirmation_requested so tech can send another solution if needed
-        confirmation_requested: confirmed ? true : false,
-        updated_at: new Date(),
+    const isConfirmed = confirmed === true || confirmed === "true";
+
+    const lastConfirm = await prisma.ticket_comments.findFirst({
+      where: { ticket_id: id, comment_type: "confirm" },
+      orderBy: { created_at: "desc" },
+    });
+
+    if (!lastConfirm) {
+      return res.status(400).json({ error: "Aucune demande de confirmation" });
+    }
+
+    const alreadyReplied = await prisma.ticket_comments.findFirst({
+      where: {
+        ticket_id: id,
+        comment_type: { in: ["confirmed", "rejected_confirm"] },
+        created_at: { gt: lastConfirm.created_at },
       },
     });
 
-    // Log in comments
+    if (alreadyReplied) {
+      return res.status(400).json({ error: "Deja repondu" });
+    }
+
+    await prisma.$executeRaw`
+  UPDATE tickets 
+  SET 
+    is_resolved_confirmed = ${isConfirmed},
+    confirmation_requested = false,
+    status = ${isConfirmed ? "resolved" : "in_progress"}::ticket_status_enum,
+    updated_at = NOW()
+  WHERE id = ${id}
+`;
+
     await prisma.ticket_comments.create({
       data: {
         ticket_id: id,
         user_id: parseInt(employeeId),
-        comment: confirmed
-          ? "L'employé a confirmé que le problème est résolu."
-          : "L'employé a signalé que le problème persiste.",
-        comment_type: confirmed ? "confirmed" : "rejected_confirm",
+        comment: isConfirmed ? "Confirme resolu." : "Probleme persiste.",
+        comment_type: isConfirmed ? "confirmed" : "rejected_confirm",
         created_at: new Date(),
       },
     });
 
-    res.json({ success: true, confirmed });
+    res.json({ success: true, confirmed: isConfirmed });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
 
-/**
- * POST /api/tickets/:id/employee-reply
- * Body (multipart): { employeeId, message }
- * Files: optional attachments
- * Called when employee replies to a technician info request
- */
 const employeeReply = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { employeeId, message } = req.body;
+    const files = req.files ?? [];
 
-    if (!message?.trim()) {
-      return res.status(400).json({ error: "Le message est requis" });
+    if ((!message || !message.trim()) && files.length === 0) {
+      return res.status(400).json({ error: "Message ou fichier requis" });
     }
 
     const comment = await prisma.ticket_comments.create({
       data: {
         ticket_id: id,
         user_id: parseInt(employeeId),
-        comment: message,
+        comment: message || "",
         comment_type: "emp_reply",
         created_at: new Date(),
       },
     });
 
-    // Save attachments if any
-    const files = req.files ?? [];
     if (files.length > 0) {
       await prisma.ticket_attachments.createMany({
         data: files.map((f) => ({
           ticket_id: id,
+          comment_id: comment.id,
           file_name: f.originalname,
           file_path: f.path,
           uploaded_by: parseInt(employeeId),
@@ -86,7 +92,6 @@ const employeeReply = async (req, res) => {
       });
     }
 
-    // Update updated_at on ticket
     await prisma.tickets.update({
       where: { id },
       data: { updated_at: new Date() },
@@ -95,7 +100,7 @@ const employeeReply = async (req, res) => {
     res.json({ success: true, commentId: comment.id, filesUploaded: files.length });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Erreur lors de l'envoi de la réponse" });
+    res.status(500).json({ error: "Erreur envoi" });
   }
 };
 

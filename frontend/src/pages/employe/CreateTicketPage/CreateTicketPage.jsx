@@ -29,8 +29,8 @@ const URGENCY_OPTIONS = [
 ];
 const PRIORITY_MATRIX = { high: { high: "critical", medium: "high", low: "medium" }, medium: { high: "high", medium: "medium", low: "low" }, low: { high: "medium", medium: "low", low: "low" } };
 const PRIORITY_LABEL = { critical: { label: "Critique", cls: "bg-red-200 text-red-800" }, high: { label: "Haute", cls: "bg-red-100 text-red-700" }, medium: { label: "Normale", cls: "bg-yellow-100 text-yellow-700" }, low: { label: "Basse", cls: "bg-green-100 text-green-700" } };
-const SLA_LABEL = { critical: "3 jours", high: "3 jours", medium: "1 semaine", low: "2 semaines" };
-
+// ✅ Corriger pour correspondre à ta sla_config (4h, 24h, 48h, 72h)
+const SLA_LABEL = { critical: "4 heures", high: "24 heures", medium: "48 heures", low: "72 heures" };
 // ── SMALL COMPONENTS ──────────────────────────────
 const OptionButtons = ({ options, selected, onSelect, small }) => (
   <div className={`grid gap-2 ${small ? "grid-cols-3 text-xs" : "grid-cols-2"}`}>
@@ -104,8 +104,12 @@ export default function CreateTicketPage() {
         <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-2 mb-6">
           <div className="flex justify-between"><span className="text-gray-400">Priorité</span><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_LABEL[success.priority]?.cls}`}>{PRIORITY_LABEL[success.priority]?.label}</span></div>
           <div className="flex justify-between"><span className="text-gray-400">Délai SLA</span><span className="text-gray-700 font-medium">{SLA_LABEL[success.priority]}</span></div>
-          <div className="flex justify-between"><span className="text-gray-400">Échéance</span><span className="text-gray-700">{new Date(success.sla_due_date).toLocaleDateString("fr-FR")}</span></div>
-        </div>
+       <span className="text-gray-700">
+  {success.sla_date_limite 
+    ? new Date(success.sla_date_limite).toLocaleDateString("fr-FR")
+    : "—"}
+</span>
+ </div>
         <button onClick={() => navigate("/employee/mes-tickets")} className="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-red-700 transition">Voir mes tickets</button>
       </div>
     </div>

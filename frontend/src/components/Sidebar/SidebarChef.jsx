@@ -1,20 +1,16 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  MdDashboard,
-  MdAssignment,
-  MdPeople,
   MdBarChart,
   MdPerson,
   MdLogout,
+  MdQueryStats, 
 } from "react-icons/md";
 
 const menuItems = [
-  { icon: MdDashboard,  label: "Accueil",          path: "/chef" },
-  { icon: MdAssignment, label: "Tickets Service",  path: "/chef/tickets" },
-  { icon: MdPeople,     label: "Mon Équipe",       path: "/chef/equipe" },
-  { icon: MdBarChart,   label: "Statistiques",     path: "/chef/statistiques" },
-  { icon: MdPerson,     label: "Profil",           path: "/chef/profile" },
+  { icon: MdBarChart,   label: "Statistiques global", path: "/chef/statistiques" },
+  { icon: MdQueryStats, label: "Répartition services",path: "/chef/repartition" },
+  { icon: MdPerson,     label: "Profil",              path: "/chef/profile" },
 ];
 
 export default function SidebarChef() {

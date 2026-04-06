@@ -39,18 +39,31 @@ router.post("/create", async (req, res) => {
     if (!title || !description || !category || !impact || !urgency || !type || !created_by) {
       return res.status(400).json({ error: "Champs manquants" });
     }
+
     const PRIORITY_MATRIX = {
       high:   { high: "critical", medium: "high",   low: "medium" },
-      medium: { high: "high",     medium: "medium",  low: "low"   },
-      low:    { high: "medium",   medium: "low",     low: "low"   },
+      medium: { high: "high",     medium: "medium", low: "low"    },
+      low:    { high: "medium",   medium: "low",    low: "low"    },
     };
-    const priority = PRIORITY_MATRIX[impact][urgency];
-    const SLA_DAYS = { critical: 3, high: 3, medium: 7, low: 14 };
-    const sla_due_date = new Date();
-    sla_due_date.setDate(sla_due_date.getDate() + SLA_DAYS[priority]);
+    const priority = PRIORITY_MATRIX[impact]?.[urgency];
+    if (!priority) return res.status(400).json({ error: "Impact ou urgence invalide" });
+
+    const slaConfig = await prisma.sla_config.findFirst({ where: { priority } });
+    if (!slaConfig) return res.status(500).json({ error: `Aucune config SLA pour : ${priority}` });
+
+    const sla_date_debut  = new Date();
+    const sla_date_limite = new Date(sla_date_debut.getTime() + slaConfig.duration_hours * 60 * 60 * 1000);
+
     const ticket = await prisma.tickets.create({
-      data: { title, description, category, impact, urgency, type, priority, created_by, sla_due_date },
+      data: {
+        title, description, category, impact, urgency, type, priority,
+        created_by: parseInt(created_by),
+        sla_date_debut,
+        sla_date_limite,
+        sla_statut: "en_cours",
+      },
     });
+
     res.json({ ticket });
   } catch (err) {
     console.error(err);
@@ -98,8 +111,10 @@ router.get("/", async (req, res) => {
       impact: t.impact,
       urgency: t.urgency,
       serviceId: t.service_id,
-      sla: t.sla_due_date,
-      date_expiration: t.sla_due_date,
+      sla:             t.sla_date_limite,
+date_expiration: t.sla_date_limite,
+sla_date_limite: t.sla_date_limite,
+sla_date_debut:  t.sla_date_debut,
       createdBy: t.users_tickets_created_byTousers?.name,
       employee: t.users_tickets_created_byTousers,
       assignedTo: t.users_tickets_assigned_toTousers?.name,
@@ -156,12 +171,13 @@ router.get("/:id", async (req, res) => {
         },
         services: { select: { name: true } },
         // ── Include comments so the employee page can read them ──
-        ticket_comments: {
-          orderBy: { created_at: "asc" },
-          include: {
-            users: { select: { id: true, name: true, surname: true, role: true } },
-          },
-        },
+      ticket_comments: {
+  orderBy: { created_at: "asc" },
+  include: {
+    users: { select: { id: true, name: true, surname: true, role: true } },
+    ticket_attachments: true,  // ← ajouter
+  },
+},
       },
     });
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
@@ -175,7 +191,9 @@ router.get("/:id", async (req, res) => {
       impact: ticket.impact,
       urgency: ticket.urgency,
       type: ticket.type,
-      sla_due_date: ticket.sla_due_date,
+     sla_date_limite: ticket.sla_date_limite,
+sla_date_debut:  ticket.sla_date_debut,
+
       createdAt: ticket.created_at,
       updatedAt: ticket.updated_at,
       solution: ticket.solution,
@@ -186,15 +204,24 @@ router.get("/:id", async (req, res) => {
       technician: ticket.users_tickets_assigned_toTousers,
       service: ticket.services?.name,
       // ── Comments for employee to consume ──
-      comments: ticket.ticket_comments.map((c) => ({
-        id: c.id,
-        message: c.comment,
-        comment_type: c.comment_type ?? "comment",
-        author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole: c.users?.role ?? "",
-        authorId: c.users?.id,
-        date: c.created_at,
-      })),
+      comments: ticket.ticket_comments.map((c) => {
+  console.log("COMMENT:", c.id, "ATTACHMENTS:", c.ticket_attachments);
+  return {
+    id: c.id,
+    message: c.comment,
+    comment_type: c.comment_type ?? "comment",
+    author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
+    authorRole: c.users?.role ?? "",
+    authorId: c.users?.id,
+    date: c.created_at,
+    files: (c.ticket_attachments ?? []).map(a => ({
+      fileName: a.file_name,
+      filePath: a.file_path
+        ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
+        : null,
+    })),
+  };
+}),
     });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });

@@ -1,196 +1,366 @@
-import React from "react";
+import React, { useEffect, useState, useMemo } from 'react';
+import axios from 'axios';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+  AreaChart, Area, ReferenceLine
+} from 'recharts';
+import {
+  MdTrendingUp, MdTimer, MdCheckCircle, MdFileDownload, MdPeople,
+  MdBarChart, MdAssignment
+} from 'react-icons/md';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from 'xlsx';
 
-// ── Fausses données ───────────────────────────────
-const fakeStats = {
-  tempsMoyen:      "4.2h",
-  slaRespecte:     28,
-  slaDepasse:      7,
-  tauxResolution:  "80%",
+const getDynamicColor = (name, index) => {
+  const map = {
+    'open': '#2563eb', 'in_progress': '#7c3aed', 'resolved': '#16a34a',
+    'closed': '#059669', 'rejected': '#dc2626', 'pending': '#d97706',
+    'pending_supplier': '#0891b2', 'critical': '#dc2626', 'high': '#f97316',
+    'medium': '#d97706', 'low': '#16a34a', 'incident': '#e11d48', 'demande': '#0ea5e9'
+  };
+  return map[name?.toLowerCase()] || ['#2563eb', '#7c3aed', '#0891b2', '#db2777', '#4b5563'][index % 5];
 };
 
-const techniciens = [
-  { rang: "🥇", initiales: "KH", nom: "Karim Haddad",  assigne: 10, resolus: 8, taux: 80, tempsMoyen: "3.5h", sla: true  },
-  { rang: "🥈", initiales: "NF", nom: "Nadia Ferhat",  assigne: 9,  resolus: 6, taux: 67, tempsMoyen: "4.2h", sla: true  },
-  { rang: "🥉", initiales: "BO", nom: "Bilal Ouali",   assigne: 8,  resolus: 5, taux: 62, tempsMoyen: "5.1h", sla: false },
-  { rang: "4",  initiales: "RB", nom: "Ryma Bouzidi",  assigne: 6,  resolus: 4, taux: 55, tempsMoyen: "6.3h", sla: false },
-  { rang: "5",  initiales: "DA", nom: "Djamel Allal",  assigne: 5,  resolus: 3, taux: 60, tempsMoyen: "4.8h", sla: true  },
-];
-
-// ── Couleur taux résolution ───────────────────────
-function couleurTaux(taux) {
-  if (taux >= 75) return "#0F766E";
-  if (taux >= 60) return "#F97316";
-  return "#DC2626";
-}
-
-export default function PerformancesPage() {
+// ── Custom dot for area chart ────────────────────────────────────────────────
+const CustomDot = (props) => {
+  const { cx, cy, value } = props;
   return (
-    <div className="p-6">
+    <g>
+      <circle cx={cx} cy={cy} r={5} fill="#2563eb" stroke="#fff" strokeWidth={2} />
+    </g>
+  );
+};
 
-      {/* ── Titre ── */}
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">
-        Suivi des performances
-      </h1>
+// ── Custom label above dot ───────────────────────────────────────────────────
+const CustomLabel = (props) => {
+  const { x, y, value } = props;
+  return (
+    <text x={x} y={y - 10} fill="#2563eb" fontSize={11} fontWeight={700} textAnchor="middle">
+      {value}
+    </text>
+  );
+};
 
-      {/* ── Cartes stats ── */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 mb-2">Temps moyen résolution</p>
-          <p className="text-2xl font-semibold text-blue-600">
-            {fakeStats.tempsMoyen}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 mb-2">SLA Respecté</p>
-          <p className="text-2xl font-semibold text-teal-600">
-            {fakeStats.slaRespecte}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 mb-2">SLA Dépassé</p>
-          <p className="text-2xl font-semibold text-red-600">
-            {fakeStats.slaDepasse}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 mb-2">Taux résolution global</p>
-          <p className="text-2xl font-semibold text-orange-500">
-            {fakeStats.tauxResolution}
-          </p>
-        </div>
-
-      </div>
-
-      {/* ── SLA Respecté vs Dépassé ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-        <p className="text-sm font-semibold text-gray-800 mb-4">
-          SLA Respecté vs Dépassé
-        </p>
-
-        {/* Barre SLA respecté */}
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-xs text-gray-500 w-20 shrink-0">Respecté</span>
-          <div className="flex-1 bg-gray-100 rounded-full h-2.5">
-            <div
-              className="bg-teal-600 h-2.5 rounded-full"
-              style={{ width: `${(fakeStats.slaRespecte / (fakeStats.slaRespecte + fakeStats.slaDepasse)) * 100}%` }}
-            />
-          </div>
-          <span className="text-xs font-medium text-teal-600 w-20 text-right">
-            {fakeStats.slaRespecte} (80%)
-          </span>
-        </div>
-
-        {/* Barre SLA dépassé */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500 w-20 shrink-0">Dépassé</span>
-          <div className="flex-1 bg-gray-100 rounded-full h-2.5">
-            <div
-              className="bg-red-600 h-2.5 rounded-full"
-              style={{ width: `${(fakeStats.slaDepasse / (fakeStats.slaRespecte + fakeStats.slaDepasse)) * 100}%` }}
-            />
-          </div>
-          <span className="text-xs font-medium text-red-600 w-20 text-right">
-            {fakeStats.slaDepasse} (20%)
-          </span>
-        </div>
-      </div>
-
-      {/* ── Classement techniciens ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <p className="text-sm font-semibold text-gray-800 mb-4">
-          Classement techniciens
-        </p>
-
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">#</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Technicien</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Assignés</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Résolus</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Taux résolution</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Temps moyen</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">SLA</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {techniciens.map((tech, index) => (
-              <tr key={index} className="border-t border-gray-100 hover:bg-gray-50 transition">
-
-                {/* Rang */}
-                <td className="px-3 py-3 font-medium text-gray-500">
-                  {tech.rang}
-                </td>
-
-                {/* Nom + initiales */}
-                <td className="px-3 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-indigo-900 flex items-center justify-center shrink-0">
-                      <span className="text-white text-xs font-medium">
-                        {tech.initiales}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-800">{tech.nom}</span>
-                  </div>
-                </td>
-
-                {/* Assignés */}
-                <td className="px-3 py-3 text-gray-500">{tech.assigne}</td>
-
-                {/* Résolus */}
-                <td className="px-3 py-3 font-medium text-teal-600">
-                  {tech.resolus}
-                </td>
-
-                {/* Taux résolution avec barre */}
-                <td className="px-3 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-16">
-                      <div
-                        className="h-1.5 rounded-full"
-                        style={{
-                          width: `${tech.taux}%`,
-                          background: couleurTaux(tech.taux)
-                        }}
-                      />
-                    </div>
-                    <span
-                      className="text-xs font-medium w-8"
-                      style={{ color: couleurTaux(tech.taux) }}
-                    >
-                      {tech.taux}%
-                    </span>
-                  </div>
-                </td>
-
-                {/* Temps moyen */}
-                <td className="px-3 py-3 text-gray-500">{tech.tempsMoyen}</td>
-
-                {/* SLA */}
-                <td className="px-3 py-3">
-                  {tech.sla ? (
-                    <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                      ✓ OK
-                    </span>
-                  ) : (
-                    <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
-                      ⚠ Dépassé
-                    </span>
-                  )}
-                </td>
-
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+// ── Monthly tooltip ──────────────────────────────────────────────────────────
+const MonthlyTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: '#1e3a8a', borderRadius: 10, padding: '10px 16px',
+      boxShadow: '0 4px 20px rgba(37,99,235,0.3)', color: '#fff'
+    }}>
+      <p style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>{label}</p>
+      <p style={{ fontSize: 20, fontWeight: 700 }}>{payload[0].value} <span style={{ fontSize: 12, fontWeight: 400 }}>tickets</span></p>
     </div>
   );
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+      padding: '10px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
+    }}>
+      {label && <p style={{ color: '#6b7280', fontSize: 11, marginBottom: 5 }}>{label}</p>}
+      {payload.map((p, i) => (
+        <p key={i} style={{ color: p.color, fontSize: 13, fontWeight: 600, margin: '2px 0' }}>
+          {p.name}: <span style={{ color: '#111827' }}>{p.value}</span>
+        </p>
+      ))}
+    </div>
+  );
+};
+
+export default function PerformancesPage() {
+  const [stats, setStats] = useState(null);
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3001/api/manager/stats/${user.id}`);
+        setStats(res.data);
+      } catch (err) {
+        console.error("Erreur stats:", err);
+      }
+    };
+    fetchStats();
+  }, [user.id]);
+
+const sortedMonthlyStats = useMemo(() => {
+  if (!stats?.monthlyStats) return [];
+  // Must match the "months" array in your Node.js backend exactly
+  const order = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  
+  return [...stats.monthlyStats].sort((a, b) => order.indexOf(a.month) - order.indexOf(b.month));
+}, [stats]);
+
+  const avgMonthly = useMemo(() => {
+    if (!sortedMonthlyStats.length) return 0;
+    return Math.round(sortedMonthlyStats.reduce((s, m) => s + m.value, 0) / sortedMonthlyStats.length);
+  }, [sortedMonthlyStats]);
+
+  const exportPDF = () => {
+    if (!stats) return;
+    const doc = new jsPDF('p', 'pt', 'a4');
+    doc.setFontSize(20);
+    doc.text(`Rapport de Performance : ${stats.serviceName}`, 40, 50);
+    autoTable(doc, {
+      startY: 80,
+      head: [['KPI', 'Valeur']],
+      body: [
+        ['Total Tickets', stats.totalTickets],
+        ['Taux de Résolution', `${stats.resolutionRate}%`],
+        ['Tickets Dans SLA', stats.slaStats[0].value],
+        ['Tickets Hors SLA', stats.slaStats[1].value],
+      ],
+      theme: 'striped'
+    });
+    doc.text('Performance Techniciens', 40, doc.lastAutoTable.finalY + 30);
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 40,
+      head: [['Technicien', 'Résolus', 'Rejetés', 'Taux (%)']],
+      body: stats.techPerformance.map(t => [t.name, t.resolu, t.rejete, `${t.resolutionRate}%`]),
+      headStyles: { fillColor: [37, 99, 235] }
+    });
+    doc.save(`Performance_${stats.serviceName}.pdf`);
+  };
+
+  const exportExcel = () => {
+    if (!stats) return;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.statusStats), "Statuts");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.techPerformance), "Techniciens");
+    XLSX.writeFile(wb, `Stats_Service_${stats.serviceName}.xlsx`);
+  };
+
+  if (!stats) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+      Chargement du tableau de bord...
+    </div>
+  );
+
+  const slaIn = stats.slaStats[0].value;
+  const slaOut = stats.slaStats[1].value;
+  const slaPct = Math.round((slaIn / (slaIn + slaOut || 1)) * 100);
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f9fafb', padding: '32px', fontFamily: "'Inter', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        .monthly-chart-wrap { background: linear-gradient(135deg, #eff6ff 0%, #fff 60%); border-radius: 16px; padding: 24px; border: 1px solid #dbeafe; }
+        .monthly-stat-badge { background: #2563eb; color: #fff; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; }
+        .monthly-stat-badge.avg { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+        <div>
+          <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Managerial View • {stats.serviceName}</p>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827' }}>Analyses & Performances</h1>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={exportPDF} style={btnStyle('#dc2626')}><MdFileDownload /> PDF</button>
+          <button onClick={exportExcel} style={btnStyle('#16a34a')}><MdFileDownload /> Excel</button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <KpiCard label="Total Global" value={stats.totalTickets} color="#2563eb" icon={<MdAssignment />} />
+        <KpiCard label="Taux Résolution" value={`${stats.resolutionRate}%`} color="#7c3aed" icon={<MdTrendingUp />} />
+        <KpiCard label="Dans les Délais" value={slaIn} color="#16a34a" icon={<MdCheckCircle />} />
+        <KpiCard label="Retards (SLA)" value={slaOut} color="#dc2626" icon={<MdTimer />} />
+      </div>
+
+      <SectionLabel>Efficacité de l'équipe</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+        <Card title="Volume de travail par Technicien">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats.techPerformance}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="resolu" name="Résolus" fill="#16a34a" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar dataKey="rejete" name="Rejetés" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={20} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title="Productivité Individuelle (%)">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats.techPerformance} layout="vertical">
+              <XAxis type="number" hide />
+              <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} width={100} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="resolutionRate" name="Taux" radius={[0, 4, 4, 0]} barSize={15}>
+                {stats.techPerformance.map((entry, index) => (
+                  <Cell key={index} fill={getDynamicColor('resolved')} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      <SectionLabel>Répartition des flux</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+        <Card title="État Actuel des Tickets">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats.statusStats}>
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+              <YAxis axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={30}>
+                {stats.statusStats.map((entry, index) => (
+                  <Cell key={index} fill={getDynamicColor(entry.name, index)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card title="Distribution par Type">
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie data={stats.typeStats} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                {stats.typeStats.map((entry, index) => (
+                  <Cell key={index} fill={getDynamicColor(entry.name, index)} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend iconType="circle" formatter={(value) => `${value}`} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div style={{ textAlign: 'center', marginTop: -10 }}>
+            {stats.typeStats.map((t, i) => (
+              <span key={i} style={{ fontSize: 12, color: '#6b7280', margin: '0 8px' }}>
+                {t.name}: <strong>{t.percentage}%</strong>
+              </span>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Santé du Service (SLA)">
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <p style={{ fontSize: 48, fontWeight: 800, color: slaPct > 80 ? '#16a34a' : '#dc2626' }}>{slaPct}%</p>
+            <p style={{ color: '#6b7280', fontSize: 14 }}>Conformité aux délais</p>
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 15 }}>
+              <div style={{ fontSize: 12 }}><span style={{ color: '#16a34a' }}>●</span> {slaIn} OK</div>
+              <div style={{ fontSize: 12 }}><span style={{ color: '#dc2626' }}>●</span> {slaOut} Retards</div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+<SectionLabel>Tendances Temporelles</SectionLabel>
+<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+  
+  {/* NEW: Monthly Curve Chart */}
+  <div className="monthly-chart-wrap">
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <p style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a', margin: 0 }}>Evolution Mensuelle des Tickets</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <span className="monthly-stat-badge">Total: {stats.totalTickets}</span>
+        <span className="monthly-stat-badge avg">Moy: {avgMonthly}/mois</span>
+      </div>
+    </div>
+    
+    <ResponsiveContainer width="100%" height={280}>
+      <AreaChart data={sortedMonthlyStats}>
+        <defs>
+          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dbeafe" />
+        <XAxis 
+          dataKey="month" 
+          axisLine={false} 
+          tickLine={false} 
+          tick={{ fontSize: 11, fill: '#1e40af', fontWeight: 500 }} 
+        />
+        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+        <Tooltip content={<MonthlyTooltip />} />
+        
+        {/* The Curve */}
+        <Area 
+          type="monotone" 
+          dataKey="value" 
+          stroke="#2563eb" 
+          strokeWidth={3} 
+          fillOpacity={1} 
+          fill="url(#colorValue)" 
+          dot={<CustomDot />}
+          activeDot={{ r: 8 }}
+          label={<CustomLabel />}
+        />
+        
+        {/* Optional: Average line */}
+        <ReferenceLine y={avgMonthly} stroke="#94a3b8" strokeDasharray="3 3" label={{ position: 'right', value: 'Moyenne', fill: '#94a3b8', fontSize: 10 }} />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
+
+        <Card title="Priorités">
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie data={stats.priorityStats} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                {stats.priorityStats.map((entry, index) => (
+                  <Cell key={index} fill={getDynamicColor(entry.name)} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
+</div>
+
+      </div>
+  );
+}
+
+function KpiCard({ label, value, color, icon }) {
+  return (
+    <div style={{ background: '#fff', padding: '20px', borderRadius: 12, border: '1px solid #e5e7eb', display: 'flex', gap: 16, alignItems: 'center' }}>
+      <div style={{ width: 48, height: 48, borderRadius: 10, background: `${color}15`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+        {icon}
+      </div>
+      <div>
+        <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>{label}</p>
+        <p style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0 }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, children }) {
+  return (
+    <div style={{ background: '#fff', padding: '24px', borderRadius: 12, border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+      <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 20 }}>{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function SectionLabel({ children }) {
+  return (
+    <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '24px 0 12px' }}>
+      {children}
+    </p>
+  );
+}
+
+function btnStyle(color) {
+  return {
+    display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 8,
+    border: `1px solid ${color}20`, background: `${color}10`, color, cursor: 'pointer',
+    fontSize: 13, fontWeight: 600, transition: 'all 0.2s'
+  };
 }

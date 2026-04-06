@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import Header from "./components/Header";
@@ -15,7 +15,6 @@ export default function TicketDetailTechnicien() {
   const { id }      = useParams();
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
 
-  // All states
   const [ticket, setTicket] = useState(null);
   const [allIds, setAllIds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +45,7 @@ export default function TicketDetailTechnicien() {
 
   const convEndRef = useRef(null);
   const isClosed = status === "closed";
-  const fmt = (d) => new Date(d).toLocaleTimeString("fr-DZ", { hour:"2-digit", minute:"2-digit" });
+  const fmt = (d) => new Date(d).toLocaleTimeString("fr-DZ", { hour: "2-digit", minute: "2-digit" });
 
   const addActEntry = (type, message, date = new Date()) => ({
     id: `act-${Date.now()}-${Math.random()}`,
@@ -55,62 +54,70 @@ export default function TicketDetailTechnicien() {
     rawDate: new Date(date),
   });
 
-  // Fetch ticket
-  useEffect(() => {
-    (async () => {
-      setLoading(true); setError(null);
-      try {
-        const res = await fetch(`${API}/tickets/${id}`);
-        if (!res.ok) throw new Error("Ticket introuvable");
-        const data = await res.json();
-        setTicket(data);
-        setStatus(data.status);
-        setAwaitingConfirm(!!data.confirmation_requested && !data.is_resolved_confirmed);
+  // ── Fetch ticket — fonction réutilisable ──────────────────────────────────
+  const fetchTicket = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API}/tickets/${id}`);
+      if (!res.ok) throw new Error("Ticket introuvable");
+      const data = await res.json();
 
-        const convItems = [];
-        const actItems = [];
+      setTicket(data);
+      setStatus(data.status);
+     const lastConfirmReq = [...data.comments].reverse().find(c => c.comment_type === "confirm");
+const responsesAfterLastConfirm = lastConfirmReq
+  ? data.comments.filter(c =>
+      new Date(c.date) > new Date(lastConfirmReq.date) &&
+      (c.comment_type === "confirmed" || c.comment_type === "rejected_confirm")
+    )
+  : [];
+setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0);   const convItems = [];
+      const actItems = [];
 
-        actItems.push({
-          id: "act-assigned", type: "assigned",
-          message: "Ticket assigné",
-          date: fmt(data.createdAt),
-          rawDate: new Date(data.createdAt),
+      actItems.push({
+        id: "act-assigned", type: "assigned",
+        message: "Ticket assigné",
+        date: fmt(data.createdAt),
+        rawDate: new Date(data.createdAt),
+      });
+
+      data.comments.forEach((c) => {
+        const type = c.comment_type ?? "comment";
+        const dateObj = new Date(c.date);
+        const dateStr = fmt(c.date);
+        const authorId = c.authorId;
+
+        convItems.push({
+          id: c.id,
+          type,
+          authorId,
+          author: c.author,
+          isMe: authorId === currentUser?.id,
+          message: c.message.replace(/^\[REDIRECTION\]\s*/, ""),
+         files: c.files ?? [],
+          date: dateStr,
         });
 
-        data.comments.forEach((c) => {
-          const type = c.comment_type ?? "comment";
-          const dateObj = new Date(c.date);
-          const dateStr = fmt(c.date);
-          const authorId = c.authorId;
+        if (type === "status") {
+          actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
+        } else if (ACT_LABEL[type]) {
+          actItems.push({ id: `act-${c.id}`, type, message: ACT_LABEL[type], date: dateStr, rawDate: dateObj });
+        }
+      });
 
-          convItems.push({
-            id: c.id,
-            type,
-            authorId,
-            author: c.author,
-            isMe: authorId === currentUser?.id,
-            message: c.message.replace(/^\[REDIRECTION\]\s*/, ""),
-            files: [],
-            date: dateStr,
-          });
-
-          if (type === "status") {
-            actItems.push({ id:`act-${c.id}`, type:"status", message: c.message, date: dateStr, rawDate: dateObj });
-          } else if (ACT_LABEL[type]) {
-            actItems.push({ id:`act-${c.id}`, type, message: ACT_LABEL[type], date: dateStr, rawDate: dateObj });
-          }
-        });
-
-        actItems.sort((a, b) => a.rawDate - b.rawDate);
-        setConversation(convItems);
-        setActuality(actItems);
-      } catch (e) { 
-        setError(e.message); 
-      } finally { 
-        setLoading(false); 
-      }
-    })();
+      actItems.sort((a, b) => a.rawDate - b.rawDate);
+      setConversation(convItems);
+      setActuality(actItems);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+
+  // Chargement initial
+  useEffect(() => { fetchTicket(); }, [fetchTicket]);
 
   // Auto-scroll
   useEffect(() => {
@@ -153,6 +160,7 @@ export default function TicketDetailTechnicien() {
     navigate(newPath);
   };
 
+  // ── Changer statut ────────────────────────────────────────────────────────
   const handleStatusChange = async (newStatus) => {
     const old = status;
     setStatus(newStatus);
@@ -164,25 +172,7 @@ export default function TicketDetailTechnicien() {
         body: JSON.stringify({ status: newStatus, technicianId: currentUser?.id }),
       });
       if (!res.ok) throw new Error();
-      const now = new Date();
-      const msg = `Statut modifié : <strong>${STATUS_FR[old] || old}</strong> → <strong>${STATUS_FR[newStatus] || newStatus}</strong>`;
-      setConversation(p => [...p, {
-        id: Date.now(),
-        type: "status",
-        authorId: currentUser?.id,
-        isMe: true,
-        author: `${currentUser?.name ?? "Tech"} ${currentUser?.surname ?? ""}`.trim(),
-        message: msg,
-        files: [],
-        date: fmt(now),
-      }]);
-      setActuality(p => [...p, { 
-        id: `act-s-${Date.now()}`, 
-        type: "status", 
-        message: msg, 
-        date: fmt(now), 
-        rawDate: now 
-      }]);
+      await fetchTicket(true); // ← rafraîchit sans spinner
     } catch {
       setStatus(old);
     } finally {
@@ -190,6 +180,7 @@ export default function TicketDetailTechnicien() {
     }
   };
 
+  // ── Envoyer solution / info ───────────────────────────────────────────────
   const handleSend = async () => {
     const msg = respondMode === "solution" ? solution : infoMsg;
     const files = respondMode === "solution" ? solutionFiles : infoFiles;
@@ -207,31 +198,17 @@ export default function TicketDetailTechnicien() {
       const res = await fetch(`${API}/tickets/${id}/send`, { method: "POST", body: fd });
       if (!res.ok) throw new Error("Erreur serveur");
 
-      const now = new Date();
-      const author = `${currentUser?.name ?? "Tech"} ${currentUser?.surname ?? ""}`.trim();
-
-      setConversation(p => [...p, {
-        id: Date.now(),
-        type: respondMode,
-        authorId: currentUser?.id,
-        isMe: true,
-        author,
-        message: msg,
-        files: files.map(f => f.name),
-        date: fmt(now),
-      }]);
-
       if (respondMode === "solution") {
-        setActuality(p => [...p, addActEntry("solution", ACT_LABEL.solution, now)]);
-        await doRequestConfirm(now);
+        await doRequestConfirm();
         setSolution("");
         setSolutionFiles([]);
       } else {
-        setActuality(p => [...p, addActEntry("info", ACT_LABEL.info, now)]);
         setInfoMsg("");
         setInfoFiles([]);
       }
+
       setClearSignal(s => s + 1);
+      await fetchTicket(true); // ← rafraîchit la conversation et l'historique
     } catch (e) {
       setSentError(e.message);
     } finally {
@@ -239,7 +216,8 @@ export default function TicketDetailTechnicien() {
     }
   };
 
-  const doRequestConfirm = async (now = new Date()) => {
+  // ── Demande de confirmation ───────────────────────────────────────────────
+  const doRequestConfirm = async () => {
     try {
       const res = await fetch(`${API}/tickets/${id}/request-confirm`, {
         method: "PUT",
@@ -247,23 +225,11 @@ export default function TicketDetailTechnicien() {
         body: JSON.stringify({ technicianId: currentUser?.id }),
       });
       if (!res.ok) return;
-      setTicket(p => ({ ...p, confirmation_requested: true }));
       setAwaitingConfirm(true);
-      const author = `${currentUser?.name ?? "Tech"} ${currentUser?.surname ?? ""}`.trim();
-      setConversation(p => [...p, {
-        id: Date.now() + 1,
-        type: "confirm",
-        authorId: currentUser?.id,
-        isMe: true,
-        author,
-        message: "Demande de confirmation envoyée à l'employé.",
-        files: [],
-        date: fmt(now),
-      }]);
-      setActuality(p => [...p, addActEntry("confirm", ACT_LABEL.confirm, now)]);
     } catch (_) {}
   };
 
+  // ── Fermeture manuelle ────────────────────────────────────────────────────
   const handleManualClose = async (closingNote) => {
     setClosingManually(true);
     try {
@@ -273,22 +239,8 @@ export default function TicketDetailTechnicien() {
         body: JSON.stringify({ technicianId: currentUser?.id, closingNote }),
       });
       if (!res.ok) throw new Error();
-      const now = new Date();
-      const author = `${currentUser?.name ?? "Tech"} ${currentUser?.surname ?? ""}`.trim();
-      setStatus("closed");
-      setTicket(p => ({ ...p, closing_note: closingNote }));
-      setConversation(p => [...p, {
-        id: Date.now(),
-        type: "comment",
-        authorId: currentUser?.id,
-        isMe: true,
-        author,
-        message: `Ticket fermé manuellement. Note : ${closingNote}`,
-        files: [],
-        date: fmt(now),
-      }]);
-      setActuality(p => [...p, addActEntry("status", "Ticket fermé manuellement", now)]);
       setShowManualClose(false);
+      await fetchTicket(true); // ← rafraîchit tout après fermeture
     } catch {
       alert("Erreur lors de la fermeture.");
     } finally {
@@ -296,6 +248,7 @@ export default function TicketDetailTechnicien() {
     }
   };
 
+  // ── Redirection ───────────────────────────────────────────────────────────
   const handleRedirect = async () => {
     if (!redirectTechId && !redirectServiceId) return;
     setRedirecting(true);
@@ -312,20 +265,10 @@ export default function TicketDetailTechnicien() {
         }),
       });
       if (!res.ok) throw new Error();
-      const now = new Date();
-      const author = `${currentUser?.name ?? "Tech"} ${currentUser?.surname ?? ""}`.trim();
-      setConversation(p => [...p, {
-        id: Date.now(),
-        type: "redirect",
-        authorId: currentUser?.id,
-        isMe: true,
-        author,
-        message: `Redirigé.`, // Simplified
-        files: [],
-        date: fmt(now),
-      }]);
-      setActuality(p => [...p, addActEntry("redirect", ACT_LABEL.redirect, now)]);
       setRedirectTechId(""); setRedirectServiceId(""); setRedirectCategory(""); setRedirectNote("");
+      await fetchTicket(true); // ← rafraîchit après redirection
+    } catch (_) {
+      alert("Erreur lors de la redirection.");
     } finally {
       setRedirecting(false);
     }
@@ -386,13 +329,11 @@ export default function TicketDetailTechnicien() {
         <Actuality actuality={actuality} />
 
         <ConversationActions
-          // Conversation
           conversation={conversation}
           empInitials={ini}
           empName={empName}
           currentUser={currentUser}
           convEndRef={convEndRef}
-          // States
           activeTab={activeTab}
           respondMode={respondMode}
           solution={solution}
@@ -409,7 +350,6 @@ export default function TicketDetailTechnicien() {
           redirecting={redirecting}
           showManualClose={showManualClose}
           closingManually={closingManually}
-          // Setters
           setActiveTab={setActiveTab}
           setRespondMode={setRespondMode}
           setSolution={setSolution}
@@ -421,11 +361,9 @@ export default function TicketDetailTechnicien() {
           setRedirectCategory={setRedirectCategory}
           setRedirectNote={setRedirectNote}
           setShowManualClose={setShowManualClose}
-          // Handlers
           handleSend={handleSend}
           handleRedirect={handleRedirect}
           handleManualClose={handleManualClose}
-          // Other
           isClosed={isClosed}
           ticket={ticket}
           services={services}
@@ -437,4 +375,3 @@ export default function TicketDetailTechnicien() {
     </div>
   );
 }
-

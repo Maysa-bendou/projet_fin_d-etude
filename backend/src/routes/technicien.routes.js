@@ -27,15 +27,15 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.get("/tickets/:id",                  getTicketDetailTech);
-router.put("/tickets/:id/status",           updateTicketStatus);
-router.post("/tickets/:id/send",            upload.array("files", 10), sendSolution);
-router.put("/tickets/:id/request-confirm",  requestConfirmation);  // sends confirmation card to employee
-router.put("/tickets/:id/close-manual",     closeTicketManually);  // manual close by technician
-router.put("/tickets/:id/redirect",         redirectTicket);
-router.get("/services",                     getServices);
-router.get("/techniciens",                  getAllTechniciens);
-router.get("/assigned/:techId",             getAssignedTickets);
-router.get("/enums",                        getEnums);
+router.get("/tickets/:id",                 getTicketDetailTech);
+router.put("/tickets/:id/status",          updateTicketStatus);
+router.post("/tickets/:id/send",           upload.array("files", 10), sendSolution);
+router.put("/tickets/:id/request-confirm", requestConfirmation);
+router.put("/tickets/:id/close-manual",    closeTicketManually);
+router.put("/tickets/:id/redirect",        redirectTicket);
+router.get("/services",                    getServices);
+router.get("/techniciens",                 getAllTechniciens);
+router.get("/assigned/:techId",            getAssignedTickets);
+router.get("/enums",                       getEnums);
 
 module.exports = router;

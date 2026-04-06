@@ -96,24 +96,42 @@ export default function CreateTicketPage() {
   };
 
   if (success) return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
-      <div className="bg-white rounded-2xl shadow p-8 max-w-md text-center">
-        <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">✓</div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-1">Ticket créé avec succès</h2>
-        <p className="text-gray-400 text-sm mb-6">Ticket <span className="font-mono text-gray-600">#{success.id}</span> soumis.</p>
-        <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-2 mb-6">
-          <div className="flex justify-between"><span className="text-gray-400">Priorité</span><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_LABEL[success.priority]?.cls}`}>{PRIORITY_LABEL[success.priority]?.label}</span></div>
-          <div className="flex justify-between"><span className="text-gray-400">Délai SLA</span><span className="text-gray-700 font-medium">{SLA_LABEL[success.priority]}</span></div>
-       <span className="text-gray-700">
-  {success.sla_date_limite 
-    ? new Date(success.sla_date_limite).toLocaleDateString("fr-FR")
-    : "—"}
-</span>
- </div>
-        <button onClick={() => navigate("/employee/mes-tickets")} className="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-red-700 transition">Voir mes tickets</button>
+  <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
+    <div className="bg-white rounded-2xl shadow p-8 max-w-md text-center">
+      <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">✓</div>
+      <h2 className="text-xl font-semibold text-gray-800 mb-1">Ticket créé avec succès</h2>
+      <p className="text-gray-400 text-sm mb-6">Ticket <span className="font-mono text-gray-600">#{success.id}</span> soumis.</p>
+      
+      <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-2 mb-6">
+        <div className="flex justify-between">
+          <span className="text-gray-400">Priorité</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_LABEL[success.priority]?.cls}`}>
+            {PRIORITY_LABEL[success.priority]?.label}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Délai SLA</span>
+          <span className="text-gray-700 font-medium">{SLA_LABEL[success.priority]}</span>
+        </div>
+        {/* ✅ Ligne date limite correctement structurée */}
+        <div className="flex justify-between">
+          <span className="text-gray-400">Date limite</span>
+          <span className="text-gray-700 font-medium">
+            {success.sla_date_limite
+              ? new Date(success.sla_date_limite).toLocaleDateString("fr-FR", {
+                  day: "2-digit", month: "long", year: "numeric",
+                })
+              : "—"}
+          </span>
+        </div>
       </div>
+
+      <button onClick={() => navigate("/employee/mes-tickets")} className="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-red-700 transition">
+        Voir mes tickets
+      </button>
     </div>
-  );
+  </div>
+);
 
   return (
     <div className="min-h-screen flex items-start justify-center p-6 bg-gray-50">

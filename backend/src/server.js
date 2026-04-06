@@ -42,8 +42,9 @@ app.use("/api/manager", managerRoutes);
 const chefRoutes = require('./routes/chef.routes');
 app.use('/api', chefRoutes);
 
-
-
+/////////////////////// NOTIFACTIONS ///////
+const notificationRoutes = require("./routes/notification.routes");
+app.use("/api/notifications", notificationRoutes);
 
 
 const PORT = 3001;

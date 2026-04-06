@@ -1,13 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Search,
   Bell,
   ChevronDown,
   User,
-  Settings,
   LogOut,
-  X,
   CheckCircle2,
   AlertCircle,
   Clock,
@@ -15,61 +12,6 @@ import {
   Ticket,
 } from "lucide-react";
 
-// ── Mock notifications ────────────────────────────────────────────────────
-const MOCK_NOTIFS = [
-  {
-    id: 1,
-    type: "ticket",
-    title: "Nouveau ticket assigné",
-    message: "Le ticket #108 vous a été assigné par le manager.",
-    time: "Il y a 5 min",
-    read: false,
-    icon: Ticket,
-    color: "text-blue-600 bg-blue-50",
-  },
-  {
-    id: 2,
-    type: "alert",
-    title: "SLA dépassé",
-    message: "Le ticket #102 a dépassé son délai de résolution.",
-    time: "Il y a 22 min",
-    read: false,
-    icon: AlertCircle,
-    color: "text-red-600 bg-red-50",
-  },
-  {
-    id: 3,
-    type: "info",
-    title: "Ticket mis à jour",
-    message: "L'employé Sara Benali a répondu au ticket #97.",
-    time: "Il y a 1h",
-    read: true,
-    icon: Info,
-    color: "text-amber-600 bg-amber-50",
-  },
-  {
-    id: 4,
-    type: "success",
-    title: "Ticket résolu",
-    message: "Le ticket #95 a été marqué comme résolu.",
-    time: "Il y a 3h",
-    read: true,
-    icon: CheckCircle2,
-    color: "text-green-600 bg-green-50",
-  },
-  {
-    id: 5,
-    type: "info",
-    title: "Rappel SLA",
-    message: "Le ticket #101 expire dans 45 minutes.",
-    time: "Il y a 4h",
-    read: true,
-    icon: Clock,
-    color: "text-purple-600 bg-purple-50",
-  },
-];
-
-// ── Role label ────────────────────────────────────────────────────────────
 const ROLE_LABEL = {
   technician:   "Technicien",
   technicien:   "Technicien",
@@ -88,7 +30,35 @@ const ROLE_PATH = {
   admin:        "admin",
 };
 
-// ── useOnClickOutside ─────────────────────────────────────────────────────
+// ── Icône et couleur selon le type de notification ────────────────────────
+function getNotifMeta(type) {
+  switch (type) {
+    case "assigned":         return { icon: Ticket,        color: "text-blue-600 bg-blue-50"   };
+    case "sla":              return { icon: AlertCircle,   color: "text-red-600 bg-red-50"     };
+    case "solution":         return { icon: CheckCircle2,  color: "text-green-600 bg-green-50" };
+    case "info":             return { icon: Info,          color: "text-amber-600 bg-amber-50" };
+    case "status":           return { icon: Clock,         color: "text-purple-600 bg-purple-50" };
+    case "emp_reply":        return { icon: Info,          color: "text-amber-600 bg-amber-50" };
+    case "confirmed":        return { icon: CheckCircle2,  color: "text-green-600 bg-green-50" };
+    case "rejected_confirm": return { icon: AlertCircle,   color: "text-red-600 bg-red-50"     };
+    case "new_ticket":       return { icon: Ticket,        color: "text-blue-600 bg-blue-50"   };
+    case "updated":          return { icon: Info,          color: "text-amber-600 bg-amber-50" };
+    default:                 return { icon: Info,          color: "text-gray-600 bg-gray-50"   };
+  }
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (m < 1)  return "À l'instant";
+  if (m < 60) return `Il y a ${m} min`;
+  if (h < 24) return `Il y a ${h}h`;
+  return `Il y a ${d}j`;
+}
+
 function useOnClickOutside(ref, handler) {
   useEffect(() => {
     const listener = (e) => {
@@ -100,7 +70,6 @@ function useOnClickOutside(ref, handler) {
   }, [ref, handler]);
 }
 
-// ── COMPONENT ─────────────────────────────────────────────────────────────
 export default function TopNavbar({ pageTitle = "" }) {
   const navigate    = useNavigate();
   const user        = JSON.parse(localStorage.getItem("user") || "null");
@@ -108,26 +77,47 @@ export default function TopNavbar({ pageTitle = "" }) {
   const roleLabel   = ROLE_LABEL[user?.role] || user?.role || "";
   const initials    = `${user?.name?.[0] || "?"}${user?.surname?.[0] || ""}`.toUpperCase();
 
-  // ── State ────────────────────────────────────────────────────────────
-  const [search,        setSearch]        = useState("");
-  const [searchOpen,    setSearchOpen]    = useState(false);
-  const [notifOpen,     setNotifOpen]     = useState(false);
-  const [profileOpen,   setProfileOpen]   = useState(false);
-  const [notifs,        setNotifs]        = useState(MOCK_NOTIFS);
+  const [notifOpen,   setNotifOpen]   = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifs,      setNotifs]      = useState([]);
 
-  const searchRef  = useRef(null);
   const notifRef   = useRef(null);
   const profileRef = useRef(null);
-  const inputRef   = useRef(null);
 
-  useOnClickOutside(searchRef,  () => { setSearchOpen(false); setSearch(""); });
   useOnClickOutside(notifRef,   () => setNotifOpen(false));
   useOnClickOutside(profileRef, () => setProfileOpen(false));
 
-  const unread = notifs.filter(n => !n.read).length;
+  // ── Polling notifications ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!user?.id) return;
 
-  const markAllRead = () => setNotifs(prev => prev.map(n => ({ ...n, read: true })));
-  const markRead    = (id) => setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    const fetchNotifs = async () => {
+      try {
+        const res = await fetch(`http://localhost:3001/api/notifications/${user.id}`);
+        if (res.ok) setNotifs(await res.json());
+      } catch (_) {}
+    };
+
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  const unread = notifs.filter(n => !n.is_read).length;
+
+  const markAllRead = async () => {
+    try {
+      await fetch(`http://localhost:3001/api/notifications/read-all/${user.id}`, { method: "PUT" });
+      setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (_) {}
+  };
+
+  const markRead = async (id) => {
+    try {
+      await fetch(`http://localhost:3001/api/notifications/${id}/read`, { method: "PUT" });
+      setNotifs(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (_) {}
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -135,17 +125,11 @@ export default function TopNavbar({ pageTitle = "" }) {
     navigate("/");
   };
 
-  // Ouvrir search et focus input
-  const openSearch = () => {
-    setSearchOpen(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
       <div className="flex items-center justify-between px-5 h-14 gap-4">
 
-        {/* ── Titre page (gauche) ── */}
+        {/* ── Titre page ── */}
         <div className="flex items-center gap-3 min-w-0">
           {pageTitle && (
             <h1 className="text-sm font-semibold text-gray-800 truncate hidden sm:block">
@@ -154,10 +138,7 @@ export default function TopNavbar({ pageTitle = "" }) {
           )}
         </div>
 
-        {/* ── Droite : search + notif + profil ── */}
         <div className="flex items-center gap-2 ml-auto">
-
-        
 
           {/* ── Notifications ── */}
           <div ref={notifRef} className="relative">
@@ -172,7 +153,6 @@ export default function TopNavbar({ pageTitle = "" }) {
               )}
             </button>
 
-            {/* Dropdown notifications */}
             {notifOpen && (
               <div className="absolute right-0 top-11 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
                 {/* Header */}
@@ -197,35 +177,36 @@ export default function TopNavbar({ pageTitle = "" }) {
 
                 {/* Liste */}
                 <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
-                  {notifs.map(n => {
-                    const Icon = n.icon;
-                    return (
-                      <button
-                        key={n.id}
-                        onClick={() => markRead(n.id)}
-                        className={`w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition cursor-pointer bg-transparent border-none
-                          ${!n.read ? "bg-blue-50/40" : ""}`}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.color}`}>
-                          <Icon size={14} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className={`text-[12px] font-semibold leading-tight ${!n.read ? "text-gray-900" : "text-gray-700"}`}>
-                              {n.title}
-                            </p>
-                            {!n.read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />
-                            )}
+                  {notifs.length === 0 ? (
+                    <p className="text-center text-gray-400 text-[12px] py-8">Aucune notification</p>
+                  ) : (
+                    notifs.map(n => {
+                      const { icon: Icon, color } = getNotifMeta(n.type);
+                      return (
+                        <button
+                          key={n.id}
+                          onClick={() => markRead(n.id)}
+                          className={`w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition cursor-pointer bg-transparent border-none
+                            ${!n.is_read ? "bg-blue-50/40" : ""}`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${color}`}>
+                            <Icon size={14} />
                           </div>
-                          <p className="text-[11px] text-gray-500 mt-0.5 leading-snug line-clamp-2">
-                            {n.message}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={`text-[12px] font-semibold leading-tight ${!n.is_read ? "text-gray-900" : "text-gray-700"}`}>
+                                {n.message}
+                              </p>
+                              {!n.is_read && (
+                                <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />
+                              )}
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-1">{formatTime(n.created_at)}</p>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
 
                 {/* Footer */}
@@ -244,11 +225,9 @@ export default function TopNavbar({ pageTitle = "" }) {
               onClick={() => { setProfileOpen(v => !v); setNotifOpen(false); }}
               className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition bg-transparent border-none cursor-pointer"
             >
-              {/* Avatar */}
               <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
                 {initials}
               </div>
-              {/* Nom + rôle */}
               <div className="hidden sm:flex flex-col items-start">
                 <span className="text-[12px] font-semibold text-gray-800 leading-tight">
                   {user?.name} {user?.surname}
@@ -261,10 +240,8 @@ export default function TopNavbar({ pageTitle = "" }) {
               />
             </button>
 
-            {/* Dropdown profil */}
             {profileOpen && (
               <div className="absolute right-0 top-11 w-52 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                {/* Carte utilisateur */}
                 <div className="px-4 py-3 bg-gradient-to-br from-blue-50 to-white border-b border-gray-100">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center shrink-0">
@@ -278,8 +255,6 @@ export default function TopNavbar({ pageTitle = "" }) {
                     </div>
                   </div>
                 </div>
-
-                {/* Actions */}
                 <div className="py-1.5">
                   <button
                     onClick={() => { navigate(`/${rolePath}/profile`); setProfileOpen(false); }}
@@ -288,12 +263,7 @@ export default function TopNavbar({ pageTitle = "" }) {
                     <User size={14} className="text-gray-400" />
                     Mon profil
                   </button>
-
-                  {/* Paramètres removed per request */}
-
                 </div>
-
-
                 <div className="border-t border-gray-100 py-1.5">
                   <button
                     onClick={handleLogout}
@@ -303,7 +273,6 @@ export default function TopNavbar({ pageTitle = "" }) {
                     Se déconnecter
                   </button>
                 </div>
-
               </div>
             )}
           </div>

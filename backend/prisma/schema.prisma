@@ -40,10 +40,9 @@ model tickets {
   sla_date_limite                  DateTime?                    @db.Timestamptz(6)
   sla_statut                       String?                      @default("en_cours")
   solution_date_resolved           DateTime?                    @db.Timestamptz(6)
-
   confirmation_requested           Boolean?                     @default(false)
   closing_note                     String?
-
+  notifications                    notifications[]
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]
   ticket_comments                  ticket_comments[]
@@ -68,6 +67,7 @@ model users {
   created_at                                                                DateTime?                    @default(now()) @db.Timestamp(6)
   service_id                                                                Int?
   department_id                                                             Int?
+  notifications                                                             notifications[]
   ticket_assignments_history_ticket_assignments_history_assigned_byTousers  ticket_assignments_history[] @relation("ticket_assignments_history_assigned_byTousers")
   ticket_assignments_history_ticket_assignments_history_from_user_idTousers ticket_assignments_history[] @relation("ticket_assignments_history_from_user_idTousers")
   ticket_assignments_history_ticket_assignments_history_to_user_idTousers   ticket_assignments_history[] @relation("ticket_assignments_history_to_user_idTousers")
@@ -112,7 +112,6 @@ model ticket_attachments {
 }
 
 model ticket_comments {
-
   id                 Int                  @id @default(autoincrement())
   ticket_id          Int?
   user_id            Int?
@@ -137,16 +136,21 @@ model sla_config {
   id             Int    @id @default(autoincrement())
   priority       String @unique @db.VarChar(50)
   duration_hours Int
+}
 
-  id           Int       @id @default(autoincrement())
-  ticket_id    Int?
-  user_id      Int?
-  comment      String
-  created_at   DateTime? @default(now()) @db.Timestamp(6)
-  comment_type String?   @default("comment") @db.VarChar(50)
-  tickets      tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users        users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+model notifications {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  ticket_id  Int?
+  type       String    @db.VarChar(50)
+  message    String
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  tickets    tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([user_id, is_read], map: "idx_notifications_is_read")
+  @@index([user_id], map: "idx_notifications_user_id")
 }
 
 enum category_enum {

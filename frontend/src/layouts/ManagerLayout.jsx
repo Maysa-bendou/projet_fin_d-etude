@@ -8,9 +8,16 @@ export default function ManagerLayout() {
       {/* Sidebar à gauche */}
       <SidebarManager />
       {/* Contenu à droite */}
-      <main className="flex-1 overflow-y-auto p-6">
-        <Outlet />
-      </main>
+     <div className="flex-1 flex flex-col overflow-hidden">
+             
+             {/* The Navbar you provided */}
+             <TopNavbar /> 
+     
+             {/* The Main area where your pages (Accueil, Tickets, etc.) appear */}
+             <main className="flex-1 overflow-y-auto p-4">
+               <Outlet />
+             </main>
+           </div>
 
     </div>
   );

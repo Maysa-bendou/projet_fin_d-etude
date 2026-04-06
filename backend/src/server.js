@@ -43,8 +43,13 @@ const chefRoutes = require('./routes/chef.routes');
 app.use('/api', chefRoutes);
 
 
+const notificationRoutes = require("./routes/notification.routes");
+app.use("/api/notifications", notificationRoutes);
+
+
 const accueilRoutes = require('./routes/accueil.routes');
 app.use('/api/accueil', accueilRoutes);
+
 
 
 const PORT = 3001;

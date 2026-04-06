@@ -1,4 +1,9 @@
 const prisma = require("../prismaClient");
+const {
+  notifyTechEmployeeReply,
+  notifyTechConfirmed,
+  notifyTechRejected,
+} = require("./notification.service");
 
 const employeeConfirmReply = async (req, res) => {
   try {
@@ -32,6 +37,12 @@ const employeeConfirmReply = async (req, res) => {
       return res.status(400).json({ error: "Deja repondu" });
     }
 
+    // ── Récupérer le ticket pour les notifications ──
+    const ticket = await prisma.tickets.findUnique({
+      where: { id },
+      select: { assigned_to: true, title: true, created_by: true },
+    });
+
     await prisma.$executeRaw`
   UPDATE tickets 
   SET 
@@ -52,6 +63,21 @@ const employeeConfirmReply = async (req, res) => {
       },
     });
 
+    // ── Notifier le technicien ──
+    if (ticket.assigned_to) {
+      const employee = await prisma.users.findUnique({
+        where: { id: parseInt(employeeId) },
+        select: { name: true, surname: true },
+      });
+      const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
+
+      if (isConfirmed) {
+        await notifyTechConfirmed(ticket.assigned_to, id, ticket.title, empName);
+      } else {
+        await notifyTechRejected(ticket.assigned_to, id, ticket.title, empName);
+      }
+    }
+
     res.json({ success: true, confirmed: isConfirmed });
   } catch (err) {
     console.error(err);
@@ -68,6 +94,12 @@ const employeeReply = async (req, res) => {
     if ((!message || !message.trim()) && files.length === 0) {
       return res.status(400).json({ error: "Message ou fichier requis" });
     }
+
+    // ── Récupérer le ticket pour les notifications ──
+    const ticket = await prisma.tickets.findUnique({
+      where: { id },
+      select: { assigned_to: true, title: true },
+    });
 
     const comment = await prisma.ticket_comments.create({
       data: {
@@ -96,6 +128,16 @@ const employeeReply = async (req, res) => {
       where: { id },
       data: { updated_at: new Date() },
     });
+
+    // ── Notifier le technicien ──
+    if (ticket.assigned_to) {
+      const employee = await prisma.users.findUnique({
+        where: { id: parseInt(employeeId) },
+        select: { name: true, surname: true },
+      });
+      const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
+      await notifyTechEmployeeReply(ticket.assigned_to, id, ticket.title, empName);
+    }
 
     res.json({ success: true, commentId: comment.id, filesUploaded: files.length });
   } catch (err) {

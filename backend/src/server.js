@@ -45,7 +45,8 @@ app.use('/api', chefRoutes);
 /////////////////////// NOTIFACTIONS ///////
 const notificationRoutes = require("./routes/notification.routes");
 app.use("/api/notifications", notificationRoutes);
-
+const accueilRoutes = require('./routes/accueil.routes'); // adapte le chemin
+app.use('/api/accueil', accueilRoutes);
 
 const PORT = 3001;
 app.listen(PORT, () => {

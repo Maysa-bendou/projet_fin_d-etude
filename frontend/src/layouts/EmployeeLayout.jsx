@@ -1,3 +1,4 @@
+
 import Sidebar from "../components/Sidebar/Sidebar";
 import Navbar from "../components/navbar/navbar";
 import { Outlet } from "react-router-dom";
@@ -12,7 +13,7 @@ export default function EmployeeLayout() {
       {/* Partie droite : Navbar en haut + contenu en bas */}
       <div className="flex flex-col flex-1 overflow-hidden">
 
-        {/* Navbar en haut */}
+         {/* Navbar en haut */}
         <TopNavbar />
 
         {/* Contenu de la page */}

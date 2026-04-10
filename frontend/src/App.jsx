@@ -26,6 +26,7 @@ import TicketsServicePage from "./pages/technicien/TicketsServicePage/TicketsSer
 import TicketsDetailsPage from "./pages/technicien/TicketsDetailsPage/TicketsDetailsPage";
 import HistoriqueTechnicien from "./pages/technicien/HistoriqueTechnicien/HistoriqueTechnicien";
 import TicketDetailTechnicien from "./pages/technicien/TicketDetailTechnicien/TicketDetailTechnicien";
+
 /* CHEF */
 import AccueilChef from "./pages/chefService/AccueilChef/AccueilChef";
 import RepartitionPage from "./pages/chefService/RepartitionPage/RepartitionPage";
@@ -41,104 +42,100 @@ import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPag
 import UsersPage from "./pages/admin/GestionUtilisateurs/UsersPage";
 import AccueilAdmin from "./pages/admin/AccueilAdmin/AccueilAdmin";
 import TicketsAdmin from "./pages/admin/Tickets/Tickets";
-import departement from "./pages/admin/Departements/Departements";
-import ParametresAdmin from "./pages/admin/Parametres/Parametres";
 import Departements from "./pages/admin/Departements/Departements";
+import ParametresAdmin from "./pages/admin/Parametres/Parametres";
 
 // ✅ Blocks access if not logged in or wrong role
 function PrivateRoute({ children, allowedRoles }) {
   const token = localStorage.getItem("token");
   const user  = JSON.parse(localStorage.getItem("user") || "null");
 
-  // Not logged in → back to login
   if (!token || !user) return <Navigate to="/" replace />;
-
-  // Wrong role → back to login
-  if (allowedRoles && !allowedRoles.includes(user.role))
-    return <Navigate to="/" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" replace />;
 
   return children;
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    // ── CETTE DIV ENVELOPPE TOUT ET GÈRE LE MODE NUIT ──
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-gray-100 transition-colors duration-500">
+      <BrowserRouter>
+        <Routes>
+          {/* LOGIN */}
+          <Route path="/" element={<LoginPage />} />
 
-        {/* LOGIN */}
-        <Route path="/" element={<LoginPage />} />
+          {/* ================= EMPLOYE ================= */}
+          <Route path="/employee" element={
+            <PrivateRoute allowedRoles={["employee"]}>
+              <EmployeeLayout />
+            </PrivateRoute>
+          }>
+            <Route index element={<AccueilPage />} />
+            <Route path="create-ticket" element={<CreateTicketPage />} />
+            <Route path="mes-tickets" element={<MesTicketsPage />} />
+            <Route path="ticket/:id" element={<TicketDetailsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
 
-        {/* ================= EMPLOYE ================= */}
-        <Route path="/employee" element={
-          <PrivateRoute allowedRoles={["employee"]}>
-            <EmployeeLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<AccueilPage />} />
-          <Route path="create-ticket" element={<CreateTicketPage />} />
-          <Route path="mes-tickets" element={<MesTicketsPage />} />
-          <Route path="ticket/:id" element={<TicketDetailsPage />} />
-          <Route path="profile" element={<ProfilePage />} />
-        </Route>
+          {/* ================= TECHNICIEN ================= */}
+          <Route path="/technician" element={
+            <PrivateRoute allowedRoles={["technician"]}>
+              <TechnicianLayout />
+            </PrivateRoute>
+          }>
+            <Route index element={<AccueilTechnicien />} />
+            <Route path="tickets-assignes" element={<TicketsAssignesPage />} />
+            <Route path="ticket-technicien/:id" element={<TicketDetailTechnicien />} />
+            <Route path="tickets-service" element={<TicketsServicePage />} />
+            <Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
+            <Route path="historique" element={<HistoriqueTechnicien />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
 
-        {/* ================= TECHNICIEN ================= */}
-        <Route path="/technician" element={
-          <PrivateRoute allowedRoles={["technician"]}>
-            <TechnicianLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<AccueilTechnicien />} />
-          <Route path="tickets-assignes" element={<TicketsAssignesPage />} />
-<Route path="ticket-technicien/:id" element={<TicketDetailTechnicien />} />
-  <Route path="tickets-service" element={<TicketsServicePage />} />
-<Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
-          <Route path="historique" element={<HistoriqueTechnicien />} />
-          <Route path="profile" element={<ProfilePage />} />
-        </Route>
+          {/* ================= CHEF SERVICE ================= */}
+          <Route path="/chef" element={
+            <PrivateRoute allowedRoles={["chef_service"]}>
+              <ChefLayout />
+            </PrivateRoute>
+          }>
+            <Route index element={<AccueilChef />} />
+            <Route path="repartition" element={<RepartitionPage />} />
+            <Route path="statistiques" element={<StatistiqueGlobal />} />
+            <Route path="profile" element={<ProfilePage />} />
+          </Route>
 
-        {/* ================= CHEF SERVICE ================= */}
-        <Route path="/chef" element={
-          <PrivateRoute allowedRoles={["chef_service"]}> {/* ✅ exact DB value */}
-            <ChefLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<AccueilChef />} />
-          <Route path="repartition" element={<RepartitionPage />} />
-          <Route path="statistiques" element={<StatistiqueGlobal />} />
-          <Route path="profile" element={<ProfilePage />} /> {/* ✅ added */}
-        </Route>
+          {/* ================= MANAGER ================= */}
+          <Route path="/manager" element={
+            <PrivateRoute allowedRoles={["manager"]}>
+              <ManagerLayout />
+            </PrivateRoute>
+          }>
+            <Route index element={<AccueilManager />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="tickets-service" element={<TicketsService />} />
+            <Route path="tickets-service/:id" element={<TicketsDetails />} />
+            <Route path="performances" element={<PerformancesPage />} />
+          </Route>
 
-{/* ================= MANAGER ================= */}
-<Route path="/manager" element={
-  <PrivateRoute allowedRoles={["manager"]}>
-    <ManagerLayout />
-  </PrivateRoute>
-}>
-  <Route index element={<AccueilManager />} />
-  <Route path="profile" element={<ProfilePage />} />
-  <Route path="tickets-service" element={<TicketsService />} />
-  <Route path="tickets-service/:id" element={<TicketsDetails />} />
-  <Route path="performances" element={<PerformancesPage />} />
-</Route>
+          {/* ================= ADMIN ================= */}
+          <Route path="/admin" element={
+            <PrivateRoute allowedRoles={["admin"]}> 
+              <AdminLayout />
+            </PrivateRoute>
+          }>
+            <Route index element={<UsersPage />}/>
+            <Route path="utilisateurs" element={<UsersPage />} />
+            <Route path="tickets" element={<TicketsAdmin />} />
+            <Route path="departements" element={<Departements />} />
+            <Route path="parametres" element={<ParametresAdmin />} />
+            <Route path="profile" element={<ProfilePage />} /> 
+          </Route>
 
-        {/* ================= ADMIN ================= */}
-        <Route path="/admin" element={
-          <PrivateRoute allowedRoles={["admin"]}> 
-            <AdminLayout />
-          </PrivateRoute>
-        }>
-          <Route index element={<UsersPage />}/>
-          <Route path="utilisateurs" element={<UsersPage />} />
-          <Route path="tickets" element={<TicketsAdmin />} />
-<Route path="departements" element={<Departements />} />
-          <Route path="parametres" element={<ParametresAdmin />} />
-          <Route path="profile" element={<ProfilePage />} /> 
-        </Route>
-
-        {/* Catch all unknown routes → login */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-
-      </Routes>
-    </BrowserRouter>
+          {/* Catch all unknown routes → login */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </div>
   );
 }

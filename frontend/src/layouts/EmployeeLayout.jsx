@@ -13,7 +13,7 @@ export default function EmployeeLayout() {
       <div className="flex flex-col flex-1 overflow-hidden">
 
         {/* Navbar en haut */}
-        <TopNavbar />
+        <Navbar />
 
         {/* Contenu de la page */}
         <main className="flex-1 overflow-y-auto p-6">

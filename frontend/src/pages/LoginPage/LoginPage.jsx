@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Import des images avec le bon chemin
 import djezzyFutureImg from "../../assets/images/djezzy_future_vr.png";
-import djezzyLogoImg from "../../assets/images/djezzy_logo_triangle.png";
+import djezzyLogoImg from "../../assets/images/Logo_Djezzy.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

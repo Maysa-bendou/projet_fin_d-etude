@@ -2,439 +2,175 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import RefreshButton from "../../../components/common/RefreshButton";
 
-// ── Styles badge ─────────────────────────────────
-const statutStyle = {
-  "Ouvert":                 "bg-blue-100 text-blue-700",
-  "En cours":               "bg-yellow-100 text-yellow-700",
-  "En attente":             "bg-purple-100 text-purple-700",
-  "En attente fournisseur": "bg-orange-100 text-orange-700",
-  "Résolu":                 "bg-green-100 text-green-700",
-  "Fermé":                  "bg-gray-200 text-gray-600",
-  "Rejeté":                 "bg-red-100 text-red-700",
-};
-
 const prioriteStyle = {
-  "Basse":    "bg-green-100 text-green-700",
-  "Normale":  "bg-yellow-100 text-yellow-700",
-  "Haute":    "bg-red-100 text-red-700",
-  "Critique": "bg-red-200 text-red-800",
+  "Basse": "bg-[#eefdf3] text-[#11a75c] border border-[#d1f7e0]",
+  "Moyenne": "bg-[#fff9eb] text-[#d99706] border border-[#fef0c7]",
+  "Normale": "bg-[#fff9eb] text-[#d99706] border border-[#fef0c7]",
+  "Haute": "bg-[#fff1f1] text-[#df2020] border border-[#fee2e2]",
+  "Critique": "bg-red-100 text-red-700 border border-red-200",
 };
 
-const categorieStyle = {
-  "Logiciels": "bg-purple-100 text-purple-800",
-  "Hardware":  "bg-blue-100 text-blue-800",
-  "Réseau":    "bg-teal-100 text-teal-800",
-  "Accès":     "bg-pink-100 text-pink-800",
-  "Sécurité":  "bg-orange-100 text-orange-800",
-  "Compte":    "bg-yellow-100 text-yellow-800",
+const statutStyle = {
+  "Ouvert": "bg-blue-100 text-blue-700",
+  "En cours": "bg-yellow-100 text-yellow-700",
+  "En attente": "bg-purple-100 text-purple-700",
+  "En attente fournisseur": "bg-orange-100 text-orange-700",
+  "Résolu": "bg-green-100 text-green-700",
+  "Fermé": "bg-gray-200 text-gray-600",
+  "Rejeté": "bg-red-100 text-red-700",
 };
 
-// ── Enum mappings EN → FR ─────────────────────────
-const statusFR = {
-  open:             "Ouvert",
-  in_progress:      "En cours",
-  pending:          "En attente",
-  pending_supplier: "En attente fournisseur",
-  resolved:         "Résolu",
-  closed:           "Fermé",
-  rejected:         "Rejeté",
-};
+const statusFR = { open: "Ouvert", in_progress: "En cours", pending: "En attente", pending_supplier: "En attente fournisseur", resolved: "Résolu", closed: "Fermé", rejected: "Rejeté" };
+const statusEN = { "Ouvert": "open", "En cours": "in_progress", "En attente": "pending", "En attente fournisseur": "pending_supplier", "Résolu": "resolved", "Fermé": "closed", "Rejeté": "rejected" };
+const priorityFR = { low: "Basse", medium: "Moyenne", high: "Haute", critical: "Critique" };
+const categoryFR = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", account: "Compte" };
 
-const statusEN = {
-  "Ouvert":                 "open",
-  "En cours":               "in_progress",
-  "En attente":             "pending",
-  "En attente fournisseur": "pending_supplier",
-  "Résolu":                 "resolved",
-  "Fermé":                  "closed",
-  "Rejeté":                 "rejected",
-};
-
-const priorityFR = {
-  low:      "Basse",
-  medium:   "Normale",
-  high:     "Haute",
-  critical: "Critique",
-};
-
-const categoryFR = {
-  hardware: "Hardware",
-  software: "Logiciels",
-  network:  "Réseau",
-  access:   "Accès",
-  security: "Sécurité",
-  account:  "Compte",
-};
-
-// ── Cartes stats config ───────────────────────────
 const STAT_CARDS = [
-  { label: "Total",                    key: null,                        cls: "text-gray-700"   },
-  { label: "Ouvert",                   key: "Ouvert",                    cls: "text-blue-600"   },
-  { label: "En cours",                 key: "En cours",                  cls: "text-yellow-600" },
-  { label: "En attente",               key: "En attente",                cls: "text-purple-600" },
-  { label: "En attente fournisseur",   key: "En attente fournisseur",    cls: "text-orange-600" },
-  { label: "Résolu",                   key: "Résolu",                    cls: "text-green-600"  },
-  { label: "Fermé",                    key: "Fermé",                     cls: "text-gray-500"   },
-  { label: "Rejeté",                   key: "Rejeté",                    cls: "text-red-600"    },
+  { label: "Total", key: null, cls: "text-gray-700" },
+  { label: "Ouvert", key: "Ouvert", cls: "text-blue-600" },
+  { label: "En cours", key: "En cours", cls: "text-yellow-600" },
+  { label: "En attente", key: "En attente", cls: "text-purple-600" },
+  { label: "En attente fournisseur", key: "En attente fournisseur", cls: "text-orange-600" },
+  { label: "Résolu", key: "Résolu", cls: "text-green-600" },
+  { label: "Fermé", key: "Fermé", cls: "text-gray-500" },
+  { label: "Rejeté", key: "Rejeté", cls: "text-red-600" },
 ];
 
-// ── Barre SLA ─────────────────────────────────────
-function SlaBar({ slaDueDate }) {
-  if (!slaDueDate) return <span className="text-gray-400 text-xs">N/A</span>;
-
-  const now       = Date.now();
-  const due       = new Date(slaDueDate).getTime();
-  const total     = 24 * 3600 * 1000;
-  const remaining = due - now;
-  const pct       = Math.min(100, Math.max(0, (remaining / total) * 100));
-  const depasse   = remaining <= 0;
-
-  const hours   = Math.floor(Math.abs(remaining) / 3600000);
-  const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
-
-  const barColor = depasse
-    ? "bg-red-500"
-    : pct < 25
-      ? "bg-red-400"
-      : pct < 60
-        ? "bg-yellow-400"
-        : "bg-green-400";
-
-  return (
-    <div className="flex flex-col gap-1 min-w-[100px]">
-      <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className={`h-1.5 rounded-full transition-all ${barColor}`}
-          style={{ width: depasse ? "100%" : `${100 - pct}%` }}
-        />
-      </div>
-      <span className={`text-xs ${depasse ? "text-red-600 font-medium" : "text-gray-400"}`}>
-        {depasse
-          ? `⚠ +${hours}h ${minutes}m dépassé`
-          : hours > 0
-            ? `${hours}h ${minutes}m restantes`
-            : `${minutes}m restantes`}
-      </span>
-    </div>
-  );
-}
-
-// ── Composant principal ───────────────────────────
 export default function TicketsAssignesPage() {
   const navigate = useNavigate();
-
-  const [ticketsData,     setTicketsData]     = useState([]);
-  const [loading,         setLoading]         = useState(true);
-  const [error,           setError]           = useState("");
-  const [statuts,         setStatuts]         = useState({});
-
-  const [search,          setSearch]          = useState("");
-  const [filterStatut,    setFilterStatut]    = useState("");
-  const [filterPriorite,  setFilterPriorite]  = useState("");
+  const [ticketsData, setTicketsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statuts, setStatuts] = useState({});
+  const [search, setSearch] = useState("");
+  const [filterStatut, setFilterStatut] = useState("");
+  const [filterPriorite, setFilterPriorite] = useState("");
   const [filterCategorie, setFilterCategorie] = useState("");
-
-  const [enumStatuts,     setEnumStatuts]     = useState([]);
-  const [enumPriorites,   setEnumPriorites]   = useState([]);
-  const [enumCategories,  setEnumCategories]  = useState([]);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // ── Fetch enums (une seule fois) ──────────────────
-  useEffect(() => {
-    fetch("http://localhost:3001/api/tech/enums")
-      .then(r => r.json())
-      .then(data => {
-        setEnumStatuts(data.statuts.map(s => statusFR[s] ?? s));
-        setEnumPriorites(data.priorites.map(p => priorityFR[p] ?? p));
-        setEnumCategories(data.categories.map(c => categoryFR[c] ?? c));
-      })
-      .catch(console.error);
-  }, []);
-
-  // ── Fetch tickets ────────────────────────────────
   const fetchTickets = useCallback(async () => {
     setLoading(true);
-    setError("");
     try {
       const res = await fetch(`http://localhost:3001/api/tech/assigned/${user.id}`);
-      if (!res.ok) throw new Error("Erreur fetch");
       const data = await res.json();
-
       const mapped = data.map(t => ({
-        id:          t.id,
-        titre:       t.title,
-        description: t.description,
-        employe:     t.employee_name,
-        priorite:    priorityFR[t.priority]  ?? t.priority,
-        categorie:   categoryFR[t.category]  ?? t.category,
-        statut:      statusFR[t.status]      ?? t.status,
-        createdAt:   t.created_at,
-       slaDueDate: t.sla_date_limite,
+        id: t.id, 
+        titre: t.title, 
+        employe: t.employee_name,
+        priorite: priorityFR[t.priority] ?? t.priority,
+        categorie: categoryFR[t.category] ?? t.category,
+        statut: statusFR[t.status] ?? t.status,
+        date: t.created_at ? new Date(t.created_at).toLocaleDateString('fr-FR') : "N/C",
       }));
-
       setTicketsData(mapped);
       setStatuts(Object.fromEntries(mapped.map(t => [t.id, t.statut])));
-    } catch (err) {
-      console.error(err);
-      setError("Impossible de récupérer les tickets.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   }, [user.id]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
-  // ── Changer statut ───────────────────────────────
-  async function changerStatut(e, id, nouveauStatut) {
-    e.stopPropagation();
-    setStatuts(prev => ({ ...prev, [id]: nouveauStatut }));
-    try {
-      await fetch(`http://localhost:3001/api/tech/tickets/${id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: statusEN[nouveauStatut] }),
-      });
-    } catch (err) {
-      console.error("Erreur mise à jour statut:", err);
-    }
-  }
+  const handleReset = () => {
+    setSearch("");
+    setFilterStatut("");
+    setFilterPriorite("");
+    setFilterCategorie("");
+  };
 
-  // ── Filtrage ─────────────────────────────────────
   const filtered = ticketsData.filter(t => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !search ||
-      String(t.id).includes(q) ||
-      t.titre?.toLowerCase().includes(q) ||
-      (t.createdAt && new Date(t.createdAt).toLocaleDateString("fr").includes(q));
-    return (
-      matchSearch &&
-      (!filterStatut    || statuts[t.id] === filterStatut) &&
-      (!filterPriorite  || t.priorite    === filterPriorite) &&
-      (!filterCategorie || t.categorie   === filterCategorie)
-    );
+    const matchSearch = t.titre?.toLowerCase().includes(search.toLowerCase()) || String(t.id).includes(search) || t.date.includes(search);
+    const matchStatut = !filterStatut || statuts[t.id] === filterStatut;
+    const matchPriorite = !filterPriorite || t.priorite === filterPriorite;
+    const matchCategorie = !filterCategorie || t.categorie === filterCategorie;
+    return matchSearch && matchStatut && matchPriorite && matchCategorie;
   });
 
-  // ── Compteurs ────────────────────────────────────
-  const counts = Object.fromEntries(
-    STAT_CARDS
-      .filter(c => c.key)
-      .map(c => [c.key, ticketsData.filter(t => statuts[t.id] === c.key).length])
-  );
-
-  const slaDepasses = ticketsData.filter(
-    t => t.slaDueDate && new Date(t.slaDueDate) < new Date()
-  );
-
-  // ── Rendu ─────────────────────────────────────────
-  if (loading) return (
-    <div className="p-6 flex items-center gap-2 text-gray-500 text-sm">
-      <span className="animate-spin">↻</span> Chargement…
-    </div>
-  );
-
-  if (error) return (
-    <div className="p-6 text-red-600 text-sm bg-red-50 rounded-xl border border-red-200">
-      {error}
-    </div>
-  );
+  const counts = Object.fromEntries(STAT_CARDS.filter(c => c.key).map(c => [c.key, ticketsData.filter(t => statuts[t.id] === c.key).length]));
 
   return (
-    <div className="p-6">
-
-      {/* En-tête */}
-      <div className="mb-5">
-        <h1 className="text-2xl font-semibold text-gray-800">Mes tickets assignés</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Suivi des incidents qui vous sont attribués — mettez à jour les statuts et respectez les délais SLA.
-        </p>
+    <div className="p-8 min-h-screen bg-[#f9f6f2]">
+      
+      <div className="mb-8 flex justify-between items-center">
+        <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Mes tickets assignés</h1>
+        <RefreshButton onRefresh={fetchTickets} />
       </div>
 
-      {/* Alerte SLA */}
-      {slaDepasses.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5 flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-          <p className="text-red-700 text-sm font-medium">
-            {slaDepasses.length} ticket(s) ont dépassé le délai SLA
-          </p>
-          <div className="ml-auto flex gap-2 flex-wrap">
-            {slaDepasses.map(t => (
-              <span
-                key={t.id}
-                onClick={() => navigate(`/technician/ticket-technicien/${t.id}`)}
-                className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium cursor-pointer hover:bg-red-200 transition"
-              >
-                #{t.id}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Cartes stats */}
-      <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 mb-6">
+      {/* Cartes Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-8">
         {STAT_CARDS.map(({ label, key, cls }) => (
-          <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
-            <p className="text-xs text-gray-400 mb-1 truncate">{label}</p>
-            <p className={`text-2xl font-semibold ${cls}`}>
+          <div key={label} className="bg-white rounded-2xl border-2 border-[#d9d4cc] p-4 flex flex-col items-center justify-center text-center shadow-sm">
+            <p className="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-tighter">{label}</p>
+            <p className={`text-2xl font-black ${cls}`}>
               {key === null ? ticketsData.length : (counts[key] ?? 0)}
             </p>
           </div>
         ))}
       </div>
 
-      {/* Filtres */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <input
-          type="text"
-          placeholder="Recherche par ID, titre ou date…"
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-60 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+      <div className="bg-white rounded-[32px] border-2 border-[#d9d4cc] shadow-sm p-8">
+        
+        <h2 className="text-xl font-bold text-slate-800 mb-6">Liste des interventions</h2>
 
-        <select
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-          value={filterStatut}
-          onChange={e => setFilterStatut(e.target.value)}
-        >
-          <option value="">Tous les statuts</option>
-          {enumStatuts.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-
-        <select
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-          value={filterPriorite}
-          onChange={e => setFilterPriorite(e.target.value)}
-        >
-          <option value="">Toutes les priorités</option>
-          {enumPriorites.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-
-        <select
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-          value={filterCategorie}
-          onChange={e => setFilterCategorie(e.target.value)}
-        >
-          <option value="">Toutes les catégories</option>
-          {enumCategories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-
-        <button
-          className="text-red-500 border border-red-200 px-3 py-2 rounded-lg text-sm hover:bg-red-50 transition"
-          onClick={() => {
-            setSearch("");
-            setFilterStatut("");
-            setFilterPriorite("");
-            setFilterCategorie("");
-          }}
-        >
-          Réinitialiser
-        </button>
-
-        <div className="ml-auto">
-          <RefreshButton onRefresh={fetchTickets} />
+        {/* Filtres */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          <div className="relative flex-1 min-w-[250px]">
+            <input
+              type="text"
+              placeholder="Recherche par ID, titre ou date..."
+              className="w-full bg-[#fcfafb] border border-gray-200 rounded-xl py-2.5 px-4 text-sm outline-none focus:ring-2 focus:ring-blue-50 transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <select className="bg-[#fcfafb] border border-gray-200 rounded-xl py-2.5 px-4 text-sm outline-none text-gray-600" value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}>
+            <option value="">Tous les statuts</option>
+            {Object.values(statusFR).map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select className="bg-[#fcfafb] border border-gray-200 rounded-xl py-2.5 px-4 text-sm outline-none text-gray-600" value={filterPriorite} onChange={(e) => setFilterPriorite(e.target.value)}>
+            <option value="">Toutes les priorités</option>
+            {["Basse", "Moyenne", "Haute", "Critique"].map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <button onClick={handleReset} className="text-red-600 font-bold px-4 py-2.5 hover:bg-red-50 rounded-xl transition-colors text-sm">Réinitialiser</button>
         </div>
-      </div>
 
-      {/* Compteur résultats */}
-      <p className="text-xs text-gray-400 mb-2">
-        {filtered.length} ticket(s) affiché(s) sur {ticketsData.length}
-      </p>
-
-      {/* Tableau */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500">
-            <tr className="text-left">
-              <th className="px-4 py-3 font-medium">ID</th>
-              <th className="px-4 py-3 font-medium">Titre</th>
-              <th className="px-4 py-3 font-medium">Catégorie</th>
-              <th className="px-4 py-3 font-medium">Employé</th>
-              <th className="px-4 py-3 font-medium">Créé le</th>
-              <th className="px-4 py-3 font-medium">Priorité</th>
-              <th className="px-4 py-3 font-medium">Statut</th>
-              <th className="px-4 py-3 font-medium">SLA restant</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(t => {
-              const depasse = t.slaDueDate && new Date(t.slaDueDate) < new Date();
-              return (
-                <tr
-                  key={t.id}
-                  onClick={() => navigate(`/technician/ticket-technicien/${t.id}`)}
-                  className={`border-t border-gray-100 hover:bg-gray-50 transition cursor-pointer
-                    ${depasse ? "bg-red-50 hover:bg-red-100" : ""}`}
-                >
-                  {/* ID */}
-                  <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                    #{t.id}
+        {/* Tableau avec barre de titre BEIGE */}
+        <div className="overflow-hidden border-2 border-[#eeebe7] rounded-[24px]">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              {/* LA MODIFICATION EST ICI : bg-[#f9f6f2] ajouté à la ligne de titre */}
+              <tr className="text-[11px] font-black text-[#94a3b8] uppercase tracking-[0.15em] bg-[#f9f6f2] border-b border-[#eeebe7]">
+                <th className="px-6 py-4 w-20">ID</th>
+                <th className="px-6 py-4">Titre</th>
+                <th className="px-6 py-4">Employé</th>
+                <th className="px-6 py-4">Priorité</th>
+                <th className="px-4 py-4 text-right">Statut</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#eeebe7] bg-white">
+              {filtered.map(t => (
+                <tr key={t.id} onClick={() => navigate(`/technician/ticket-technicien/${t.id}`)} className="hover:bg-[#f3f0ec] cursor-pointer transition-colors group">
+                  <td className="px-6 py-5 text-xs font-black text-slate-300">#{t.id}</td>
+                  <td className="px-6 py-5">
+                    <p className="font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{t.titre}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase">{t.categorie}</p>
                   </td>
-
-                  {/* Titre */}
-                  <td className="px-4 py-3 font-medium text-gray-800 max-w-[160px]">
-                    <span className="block truncate">{t.titre}</span>
+                  <td className="px-6 py-5 text-sm font-medium text-slate-500">{t.employe}</td>
+                  <td className="px-6 py-5">
+                    <span className={`px-4 py-1 rounded-full text-[11px] font-bold ${prioriteStyle[t.priorite]}`}>{t.priorite}</span>
                   </td>
-
-                  {/* Catégorie */}
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium
-                      ${categorieStyle[t.categorie] ?? "bg-gray-100 text-gray-600"}`}>
-                      {t.categorie ?? "N/A"}
-                    </span>
-                  </td>
-
-                  {/* Employé */}
-                  <td className="px-4 py-3 text-gray-600 text-xs">
-                    {t.employe || "N/A"}
-                  </td>
-
-                  {/* Date création */}
-                  <td className="px-4 py-3 text-gray-400 text-xs">
-                    {t.createdAt
-                      ? new Date(t.createdAt).toLocaleDateString("fr-FR")
-                      : "N/A"}
-                  </td>
-
-                  {/* Priorité */}
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium
-                      ${prioriteStyle[t.priorite] ?? "bg-gray-100 text-gray-600"}`}>
-                      {t.priorite ?? "N/A"}
-                    </span>
-                  </td>
-
-                  {/* Statut — select inline, stop propagation */}
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                    <select
-                      value={statuts[t.id] ?? ""}
-                      onChange={e => changerStatut(e, t.id, e.target.value)}
-                      className={`border-none rounded-full px-2 py-1 text-xs font-medium
-                        cursor-pointer focus:outline-none
-                        ${statutStyle[statuts[t.id]] ?? "bg-gray-100 text-gray-600"}`}
-                    >
-                      {Object.keys(statusEN).map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
+                  <td className="px-6 py-5 text-right" onClick={e => e.stopPropagation()}>
+                    <select value={statuts[t.id] ?? ""} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase outline-none cursor-pointer ${statutStyle[statuts[t.id]]}`}>
+                      {Object.keys(statusEN).map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
-
-                  {/* SLA */}
-                  <td className="px-4 py-3">
-                    <SlaBar slaDueDate={t.slaDueDate} />
-                  </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-12 text-gray-400 text-sm">
-            Aucun ticket trouvé
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        <p className="text-[11px] text-gray-400 mt-4 px-2">
+          {filtered.length} ticket(s) affiché(s) sur {ticketsData.length}
+        </p>
       </div>
     </div>
   );

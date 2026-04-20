@@ -9,41 +9,35 @@ import {
   AlertCircle,
   Clock,
   Info,
-  Ticket,
+  Ticket
 } from "lucide-react";
 
+// --- Configuration ---
 const ROLE_LABEL = {
-  technician:   "Technicien",
-  technicien:   "Technicien",
-  manager:      "Manager",
+  technician: "Technicien",
+  manager: "Manager",
   chef_service: "Chef de service",
-  employee:     "Employé",
-  admin:        "Administrateur",
+  employee: "Employé",
+  admin: "Administrateur",
 };
 
 const ROLE_PATH = {
-  technician:   "technician",
-  technicien:   "technician",
-  manager:      "manager",
+  technician: "technician",
+  manager: "manager",
   chef_service: "chef",
-  employee:     "employee",
-  admin:        "admin",
+  employee: "employee",
+  admin: "admin",
 };
 
-// ── Icône et couleur selon le type de notification ────────────────────────
+// Fonctions utilitaires du Code 2
 function getNotifMeta(type) {
   switch (type) {
-    case "assigned":         return { icon: Ticket,        color: "text-blue-600 bg-blue-50"   };
-    case "sla":              return { icon: AlertCircle,   color: "text-red-600 bg-red-50"     };
-    case "solution":         return { icon: CheckCircle2,  color: "text-green-600 bg-green-50" };
-    case "info":             return { icon: Info,          color: "text-amber-600 bg-amber-50" };
-    case "status":           return { icon: Clock,         color: "text-purple-600 bg-purple-50" };
-    case "emp_reply":        return { icon: Info,          color: "text-amber-600 bg-amber-50" };
-    case "confirmed":        return { icon: CheckCircle2,  color: "text-green-600 bg-green-50" };
-    case "rejected_confirm": return { icon: AlertCircle,   color: "text-red-600 bg-red-50"     };
-    case "new_ticket":       return { icon: Ticket,        color: "text-blue-600 bg-blue-50"   };
-    case "updated":          return { icon: Info,          color: "text-amber-600 bg-amber-50" };
-    default:                 return { icon: Info,          color: "text-gray-600 bg-gray-50"   };
+    case "assigned": return { icon: Ticket, color: "text-blue-600 bg-blue-50" };
+    case "sla": return { icon: AlertCircle, color: "text-red-600 bg-red-50" };
+    case "solution": return { icon: CheckCircle2, color: "text-green-600 bg-green-50" };
+    case "info": return { icon: Info, color: "text-amber-600 bg-amber-50" };
+    case "status": return { icon: Clock, color: "text-purple-600 bg-purple-50" };
+    default: return { icon: Info, color: "text-gray-600 bg-gray-50" };
   }
 }
 
@@ -53,64 +47,59 @@ function formatTime(dateStr) {
   const m = Math.floor(diff / 60000);
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(diff / 86400000);
-  if (m < 1)  return "À l'instant";
+  if (m < 1) return "À l'instant";
   if (m < 60) return `Il y a ${m} min`;
   if (h < 24) return `Il y a ${h}h`;
   return `Il y a ${d}j`;
 }
 
-function useOnClickOutside(ref, handler) {
-  useEffect(() => {
-    const listener = (e) => {
-      if (!ref.current || ref.current.contains(e.target)) return;
-      handler();
-    };
-    document.addEventListener("mousedown", listener);
-    return () => document.removeEventListener("mousedown", listener);
-  }, [ref, handler]);
-}
+export default function TopNavbar() {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const rolePath = ROLE_PATH[user?.role] || "";
+  const roleLabel = ROLE_LABEL[user?.role] || user?.role || "";
+  const initials = `${user?.name?.[0] || "?"}${user?.surname?.[0] || ""}`.toUpperCase();
 
-export default function TopNavbar({ pageTitle = "" }) {
-  const navigate    = useNavigate();
-  const user        = JSON.parse(localStorage.getItem("user") || "null");
-  const rolePath    = ROLE_PATH[user?.role] || "";
-  const roleLabel   = ROLE_LABEL[user?.role] || user?.role || "";
-  const initials    = `${user?.name?.[0] || "?"}${user?.surname?.[0] || ""}`.toUpperCase();
-
-  const [notifOpen,   setNotifOpen]   = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifs,      setNotifs]      = useState([]);
+  const [notifs, setNotifs] = useState([]);
+  const [time, setTime] = useState(new Date());
 
-  const notifRef   = useRef(null);
+  const notifRef = useRef(null);
   const profileRef = useRef(null);
 
-  useOnClickOutside(notifRef,   () => setNotifOpen(false));
-  useOnClickOutside(profileRef, () => setProfileOpen(false));
-
-  // ── Polling notifications ─────────────────────────────────────────────
+  // Fermer les menus si on clique ailleurs
   useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchNotifs = async () => {
-      try {
-        const res = await fetch(`http://localhost:3001/api/notifications/${user.id}`);
-        if (res.ok) setNotifs(await res.json());
-      } catch (_) {}
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) setNotifOpen(false);
+      if (profileRef.current && !profileRef.current.contains(event.target)) setProfileOpen(false);
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
+  // Horloge
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Fetch Notifications
+  const fetchNotifs = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`http://localhost:3001/api/notifications/${user.id}`);
+      if (res.ok) setNotifs(await res.json());
+    } catch (_) {}
+  };
+
+  useEffect(() => {
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 30000);
     return () => clearInterval(interval);
   }, [user?.id]);
 
   const unread = notifs.filter(n => !n.is_read).length;
-
-  const markAllRead = async () => {
-    try {
-      await fetch(`http://localhost:3001/api/notifications/read-all/${user.id}`, { method: "PUT" });
-      setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
-    } catch (_) {}
-  };
 
   const markRead = async (id) => {
     try {
@@ -126,59 +115,47 @@ export default function TopNavbar({ pageTitle = "" }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
-      <div className="flex items-center justify-between px-5 h-14 gap-4">
-
-        {/* ── Titre page ── */}
-        <div className="flex items-center gap-3 min-w-0">
-          {pageTitle && (
-            <h1 className="text-sm font-semibold text-gray-800 truncate hidden sm:block">
-              {pageTitle}
-            </h1>
-          )}
+    <header className="w-full px-6 py-4" style={{ backgroundColor: "#f9f6f2" }}>
+      <div className="flex items-center justify-between bg-white px-8 h-16 rounded-[40px] border border-[#e2e8f0] shadow-sm">
+        
+        {/* GAUCHE : Logo & Horloge */}
+        <div className="flex items-center gap-6">
+          <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest border-r border-slate-100 pr-6">
+            Support Panel
+          </span>
+          <div className="flex items-center gap-2 text-slate-500">
+            <Clock size={14} className="text-blue-500" />
+            <span className="text-sm font-bold tabular-nums">
+              {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
-
-          {/* ── Notifications ── */}
+        {/* DROITE : Actions */}
+        <div className="flex items-center gap-4">
+          
+          {/* Notifications */}
           <div ref={notifRef} className="relative">
             <button
-              onClick={() => { setNotifOpen(v => !v); setProfileOpen(false); }}
-              className="relative flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition bg-transparent border-none cursor-pointer"
-              title="Notifications"
+              onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
+              className="relative p-2.5 rounded-2xl text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-all cursor-pointer border-none bg-transparent"
             >
-              <Bell size={18} />
+              <Bell size={20} />
               {unread > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
               )}
             </button>
 
+            {/* Menu Déroulant Notifications */}
             {notifOpen && (
-              <div className="absolute right-0 top-11 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-800">Notifications</span>
-                    {unread > 0 && (
-                      <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full">
-                        {unread}
-                      </span>
-                    )}
-                  </div>
-                  {unread > 0 && (
-                    <button
-                      onClick={markAllRead}
-                      className="text-[11px] text-blue-600 hover:underline bg-transparent border-none cursor-pointer"
-                    >
-                      Tout marquer lu
-                    </button>
-                  )}
+              <div className="absolute right-0 mt-3 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                <div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center">
+                  <span className="font-bold text-slate-800">Notifications</span>
+                  {unread > 0 && <span className="bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-bold">{unread} nouvelles</span>}
                 </div>
-
-                {/* Liste */}
-                <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                <div className="max-h-[400px] overflow-y-auto">
                   {notifs.length === 0 ? (
-                    <p className="text-center text-gray-400 text-[12px] py-8">Aucune notification</p>
+                    <div className="p-8 text-center text-slate-400 text-sm">Aucune notification</div>
                   ) : (
                     notifs.map(n => {
                       const { icon: Icon, color } = getNotifMeta(n.type);
@@ -186,93 +163,64 @@ export default function TopNavbar({ pageTitle = "" }) {
                         <button
                           key={n.id}
                           onClick={() => markRead(n.id)}
-                          className={`w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition cursor-pointer bg-transparent border-none
-                            ${!n.is_read ? "bg-blue-50/40" : ""}`}
+                          className={`w-full flex gap-3 px-5 py-4 text-left hover:bg-slate-50 transition border-none bg-transparent cursor-pointer ${!n.is_read ? "bg-blue-50/30" : ""}`}
                         >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${color}`}>
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
                             <Icon size={14} />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className={`text-[12px] font-semibold leading-tight ${!n.is_read ? "text-gray-900" : "text-gray-700"}`}>
-                                {n.message}
-                              </p>
-                              {!n.is_read && (
-                                <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />
-                              )}
-                            </div>
-                            <p className="text-[10px] text-gray-400 mt-1">{formatTime(n.created_at)}</p>
+                          <div className="flex-1">
+                            <p className={`text-xs leading-snug ${!n.is_read ? "font-bold text-slate-900" : "text-slate-600"}`}>{n.message}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">{formatTime(n.created_at)}</p>
                           </div>
                         </button>
                       );
                     })
                   )}
                 </div>
-
-                {/* Footer */}
-                <div className="px-4 py-2.5 border-t border-gray-100 text-center">
-                  <button className="text-[11px] text-blue-600 hover:underline bg-transparent border-none cursor-pointer">
-                    Voir toutes les notifications
-                  </button>
-                </div>
               </div>
             )}
           </div>
 
-          {/* ── Profil ── */}
+          <div className="w-[1px] h-8 bg-slate-100 mx-1" />
+
+          {/* Profil */}
           <div ref={profileRef} className="relative">
             <button
-              onClick={() => { setProfileOpen(v => !v); setNotifOpen(false); }}
-              className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-lg hover:bg-gray-100 transition bg-transparent border-none cursor-pointer"
+              onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
+              className="flex items-center gap-3 p-1 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer border-none bg-transparent"
             >
-              <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
-                {initials}
-              </div>
-              <div className="hidden sm:flex flex-col items-start">
-                <span className="text-[12px] font-semibold text-gray-800 leading-tight">
+              <div className="hidden md:flex flex-col text-right">
+                <span className="text-xs font-bold text-slate-900 leading-none">
                   {user?.name} {user?.surname}
                 </span>
-                <span className="text-[10px] text-gray-400 leading-tight">{roleLabel}</span>
+                <span className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">
+                  {roleLabel}
+                </span>
               </div>
-              <ChevronDown
-                size={14}
-                className={`text-gray-400 transition-transform ${profileOpen ? "rotate-180" : ""}`}
-              />
+              <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-lg shadow-blue-100">
+                {initials}
+              </div>
+              <ChevronDown size={14} className={`text-slate-300 transition-transform ${profileOpen ? "rotate-180" : ""}`} />
             </button>
 
+            {/* Menu Déroulant Profil */}
             {profileOpen && (
-              <div className="absolute right-0 top-11 w-52 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                <div className="px-4 py-3 bg-gradient-to-br from-blue-50 to-white border-b border-gray-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center shrink-0">
-                      {initials}
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-gray-900">
-                        {user?.name} {user?.surname}
-                      </p>
-                      <p className="text-[10px] text-gray-400">{roleLabel}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="py-1.5">
-                  <button
-                    onClick={() => { navigate(`/${rolePath}/profile`); setProfileOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] text-gray-700 hover:bg-gray-50 transition bg-transparent border-none cursor-pointer text-left"
-                  >
-                    <User size={14} className="text-gray-400" />
-                    Mon profil
-                  </button>
-                </div>
-                <div className="border-t border-gray-100 py-1.5">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[12px] text-red-600 hover:bg-red-50 transition bg-transparent border-none cursor-pointer text-left"
-                  >
-                    <LogOut size={14} className="text-red-500" />
-                    Se déconnecter
-                  </button>
-                </div>
+              <div className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-50 p-2">
+                <button
+                  onClick={() => { navigate(`/${rolePath}/profile`); setProfileOpen(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition border-none bg-transparent cursor-pointer"
+                >
+                  <User size={16} />
+                  <span className="font-semibold">Mon Profil</span>
+                </button>
+                <div className="h-[1px] bg-slate-50 my-1 mx-2" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-red-500 hover:bg-red-50 transition border-none bg-transparent cursor-pointer"
+                >
+                  <LogOut size={16} />
+                  <span className="font-semibold">Déconnexion</span>
+                </button>
               </div>
             )}
           </div>

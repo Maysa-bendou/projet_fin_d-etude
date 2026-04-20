@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import {
   MessageSquare, CheckCircle2, Forward, Lock, Send, ShieldCheck,
-  Info, AlertTriangle, User, Layers, Tag, Paperclip, X
+  Info, AlertTriangle, User, Layers, Tag
 } from "lucide-react";
 import { CATEGORIES_EN } from "./constants";
 import ConvBubble from "./utils/ConvBubble";
@@ -13,6 +13,18 @@ const CATEGORY_FR = {
   hardware: "Matériel", software: "Logiciels", network: "Réseau",
   access: "Accès", security: "Sécurité", account: "Compte",
 };
+
+const TAB_STYLE = (active, color = '#3b82f6') => ({
+  flex: 1, padding: '11px 0',
+  fontSize: 12, fontWeight: 700,
+  border: 'none', borderBottom: active ? `2px solid ${color}` : '2px solid transparent',
+  background: 'transparent', cursor: 'pointer',
+  color: active ? color : '#9ca3af',
+  fontFamily: 'Inter, sans-serif',
+  transition: 'color 0.15s, border-color 0.15s'
+});
+
+const tabColor = { respond: '#3b82f6', redirect: '#7c3aed', close: '#374151' };
 
 export default function ConversationActions({
   conversation, empInitials, empName, currentUser, convEndRef,
@@ -27,161 +39,177 @@ export default function ConversationActions({
 }) {
   const solutionBlockedLocal = solutionBlocked || false;
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+  const inputStyle = {
+    width: '100%', fontSize: 12, padding: '8px 12px',
+    border: '1px solid #e5e7eb', borderRadius: 8,
+    background: '#f9fafb', color: '#111827',
+    outline: 'none', fontFamily: 'Inter, sans-serif',
+    boxSizing: 'border-box'
+  };
 
-      {/* ── Conversation ── */}
-      <div className="bg-white rounded-xl border border-gray-200 h-[500px] flex flex-col">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-            <MessageSquare size={12}/> Conversation
-          </h2>
-          <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 16, fontFamily: 'Inter, sans-serif' }}>
+
+      {/* ── CONVERSATION ── */}
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', height: 520, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Header */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MessageSquare size={13} color="#9ca3af" />
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Conversation</p>
+          </div>
+          <span style={{ fontSize: 11, background: '#f3f4f6', color: '#6b7280', padding: '2px 10px', borderRadius: 99, fontWeight: 600 }}>
             {conversation.length} msg
           </span>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+
+        {/* Messages */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
           {conversation.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <MessageSquare size={28} className="text-gray-200 mb-3"/>
-              <p className="text-[12px] text-gray-400 font-medium">Aucun message</p>
-              <p className="text-[11px] text-gray-300 mt-1">Les échanges apparaîtront ici.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}>
+              <MessageSquare size={28} color="#e5e7eb" />
+              <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, margin: '10px 0 4px' }}>Aucun message</p>
+              <p style={{ fontSize: 12, color: '#d1d5db', margin: 0 }}>Les échanges apparaîtront ici.</p>
             </div>
           ) : (
             conversation.map(item => (
-              <ConvBubble
-                key={item.id}
-                item={item}
-                currentUser={currentUser}
-                empInitials={empInitials}
-                empName={empName}
-              />
+              <ConvBubble key={item.id} item={item} currentUser={currentUser} empInitials={empInitials} empName={empName} />
             ))
           )}
-          <div ref={convEndRef}/>
+          <div ref={convEndRef} />
         </div>
       </div>
 
-      {/* ── Actions ── */}
-      <div className="bg-white rounded-xl border border-gray-200 h-[500px] flex flex-col">
+      {/* ── ACTIONS ── */}
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', height: 520, display: 'flex', flexDirection: 'column' }}>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 shrink-0">
+        <div style={{ display: 'flex', borderBottom: '1px solid #f3f4f6', flexShrink: 0 }}>
           {[
-            { id: "respond",  label: "Répondre"  },
-            { id: "redirect", label: "Rediriger" },
-            { id: "close",    label: "Fermer"    },
+            { id: 'respond',  label: 'Répondre'  },
+            { id: 'redirect', label: 'Rediriger' },
+            { id: 'close',    label: 'Fermer'    },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 text-[11px] font-semibold border-b-2 transition-all bg-transparent cursor-pointer
-                ${activeTab === tab.id
-                  ? "text-blue-700 border-blue-600"
-                  : "text-gray-500 border-transparent hover:text-gray-700"}`}>
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={TAB_STYLE(activeTab === tab.id, tabColor[tab.id])}
+            >
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        {/* Contenu */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-          {/* ── RESPOND tab ── */}
-          {activeTab === "respond" && (
+          {/* ── RÉPONDRE ── */}
+          {activeTab === 'respond' && (
             isClosed ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-gray-500">
-                  <Lock size={15}/>
-                  <p className="text-sm font-semibold">Ticket fermé — aucune action disponible</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6b7280' }}>
+                  <Lock size={15} />
+                  <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>Ticket fermé — aucune action disponible</p>
                 </div>
                 {ticket.solution && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                      <CheckCircle2 size={11}/> Solution finale
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CheckCircle2 size={11} /> Solution finale
                     </p>
-                    <div className="text-[12px] text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+                    <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: ticket.solution }} />
                   </div>
                 )}
                 {ticket.closing_note && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Note de fermeture</p>
-                    <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
+                  <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', margin: '0 0 6px 0' }}>Note de fermeture</p>
+                    <p style={{ fontSize: 12, color: '#374151', margin: 0 }}>{ticket.closing_note}</p>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                {/* Mode toggle: Solution / Commentaire */}
-                <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
-                  <button onClick={() => setRespondMode("solution")}
-                    className={`flex-1 py-2 text-[11px] font-semibold transition flex items-center justify-center gap-1
-                      ${respondMode === "solution" ? "bg-white text-blue-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-                    <CheckCircle2 size={12}/> Solution
-                  </button>
-                  <button onClick={() => setRespondMode("info")}
-                    className={`flex-1 py-2 text-[11px] font-semibold transition flex items-center justify-center gap-1
-                      ${respondMode === "info" ? "bg-white text-amber-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-                    <MessageSquare size={12}/> Commentaire
-                  </button>
+                {/* Toggle Solution / Commentaire */}
+                <div style={{ display: 'flex', background: '#f3f4f6', borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                  {[
+                    { id: 'solution', label: 'Solution',    Icon: CheckCircle2, color: '#3b82f6' },
+                    { id: 'info',     label: 'Commentaire', Icon: MessageSquare, color: '#d97706' },
+                  ].map(m => (
+                    <button key={m.id} onClick={() => setRespondMode(m.id)} style={{
+                      flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 700,
+                      border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                      background: respondMode === m.id ? '#fff' : 'transparent',
+                      color: respondMode === m.id ? m.color : '#9ca3af',
+                      borderRadius: respondMode === m.id ? 8 : 0,
+                      boxShadow: respondMode === m.id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s'
+                    }}>
+                      <m.Icon size={12} /> {m.label}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Notices */}
-                {respondMode === "solution" && solutionBlockedLocal && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 flex items-start gap-2">
-                    <Info size={13} className="shrink-0 mt-0.5"/>
+                {respondMode === 'solution' && solutionBlockedLocal && (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                    <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
                     Solution envoyée — en attente de la confirmation de l'employé.
                   </div>
                 )}
                 {ticket?.is_resolved_confirmed && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-700 flex items-center gap-2">
-                    <CheckCircle2 size={13}/> Résolution confirmée par l'employé.
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle2 size={13} /> Résolution confirmée par l'employé.
                   </div>
                 )}
 
+                {/* Label + éditeur */}
                 <div>
-                  <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
-                    {respondMode === "solution" ? "Solution" : "Commentaire"}
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 6 }}>
+                    {respondMode === 'solution' ? 'Solution' : 'Commentaire'}
                   </label>
                   <RichTextArea
-                    onChange={respondMode === "solution" ? setSolution : setInfoMsg}
-                    placeholder={respondMode === "solution" ? "Décrivez la solution..." : "Ajoutez un commentaire..."}
+                    onChange={respondMode === 'solution' ? setSolution : setInfoMsg}
+                    placeholder={respondMode === 'solution' ? 'Décrivez la solution...' : 'Ajoutez un commentaire...'}
                     rows={5}
-                    disabled={respondMode === "solution" && solutionBlockedLocal}
+                    disabled={respondMode === 'solution' && solutionBlockedLocal}
                     clearSignal={clearSignal}
                   />
                 </div>
 
                 <FileAttachment
-               disabled={respondMode === "solution" && solutionBlockedLocal}
-                  files={respondMode === "solution" ? solutionFiles : infoFiles}
-                  onAdd={f => respondMode === "solution"
-                    ? setSolutionFiles(p => [...p, ...f])
-                    : setInfoFiles(p => [...p, ...f])}
-                  onRemove={i => respondMode === "solution"
-                    ? setSolutionFiles(p => p.filter((_, x) => x !== i))
-                    : setInfoFiles(p => p.filter((_, x) => x !== i))}
+                  disabled={respondMode === 'solution' && solutionBlockedLocal}
+                  files={respondMode === 'solution' ? solutionFiles : infoFiles}
+                  onAdd={f => respondMode === 'solution' ? setSolutionFiles(p => [...p, ...f]) : setInfoFiles(p => [...p, ...f])}
+                  onRemove={i => respondMode === 'solution' ? setSolutionFiles(p => p.filter((_, x) => x !== i)) : setInfoFiles(p => p.filter((_, x) => x !== i))}
                 />
 
                 {sentError && (
-                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[11px] text-red-700">
-                    <AlertTriangle size={13}/> {sentError}
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangle size={13} /> {sentError}
                   </div>
                 )}
 
-                <button onClick={handleSend}
-                 disabled={sending || (respondMode === "solution" && solutionBlockedLocal) || (
-  !solution.replace(/<[^>]*>/g, "").trim() &&
-  !infoMsg.replace(/<[^>]*>/g, "").trim() &&
-  solutionFiles.length === 0 && infoFiles.length === 0
-)}
-                  className={`flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-40 disabled:cursor-not-allowed transition
-                    ${respondMode === "solution" ? "bg-blue-600 hover:bg-blue-700" : "bg-amber-500 hover:bg-amber-600"}`}>
-                  <Send size={13}/>
-                  {sending ? "Envoi..." : respondMode === "solution" ? "Envoyer solution" : "Envoyer commentaire"}
+                <button
+                  onClick={handleSend}
+                  disabled={sending || (respondMode === 'solution' && solutionBlockedLocal) || (!solution.replace(/<[^>]*>/g, '').trim() && !infoMsg.replace(/<[^>]*>/g, '').trim() && solutionFiles.length === 0 && infoFiles.length === 0)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '10px 16px', borderRadius: 10, border: 'none',
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    background: respondMode === 'solution' ? '#3b82f6' : '#d97706',
+                    color: '#fff', fontFamily: 'Inter, sans-serif',
+                    opacity: (sending || (respondMode === 'solution' && solutionBlockedLocal)) ? 0.4 : 1,
+                    transition: 'background 0.15s'
+                  }}
+                >
+                  <Send size={13} />
+                  {sending ? 'Envoi...' : respondMode === 'solution' ? 'Envoyer solution' : 'Envoyer commentaire'}
                 </button>
 
-                {respondMode === "solution" && (
-                  <p className="text-[10px] text-gray-400 flex items-center gap-1">
-                    <ShieldCheck size={11} className="text-green-500"/>
+                {respondMode === 'solution' && (
+                  <p style={{ fontSize: 10, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 4, margin: 0 }}>
+                    <ShieldCheck size={11} color="#16a34a" />
                     Une demande de confirmation sera envoyée à l'employé.
                   </p>
                 )}
@@ -189,131 +217,108 @@ export default function ConversationActions({
             )
           )}
 
-          {/* ── REDIRECT tab ── */}
-          {activeTab === "redirect" && (
+          {/* ── REDIRIGER ── */}
+          {activeTab === 'redirect' && (
             isClosed ? (
-              <div className="flex items-center gap-2 text-gray-400 text-[12px]">
-                <Lock size={13}/> Ticket fermé
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9ca3af', fontSize: 13 }}>
+                <Lock size={13} /> Ticket fermé
               </div>
             ) : (
               <>
-                <div className="flex items-start gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-[11px] text-purple-700">
-                  <Forward size={13} className="shrink-0 mt-0.5"/>
+                <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#7c3aed', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <Forward size={13} style={{ flexShrink: 0, marginTop: 1 }} />
                   Sélectionnez le technicien ou service vers lequel rediriger.
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <User size={11} className="text-gray-400"/> Technicien
-                  </label>
-                  <select value={redirectTechId} onChange={e => setRedirectTechId(e.target.value)}
-                    className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-purple-400">
-                    <option value="">Choisir...</option>
-                    {techniciens?.map(t => (
-                      <option key={t.id} value={t.id}>{t.name} {t.surname}</option>
-                    ))}
-                  </select>
-                </div>
+                {[
+                  { label: 'Technicien', Icon: User, value: redirectTechId, setter: setRedirectTechId, options: techniciens?.map(t => ({ value: t.id, label: `${t.name} ${t.surname}` })) },
+                  { label: 'Service',    Icon: Layers, value: redirectServiceId, setter: setRedirectServiceId, options: services?.map(s => ({ value: s.id, label: s.name })) },
+                  { label: 'Catégorie', Icon: Tag, value: redirectCategory, setter: setRedirectCategory, options: CATEGORIES_EN?.map(c => ({ value: c, label: CATEGORY_FR[c] ?? c })) },
+                ].map(({ label, Icon, value, setter, options }) => (
+                  <div key={label}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                      <Icon size={11} color="#9ca3af" /> {label}
+                    </label>
+                    <select value={value} onChange={e => setter(e.target.value)} style={{ ...inputStyle }}>
+                      <option value="">Choisir...</option>
+                      {options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                ))}
 
                 <div>
-                  <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <Layers size={11} className="text-gray-400"/> Service
-                  </label>
-                  <select value={redirectServiceId} onChange={e => setRedirectServiceId(e.target.value)}
-                    className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-purple-400">
-                    <option value="">Choisir...</option>
-                    {services?.map(s => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <Tag size={11} className="text-gray-400"/> Catégorie
-                  </label>
-                  <select value={redirectCategory} onChange={e => setRedirectCategory(e.target.value)}
-                    className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-purple-400">
-                    <option value="">Choisir...</option>
-                    {CATEGORIES_EN?.map(c => (
-                      <option key={c} value={c}>{CATEGORY_FR[c] ?? c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
-                    <MessageSquare size={11} className="text-gray-400"/> Raison
-                    <span className="text-gray-400 font-normal">(obligatoire)</span>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                    <MessageSquare size={11} color="#9ca3af" /> Raison <span style={{ fontWeight: 400, color: '#9ca3af' }}>(obligatoire)</span>
                   </label>
                   <textarea rows={3} value={redirectNote} onChange={e => setRedirectNote(e.target.value)}
                     placeholder="Pourquoi rediriger ?"
-                    className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 resize-none focus:outline-none focus:border-purple-400"/>
+                    style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }} />
                 </div>
 
                 <button onClick={handleRedirect}
                   disabled={(!redirectTechId && !redirectServiceId) || !redirectNote?.trim() || redirecting}
-                  className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-40 transition">
-                  <Forward size={13}/>{redirecting ? "..." : "Rediriger"}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '10px 16px', borderRadius: 10, border: 'none',
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    background: '#7c3aed', color: '#fff', fontFamily: 'Inter, sans-serif',
+                    opacity: ((!redirectTechId && !redirectServiceId) || !redirectNote?.trim() || redirecting) ? 0.4 : 1
+                  }}>
+                  <Forward size={13} /> {redirecting ? '...' : 'Rediriger'}
                 </button>
               </>
             )
           )}
 
-          {/* ── CLOSE tab ── */}
-          {activeTab === "close" && (
+          {/* ── FERMER ── */}
+          {activeTab === 'close' && (
             isClosed ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold">
-                  <Lock size={15}/> Fermé
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6b7280' }}>
+                  <Lock size={15} /> <span style={{ fontSize: 13, fontWeight: 600 }}>Fermé</span>
                 </div>
                 {ticket.closing_note && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Note</p>
-                    <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
+                  <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px' }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', margin: '0 0 6px 0' }}>Note</p>
+                    <p style={{ fontSize: 12, color: '#374151', margin: 0 }}>{ticket.closing_note}</p>
                   </div>
                 )}
               </div>
             ) : (
               <>
                 {ticket?.is_resolved_confirmed && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-700 flex items-center gap-2">
-                    <CheckCircle2 size={13}/> Confirmé par l'employé — prêt à fermer.
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle2 size={13} /> Confirmé par l'employé — prêt à fermer.
                   </div>
                 )}
-
                 {awaitingConfirm && !ticket?.is_resolved_confirmed && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 flex items-center gap-2">
-                    <Info size={13}/> En attente de confirmation de l'employé.
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Info size={13} /> En attente de confirmation de l'employé.
                   </div>
                 )}
-
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
-                  <div>
-                    <p className="text-[12px] font-bold text-gray-800 mb-1">Fermeture manuelle</p>
-                    <p className="text-[11px] text-gray-500">
-                      Résolu hors système (téléphone, sur site...) ? Documentez la solution avant de fermer.
-                    </p>
-                  </div>
-                  <button onClick={() => setShowManualClose(true)}
-                    className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 bg-white w-full">
-                    <Lock size={13}/> Fermer manuellement
+                <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>Fermeture manuelle</p>
+                  <p style={{ fontSize: 11, color: '#6b7280', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+                    Résolu hors système (téléphone, sur site...) ? Documentez la solution avant de fermer.
+                  </p>
+                  <button onClick={() => setShowManualClose(true)} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    width: '100%', padding: '9px 16px', borderRadius: 10,
+                    border: '1px solid #e5e7eb', background: '#fff',
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer', color: '#374151',
+                    fontFamily: 'Inter, sans-serif'
+                  }}>
+                    <Lock size={13} /> Fermer manuellement
                   </button>
                 </div>
               </>
             )
           )}
-
         </div>
       </div>
 
-      {/* Modal fermeture manuelle */}
       {showManualClose && (
-        <ManualCloseModal
-          loading={closingManually}
-          onConfirm={handleManualClose}
-          onCancel={() => setShowManualClose(false)}
-        />
+        <ManualCloseModal loading={closingManually} onConfirm={handleManualClose} onCancel={() => setShowManualClose(false)} />
       )}
     </div>
   );

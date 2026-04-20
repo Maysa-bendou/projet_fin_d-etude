@@ -1,28 +1,28 @@
-
 import Sidebar from "../components/Sidebar/Sidebar";
-import Navbar from "../components/navbar/navbar";
 import { Outlet } from "react-router-dom";
 import TopNavbar from "../components/TopNavbar/TopNavbar";
+
 export default function EmployeeLayout() {
   return (
-    <div className="flex h-screen bg-gray-50">
+    // On remplace bg-gray-50 par le beige exact #f9f6f2
+    <div className="flex h-screen" style={{ backgroundColor: '#f9f6f2' }}>
 
       {/* Sidebar à gauche */}
       <Sidebar />
 
-      {/* Partie droite : Navbar en haut + contenu en bas */}
+      {/* Partie droite */}
       <div className="flex flex-col flex-1 overflow-hidden">
 
-         {/* Navbar en haut */}
+        {/* Navbar en haut */}
         <TopNavbar />
 
         {/* Contenu de la page */}
-        <main className="flex-1 overflow-y-auto p-6">
+        {/* On enlève p-6 ici pour que la page intérieure gère ses propres marges sans créer de bordures blanches */}
+        <main className="flex-1 overflow-y-auto" style={{ backgroundColor: '#f9f6f2' }}>
           <Outlet />
         </main>
 
       </div>
-
     </div>
   );
 }

@@ -1,47 +1,68 @@
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function Header({ 
-  ticket, 
-  allIds, 
-  idx, 
-  prevId, 
-  nextId, 
-  goToTicket,
-  navigate 
-}) {
+export default function Header({ ticket, allIds, idx, prevId, nextId, goToTicket, navigate }) {
   return (
-    <div className="flex items-center justify-between flex-wrap gap-3">
-      <div className="flex items-center gap-2 text-sm">
-        <button 
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      flexWrap: 'wrap', gap: 12, fontFamily: 'Inter, sans-serif',
+      marginBottom: 4
+    }}>
+      {/* Breadcrumb */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
           onClick={() => navigate("/technician/tickets-assignes")}
-          className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 transition bg-transparent border-none cursor-pointer p-0 font-medium"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#9ca3af', fontSize: 12, fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.1em', padding: 0,
+            fontFamily: 'Inter, sans-serif'
+          }}
         >
-          <ArrowLeft size={15}/> Tickets Assignés
+          <ArrowLeft size={14} /> Tickets Assignés
         </button>
-        <ChevronRight size={13} className="text-gray-300"/>
-        <span className="text-gray-800 font-semibold truncate max-w-xs sm:max-w-md">
+        <ChevronRight size={13} color="#d1d5db" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           T n°{ticket.id} — {ticket.title}
         </span>
       </div>
-      <div className="flex items-center gap-2">
-        <button 
-          disabled={!prevId} 
+
+      {/* Navigation prev/next */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          disabled={!prevId}
           onClick={() => goToTicket(prevId)}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '7px 14px', borderRadius: 10,
+            border: '1px solid #e5e7eb', background: '#fff',
+            color: '#374151', fontSize: 12, fontWeight: 600,
+            cursor: prevId ? 'pointer' : 'not-allowed',
+            opacity: prevId ? 1 : 0.4, fontFamily: 'Inter, sans-serif'
+          }}
         >
-          <ChevronLeft size={13}/> Précédent
+          <ChevronLeft size={13} /> Précédent
         </button>
+
         {idx >= 0 && (
-          <span className="text-xs text-gray-400 font-mono">
-            {idx+1}/{allIds.length}
+          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
+            {idx + 1}/{allIds.length}
           </span>
         )}
-        <button 
-          disabled={!nextId} 
+
+        <button
+          disabled={!nextId}
           onClick={() => goToTicket(nextId)}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '7px 14px', borderRadius: 10,
+            border: '1px solid #e5e7eb', background: '#fff',
+            color: '#374151', fontSize: 12, fontWeight: 600,
+            cursor: nextId ? 'pointer' : 'not-allowed',
+            opacity: nextId ? 1 : 0.4, fontFamily: 'Inter, sans-serif'
+          }}
         >
-          Suivant <ChevronRight size={13}/>
+          Suivant <ChevronRight size={13} />
         </button>
       </div>
     </div>

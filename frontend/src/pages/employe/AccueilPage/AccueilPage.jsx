@@ -1,125 +1,154 @@
 import React, { useState, useEffect } from 'react';
-import { Ticket, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
 import axios from 'axios';
+import { MdSearch, MdHistory, MdCheckCircle, MdErrorOutline, MdHourglassEmpty } from 'react-icons/md';
+
+const StatCard = ({ title, value, IconComponent, bgColor, iconColor }) => (
+  <div style={{
+    background: '#fff',
+    borderRadius: 14,
+    border: '1.5px solid #d9d4cc', // Bordure beige de ton modèle
+    padding: '20px 24px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+  }}>
+    <div style={{
+      width: 46,
+      height: 46,
+      borderRadius: 12,
+      background: bgColor,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    }}>
+      <IconComponent size={21} style={{ color: iconColor }} />
+    </div>
+    <div>
+      <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 3px 0', fontWeight: 400 }}>{title}</p>
+      <p style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', margin: 0, lineHeight: 1 }}>{value}</p>
+    </div>
+  </div>
+);
+
+const getPriorityBadge = (priority) => {
+  const map = {
+    high: { bg: '#fef2f2', color: '#dc2626', label: 'Haute', border: '#fecaca' },
+    medium: { bg: '#fefce8', color: '#ca8a04', label: 'Moyenne', border: '#e6ce77' },
+    low: { bg: '#f0fdf4', color: '#16a34a', label: 'Basse', border: '#bbf7d0' },
+  };
+  const key = (priority || '').toLowerCase();
+  const s = map[key] || { bg: '#f1f5f9', color: '#64748b', label: priority || '-', border: '#e2e8f0' };
+  return (
+    <span style={{
+      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
+      borderRadius: 20, padding: '2px 10px',
+      fontSize: 12, fontWeight: 600,
+    }}>
+      {s.label}
+    </span>
+  );
+};
 
 const AccueilPage = () => {
   const [stats, setStats] = useState({ total: 0, resolved: 0, open: 0, rejected: 0 });
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchEmployeeDashboard = async () => {
       try {
         const token = localStorage.getItem('token');
-const response = await axios.get('http://localhost:3001/api/accueil/dashboard', {
-  headers: { Authorization: `Bearer ${token}` }
-});
-
+        const response = await axios.get('http://localhost:3001/api/accueil/dashboard', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (response.data.type === 'employee') {
           setStats(response.data.stats);
           setTickets(response.data.tickets);
         }
       } catch (error) {
-        console.error("Erreur lors de la récupération des données:", error);
+        console.error('Erreur:', error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchEmployeeDashboard();
   }, []);
 
-  // Helper to format dates from PostgreSQL/Prisma format
   const formatDate = (dateString) => {
-    if (!dateString) return "-";
+    if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
-  // Filter logic for the search bar
-  const filteredTickets = tickets.filter(t => 
+  const filteredTickets = tickets.filter(t =>
     t.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const StatCard = ({ title, value, icon: Icon, color }) => (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
-      <div className={`p-3 rounded-lg ${color}`}>
-        <Icon className="text-white" size={24} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-500 font-medium">{title}</p>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
-      </div>
-    </div>
-  );
-
-  if (loading) return <div className="p-10 text-center font-bold text-blue-600">Chargement de vos tickets...</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Chargement...</div>;
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Mon Espace Support</h1>
+    <div style={{ padding: '32px', background: '#f9f6f2', minHeight: '100vh' }}> {/* Fond crème */}
+
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+          Mon Espace Support
+        </h1>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Total Créés" value={stats.total} icon={Ticket} color="bg-blue-500" />
-        <StatCard title="Résolus" value={stats.resolved} icon={CheckCircle} color="bg-green-500" />
-        <StatCard title="Ouverts" value={stats.open} icon={Clock} color="bg-yellow-500" />
-        <StatCard title="Rejetés" value={stats.rejected} icon={XCircle} color="bg-red-500" />
+      {/* Stats avec ta structure d'origine */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 28 }}>
+        <StatCard title="Total Créés" value={stats.total} IconComponent={MdHistory} bgColor="#eff6ff" iconColor="#3b82f6" />
+        <StatCard title="Résolus" value={stats.resolved} IconComponent={MdCheckCircle} bgColor="#f0fdf4" iconColor="#22c55e" />
+        <StatCard title="Ouverts" value={stats.open} IconComponent={MdHourglassEmpty} bgColor="#fffbeb" iconColor="#f59e0b" />
+        <StatCard title="Rejetés" value={stats.rejected} IconComponent={MdErrorOutline} bgColor="#fef2f2" iconColor="#ef4444" />
       </div>
 
-      {/* Table Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="font-semibold text-gray-700">Mes Demandes de Support</h2>
-          <input 
-            type="text" 
-            placeholder="Rechercher un ticket..." 
-            className="border rounded-md px-3 py-1 text-sm outline-none focus:ring-2 ring-blue-100 transition-all w-64"
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      {/* Carte principale */}
+      <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid #d9d4cc', padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', margin: 0 }}>
+            Mes Demandes de Support
+          </h2>
+          <div style={{ position: 'relative', width: 260 }}>
+            <MdSearch style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input
+              type="text"
+              placeholder="Rechercher un ticket..."
+              style={{
+                border: '1.5px solid #d9d4cc', borderRadius: 8, padding: '7px 12px 7px 32px',
+                fontSize: 13, outline: 'none', width: '100%', background: '#f9f6f2', boxSizing: 'border-box',
+              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-600 text-sm">
-              <tr>
-                <th className="p-4 font-medium">Titre</th>
-                <th className="p-4 font-medium">Catégorie</th>
-                <th className="p-4 font-medium text-center">Priorité</th>
-                <th className="p-4 font-medium">Créé le</th>
-                <th className="p-4 font-medium">Mis à jour</th>
-                <th className="p-4 font-medium">Solution</th>
+
+        {/* Tableau avec ta structure d'origine */}
+        <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #d9d4cc', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: '#fcfaf8', borderBottom: '1.5px solid #d9d4cc' }}>
+                {['Titre', 'Catégorie', 'Priorité', 'Créé le', 'Solution'].map(col => (
+                  <th key={col} style={{ padding: '12px 16px', fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    {col}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredTickets.length > 0 ? (
-                filteredTickets.map((t) => (
-                  <tr key={t.id} className="hover:bg-blue-50/30 transition">
-                    <td className="p-4 text-sm font-semibold text-gray-800">{t.title}</td>
-                    <td className="p-4 text-sm text-gray-600 capitalize">{t.category}</td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                        t.priority === 'high' || t.priority === 'critical' 
-                        ? 'bg-red-100 text-red-600' 
-                        : 'bg-blue-100 text-blue-600'
-                      }`}>
-                        {t.priority}
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm text-gray-500">{formatDate(t.created_at)}</td>
-                    <td className="p-4 text-sm text-gray-500">{formatDate(t.updated_at)}</td>
-                    <td className="p-4 text-sm text-gray-600 italic max-w-xs truncate">
-                      {t.solution || <span className="text-gray-300">En attente...</span>}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="p-10 text-center text-gray-400">Aucun ticket trouvé.</td>
+            <tbody>
+              {filteredTickets.map((ticket, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '14px 16px', fontSize: 14, color: '#1e293b', fontWeight: 500 }}>{ticket.title}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: '#64748b' }}>{ticket.category}</td>
+                  <td style={{ padding: '14px 16px' }}>{getPriorityBadge(ticket.priority)}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: '#64748b' }}>{formatDate(ticket.createdAt || ticket.created_at)}</td>
+                  <td style={{ padding: '14px 16px', fontSize: 13, color: '#64748b' }}>
+                    {ticket.solution || <span style={{ color: '#cbd5e1', fontStyle: 'italic' }}>En attente</span>}
+                  </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>

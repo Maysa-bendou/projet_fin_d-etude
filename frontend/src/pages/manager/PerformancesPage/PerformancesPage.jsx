@@ -158,14 +158,17 @@ const sortedMonthlyStats = useMemo(() => {
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div>
-          <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 4 }}>Managerial View • {stats.serviceName}</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827' }}>Analyses & Performances</h1>
+         <div>
+          <h1 className="text-2xl font-bold text-[#0f172a] mb-1">Analyses & Performances</h1>
+          <p className="text-sm text-slate-500">{stats.serviceName} • Vue Managériale</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={exportPDF} style={btnStyle('#dc2626')}><MdFileDownload /> PDF</button>
-          <button onClick={exportExcel} style={btnStyle('#16a34a')}><MdFileDownload /> Excel</button>
-        </div>
+        <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+            <MdFileDownload className="text-emerald-500" size={18} /> Excel
+          </button>
+          <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 bg-[#0f172a] text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-all shadow-md">
+            <MdFileDownload className="text-red-400" size={18} /> Rapport PDF
+          </button> </div>
       </div>
 
       {/* KPI Cards */}

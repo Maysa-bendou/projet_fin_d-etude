@@ -1,125 +1,157 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-// ── Pages du manager ──────────────────────────────
+import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
-  MdPerson, 
-  MdLogout, 
-  MdBarChart, 
-  MdBuild   
-} from "react-icons/md";
+  BarChart3, 
+  Wrench, 
+  User, 
+  LogOut, 
+  ChevronRight, 
+  ChevronLeft 
+} from "lucide-react";
 
-const menuItems = [
-
-  
-  { icon: MdBuild,      label: "Tickets du service",   path: "/manager/tickets-service" },
-  { icon: MdBarChart,   label: "Suivi performances",   path: "/manager/performances" },
-  { icon: MdPerson,     label: "Profil",               path: "/manager/profile" },
-];
+// --- COMPOSANT LOGO DJEZZY RÉALISTE ---
+const DjezzyLogo = ({ isOpen }) => (
+  <div className={`relative transition-all duration-500 flex items-center justify-center ${isOpen ? "w-36 h-20" : "w-16 h-12"}`}>
+    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
+      <path 
+        d="M 15 85 L 85 50 L 15 15 Z" 
+        fill="#ff0113" 
+        strokeLinejoin="round" 
+        strokeWidth="10" 
+        stroke="#ff0113" 
+      />
+      <text x="18" y="50" fill="white" fontSize="12" fontWeight="black" fontFamily="Arial, sans-serif">
+        DJEZZY
+      </text>
+      <text x="18" y="70" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial, sans-serif">
+        جازی
+      </text>
+    </svg>
+  </div>
+);
 
 export default function SidebarManager() {
+  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Menu spécifique pour le Manager avec une propriété 'hasNotify'
+  const menuItems = [
+    { 
+      icon: Wrench, 
+      label: "Tickets du service", 
+      path: "/manager/tickets-service",
+      hasNotify: true // <--- C'est ici qu'on active le point rouge !
+    },
+    { icon: BarChart3, label: "Suivi performances", path: "/manager/performances" },
+    { icon: User, label: "Profil", path: "/manager/profile" },
+  ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/");
+  };
 
   return (
-    <div className="
-      group flex flex-col
-      h-screen
-      bg-white shadow-xl
-      py-5 px-2
-      w-16 hover:w-56
-      transition-all duration-300 overflow-hidden
-      shrink-0
-    ">
-
-      {/* ── Logo ── */}
-      <div className="flex items-center w-full px-2 mb-8 gap-3">
-        <div className="shrink-0 w-10 h-10 flex items-center justify-center">
-          <svg width="40" height="36" viewBox="0 0 40 36">
-            <polygon points="2,2 2,34 38,18" fill="#e40c0c" />
-            <text x="14" y="16" textAnchor="middle"
-              fill="white" fontSize="6" fontWeight="bold">DJEZZY</text>
-            <text x="14" y="25" textAnchor="middle"
-              fill="white" fontSize="6">جازي</text>
-          </svg>
-        </div>
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-bold text-red-600 text-base whitespace-nowrap">
-          DJEZZY
-        </span>
+    <div className={`
+      relative flex flex-col h-[96vh] my-[2vh] ml-[2vh]
+      transition-all duration-500 ease-in-out rounded-[2.5rem] py-6 shrink-0 z-50
+      bg-white text-gray-800 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)]
+      ${isOpen ? "w-64" : "w-20"}
+    `}>
+      
+      {/* LOGO */}
+      <div className="flex items-center justify-center mb-10">
+        <DjezzyLogo isOpen={isOpen} />
       </div>
 
-      {/* ── Items du menu ── */}
-      <div className="flex flex-col gap-1 w-full px-1 flex-1">
+      {/* BOUTON FLÈCHE */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="absolute -right-4 top-10 w-8 h-8 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-md hover:text-[#ff0113] transition-all z-[60]"
+      >
+        {isOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+      </button>
+
+      {/* MENU */}
+      <div className="flex flex-col gap-6 w-full flex-1 items-center px-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 
           return (
-            <div key={item.path} className="relative group/item">
-              <Link
-                to={item.path}
-                className={`
-                  flex items-center gap-3
-                  w-full px-2 py-2.5 rounded-xl
-                  transition-all duration-200
-                  ${isActive
-                    ? "bg-blue-100 text-blue-600"
-                    : "text-gray-400 hover:bg-blue-50 hover:text-blue-500"
-                  }
-                `}
-              >
-                <Icon size={20} className="shrink-0" />
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-medium whitespace-nowrap">
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`
+                group relative flex items-center transition-all duration-300 rounded-2xl
+                ${isOpen ? "w-full px-5 py-3.5 gap-4" : "w-16 h-16 justify-center"}
+                ${isActive
+                  ? "bg-[#fff5f5] text-[#ff0113]" 
+                  : "text-gray-400 hover:bg-gray-50"
+                }
+              `}
+            >
+              {/* Tooltip */}
+              {!isOpen && (
+                <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 z-[70] origin-left">
+                   <div className="bg-[#fff5f5] text-[#ff0113] text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm border border-red-50 whitespace-nowrap">
+                     {item.label}
+                   </div>
+                </div>
+              )}
+
+              {/* Barre verticale rouge si actif */}
+              {isActive && isOpen && (
+                <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff0113] rounded-r-full" />
+              )}
+              
+              {/* ── ICÔNE AVEC LE POINT DE DÉTAIL EN ROUGE ── */}
+              <div className="relative shrink-0">
+                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                
+                {/* Le petit point de notification rouge (comme sur la photo) */}
+                {item.hasNotify && (
+                  <div className={`
+                    absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-[#ff0113]
+                    border-2 border-white 
+                    ${isActive ? "border-[#fff5f5]" : "border-white"}
+                    transition-colors duration-300
+                  `} />
+                )}
+              </div>
+              
+              {isOpen && (
+                <span className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-500"}`}>
                   {item.label}
                 </span>
-              </Link>
-
-              {/* Tooltip quand sidebar fermée */}
-              <span className="
-                absolute left-14 top-1/2 -translate-y-1/2
-                bg-gray-800 text-white text-xs
-                px-2.5 py-1.5 rounded-lg whitespace-nowrap
-                opacity-0 group-hover/item:opacity-100
-                group-hover:hidden
-                transition-opacity duration-150
-                pointer-events-none z-50
-              ">
-                {item.label}
-              </span>
-            </div>
+              )}
+            </Link>
           );
         })}
       </div>
 
-      {/* ── Déconnexion ── */}
-      <div className="relative group/item w-full px-1 mt-2">
-        <Link
-          to="/"
-          onClick={() => localStorage.removeItem("role")}
-          className="
-            flex items-center gap-3
-            w-full px-2 py-2.5 rounded-xl
-            text-gray-400 hover:bg-red-50 hover:text-red-500
-            transition-all
-          "
+      {/* DÉCONNEXION */}
+      <div className="pt-4 border-t border-gray-50 flex justify-center">
+        <button 
+          onClick={handleLogout}
+          className={`
+            group relative flex items-center text-gray-400 hover:text-[#ff0113] transition-colors
+            ${isOpen ? "w-full px-8 py-4 gap-4" : "w-12 h-12 justify-center"}
+          `}
         >
-          <MdLogout size={20} className="shrink-0" />
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-medium whitespace-nowrap">
-            Déconnexion
-          </span>
-        </Link>
-
-        <span className="
-          absolute left-14 top-1/2 -translate-y-1/2
-          bg-gray-800 text-white text-xs
-          px-2.5 py-1.5 rounded-lg whitespace-nowrap
-          opacity-0 group-hover/item:opacity-100
-          group-hover:hidden
-          transition-opacity duration-150
-          pointer-events-none z-50
-        ">
-          Déconnexion
-        </span>
+          {!isOpen && (
+            <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 origin-left">
+               <div className="bg-red-50 text-red-600 text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm">
+                 Quitter
+               </div>
+            </div>
+          )}
+          <LogOut size={24} />
+          {isOpen && <span className="text-sm font-bold">Déconnexion</span>}
+        </button>
       </div>
-
     </div>
   );
 }

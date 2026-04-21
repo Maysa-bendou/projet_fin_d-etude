@@ -9,29 +9,18 @@ import {
 } from 'react-icons/md';
 
 export default function StatistiqueGlobal() {
-  // ─────────────────────────────
-  // 1. STATES
-  // ─────────────────────────────
   const [servicesData, setServicesData] = useState([]);
   const [totalTicketsAll, setTotalTicketsAll] = useState(0); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ─────────────────────────────
-  // 2. FETCH DATA (UPDATED API)
-  // ─────────────────────────────
   useEffect(() => {
     const fetchGlobalStats = async () => {
       try {
         setLoading(true);
-
-        const response = await axios.get(
-          'http://localhost:3001/api/services/global-stats'
-        );
-
+        const response = await axios.get('http://localhost:3001/api/services/global-stats');
         setServicesData(response.data.services || []);
         setTotalTicketsAll(response.data.totalGlobal || 0);
-
         setError(null);
       } catch (err) {
         console.error("Erreur stats globales:", err);
@@ -40,176 +29,166 @@ export default function StatistiqueGlobal() {
         setLoading(false);
       }
     };
-
     fetchGlobalStats();
   }, []);
 
-  // ─────────────────────────────
-  // 3. GLOBAL CALCULATIONS
-  // ─────────────────────────────
   const globalResRate = servicesData.length > 0 
-    ? Math.round(
-        servicesData.reduce((acc, s) => acc + (s.resolutionRate || 0), 0) 
-        / servicesData.length
-      )
+    ? Math.round(servicesData.reduce((acc, s) => acc + (s.resolutionRate || 0), 0) / servicesData.length)
     : 0;
 
   const globalAvgTime = servicesData.length > 0 
-    ? (
-        servicesData.reduce((acc, s) => acc + parseFloat(s.avgTime || 0), 0) 
-        / servicesData.length
-      ).toFixed(1)
+    ? (servicesData.reduce((acc, s) => acc + parseFloat(s.avgTime || 0), 0) / servicesData.length).toFixed(1)
     : "0.0";
 
-  // ─────────────────────────────
-  // 4. LOADING STATE
-  // ─────────────────────────────
   if (loading) return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      <span className="ml-3 text-gray-600 font-medium">
-        Chargement des données...
-      </span>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ width: 40, height: 40, border: '3px solid #e5e7eb', borderTop: '3px solid #3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <span style={{ marginLeft: 12, color: '#6b7280', fontWeight: 600 }}>Chargement des données...</span>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
-  // ─────────────────────────────
-  // 5. ERROR STATE
-  // ─────────────────────────────
   if (error) return (
-    <div className="p-10 text-center text-red-500 flex flex-col items-center">
-      <MdErrorOutline size={48} />
-      <p className="mt-2 font-bold">{error}</p>
+    <div style={{ padding: 40, textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
+      <MdErrorOutline style={{ fontSize: 48, color: '#dc2626' }} />
+      <p style={{ marginTop: 8, fontWeight: 700, color: '#dc2626' }}>{error}</p>
     </div>
   );
 
-  // ─────────────────────────────
-  // 6. UI
-  // ─────────────────────────────
   return (
-    <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
+    <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh', padding: '40px 32px' }}>
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <MdBarChart className="text-blue-600" /> Dashboard Analytics
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <MdBarChart style={{ color: '#3b82f6', fontSize: 26 }} />
+          Dashboard Analytics
         </h1>
-
-        <div className="flex items-center gap-2 bg-white shadow-sm border border-blue-100 px-5 py-2 rounded-2xl">
-          <span className="text-gray-500 text-sm font-medium">
-            Volume Total :
-          </span>
-          <span className="text-blue-700 text-xl font-black">
-            {totalTicketsAll} Tickets
-          </span>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: '#fff', border: '1px solid #e5e7eb',
+          borderRadius: 16, padding: '10px 20px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+        }}>
+          <span style={{ color: '#6b7280', fontSize: 13, fontWeight: 500 }}>Volume Total :</span>
+          <span style={{ color: '#1d4ed8', fontSize: 20, fontWeight: 800 }}>{totalTicketsAll} Tickets</span>
         </div>
       </div>
 
       {/* KPI CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
 
-        {/* Resolution Rate */}
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-all">
-          <MdCheckCircleOutline className="mx-auto text-green-500 text-5xl mb-4" />
-          <h2 className="text-xl font-bold text-gray-800">
-            Taux de Résolution
-          </h2>
-          <p className="text-gray-500 mb-6 text-sm italic">
-            Moyenne de performance inter-services
-          </p>
-
-          <div className="text-5xl font-black text-green-600 mb-2">
-            {globalResRate}%
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, flexShrink: 0, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MdCheckCircleOutline style={{ fontSize: 24, color: '#16a34a' }} />
           </div>
-
-          <div className="w-full bg-gray-100 h-2 rounded-full mt-4 max-w-xs mx-auto">
-            <div 
-              className="bg-green-500 h-full rounded-full transition-all duration-1000" 
-              style={{ width: `${globalResRate}%` }}
-            ></div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 1px 0' }}>Taux de Résolution</p>
+            <p style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic', margin: '0 0 8px 0' }}>Moyenne de performance inter-services</p>
+            <p style={{ fontSize: 26, fontWeight: 800, color: '#16a34a', margin: '0 0 6px 0', lineHeight: 1 }}>{globalResRate}%</p>
+            <div style={{ background: '#f3f4f6', height: 4, borderRadius: 99 }}>
+              <div style={{ width: `${globalResRate}%`, background: '#16a34a', height: '100%', borderRadius: 99 }} />
+            </div>
           </div>
         </div>
 
-        {/* Avg Time */}
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-all">
-          <MdAccessTime className="mx-auto text-blue-500 text-5xl mb-4" />
-          <h2 className="text-xl font-bold text-gray-800">
-            Délai Moyen (MTTR)
-          </h2>
-          <p className="text-gray-500 mb-6 text-sm italic">
-            Temps moyen jusqu'à résolution
-          </p>
-
-          <div className="text-5xl font-black text-blue-600 mb-2">
-            {globalAvgTime}h
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, flexShrink: 0, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <MdAccessTime style={{ fontSize: 24, color: '#3b82f6' }} />
           </div>
-
-          <p className="text-xs text-gray-400">
-            Calculé sur les tickets clôturés
-          </p>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 1px 0' }}>Délai Moyen (MTTR)</p>
+            <p style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic', margin: '0 0 8px 0' }}>Temps moyen jusqu'à résolution</p>
+            <p style={{ fontSize: 26, fontWeight: 800, color: '#3b82f6', margin: '0 0 6px 0', lineHeight: 1 }}>{globalAvgTime}h</p>
+            <p style={{ fontSize: 10, color: '#9ca3af', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Calculé sur les tickets clôturés</p>
+          </div>
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-50 flex items-center gap-2">
-          <MdAssignment className="text-gray-400 text-xl" />
-          <h2 className="text-lg font-bold text-gray-700">
+      {/* OUTER CARD */}
+      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+
+        {/* Titre de la card */}
+        <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <MdAssignment style={{ fontSize: 18, color: '#9ca3af' }} />
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>
             Répartition par Service
           </h2>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-xs font-semibold">
-              <tr>
-                <th className="px-6 py-4">Nom du Service</th>
-                <th className="px-6 py-4 text-center">Tickets Liés</th>
-                <th className="px-6 py-4 text-center">Efficacité</th>
-                <th className="px-6 py-4 text-center">Temps de Traitement</th>
-              </tr>
-            </thead>
+        {/* INNER CARD — tableau avec bordure propre */}
+        <div style={{ padding: '0 20px 20px 20px' }}>
+          <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
 
-            <tbody className="divide-y divide-gray-100">
-              {servicesData.map((service) => (
-                <tr 
-                  key={service.id} 
-                  className="hover:bg-blue-50/40 transition-colors group"
-                >
-                  <td className="px-6 py-4 font-semibold text-gray-800 group-hover:text-blue-700">
-                    {service.name}
-                  </td>
-
-                  <td className="px-6 py-4 text-center">
-                    <span className="bg-gray-100 text-gray-700 px-4 py-1 rounded-xl text-sm font-bold">
-                      {service.totalTickets}
-                    </span>
-                  </td>
-
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-green-600 font-bold">
-                        {service.resolutionRate}%
-                      </span>
-
-                      <div className="w-20 bg-gray-100 h-1 rounded-full">
-                        <div 
-                          className="bg-green-500 h-full rounded-full" 
-                          style={{ width: `${service.resolutionRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4 text-center font-mono text-blue-600 font-medium">
-                    {service.avgTime}h
-                  </td>
+              {/* EN-TÊTE BEIGE */}
+              <thead>
+                <tr style={{ background: '#f9f6f2', borderBottom: '1px solid #e8e4de' }}>
+                  {[
+                    { label: 'Nom du Service', align: 'left' },
+                    { label: 'Tickets Liés',   align: 'center' },
+                    { label: 'Efficacité',      align: 'center' },
+                    { label: 'Temps de Traitement', align: 'center' },
+                  ].map((col, i) => (
+                    <th key={i} style={{
+                      padding: '11px 24px', fontSize: 11, fontWeight: 700,
+                      color: '#6b7280', textTransform: 'uppercase',
+                      letterSpacing: '0.08em', textAlign: col.align, whiteSpace: 'nowrap'
+                    }}>
+                      {col.label}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
+              </thead>
 
-          </table>
+              <tbody>
+                {servicesData.map((service, idx) => (
+                  <tr
+                    key={service.id}
+                    style={{
+                      borderBottom: idx < servicesData.length - 1 ? '1px solid #f3f4f6' : 'none',
+                      transition: 'background 0.15s',
+                      background: '#fff'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                  >
+                    <td style={{ padding: '16px 24px', fontSize: 14, fontWeight: 600, color: '#111827' }}>
+                      {service.name}
+                    </td>
+
+                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: 32, height: 32, borderRadius: '50%',
+                        background: '#f3f4f6', color: '#374151',
+                        fontSize: 13, fontWeight: 700
+                      }}>
+                        {service.totalTickets}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>
+                          {service.resolutionRate}%
+                        </span>
+                        <div style={{ width: 80, background: '#f3f4f6', height: 4, borderRadius: 99 }}>
+                          <div style={{ width: `${service.resolutionRate}%`, background: '#16a34a', height: '100%', borderRadius: 99 }} />
+                        </div>
+                      </div>
+                    </td>
+
+                    <td style={{ padding: '16px 24px', textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#3b82f6' }}>
+                      {service.avgTime}h
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+
       </div>
     </div>
   );

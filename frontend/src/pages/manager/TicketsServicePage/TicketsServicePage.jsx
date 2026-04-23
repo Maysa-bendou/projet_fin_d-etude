@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import RefreshButton from "../../../components/common/RefreshButton";
 
 // ── COMPOSANT SLA BAR (Logique dynamique) ──
 // ✅ SlaBar corrigé — barre proportionnelle à la vraie durée SLA
@@ -86,7 +87,13 @@ const TicketsServicePage = () => {
       const ticketsRes = await fetch("http://localhost:3001/api/tickets");
       const ticketsData = await ticketsRes.json();
       
-      const serviceTickets = ticketsData.filter((t) => (t.serviceId || t.service_id) === serviceId);
+      const serviceTickets = ticketsData
+        .filter((t) => (t.serviceId || t.service_id) === serviceId)
+        .sort((a, b) => {
+          const dateA = new Date(a.createdAt || a.created_at || 0).getTime();
+          const dateB = new Date(b.createdAt || b.created_at || 0).getTime();
+          return dateB - dateA;
+        });
       setTickets(serviceTickets);
     } catch (err) {
       console.error("Erreur lors du chargement:", err);
@@ -153,15 +160,7 @@ const TicketsServicePage = () => {
             </h1>
           </div>
           
-          <button 
-            onClick={fetchData} 
-            className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm transition-all text-gray-600"
-            title="Actualiser la liste"
-          >
-             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-             </svg>
-          </button>
+          <RefreshButton onRefresh={fetchData} />
         </div>
 
         {/* BARRE DE FILTRES */}
@@ -211,7 +210,6 @@ const TicketsServicePage = () => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wider">
               <th className="p-4 text-left font-semibold">Titre</th>
-              <th className="p-4 text-left font-semibold">Description</th>
               <th className="p-4 text-center font-semibold">Catégorie</th>
               <th className="p-4 text-center font-semibold">Priorité</th>
               <th className="p-4 text-center font-semibold">Statut</th>
@@ -233,7 +231,6 @@ const TicketsServicePage = () => {
                   className="border-t border-gray-50 hover:bg-blue-50/60 cursor-pointer transition-all group"
                 >
                   <td className="p-4 font-medium text-gray-800 group-hover:text-blue-700">{t.title || "N/A"}</td>
-                  <td className="p-4 text-gray-500 max-w-[200px] truncate">{t.description || "N/A"}</td>
                   <td className="p-4 text-center">
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
                       {categoryFR[t.category] || t.category || "N/A"}

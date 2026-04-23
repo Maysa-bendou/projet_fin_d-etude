@@ -1,9 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-
-// Import des images avec le bon chemin
-import djezzyFutureImg from "../../assets/images/djezzy_future_vr.png";
+import { Mail, Lock, LogIn, AlertCircle, HeadsetIcon } from "lucide-react";
 import djezzyLogoImg from "../../assets/images/Logo_Djezzy.png";
 
 export default function LoginPage() {
@@ -11,7 +8,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isHovered, setIsHovered] = useState(false); 
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -28,7 +24,6 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.message || "Erreur de connexion");
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
       const roles = { admin: "/admin", technician: "/technician", chef_service: "/chef", manager: "/manager" };
       navigate(roles[data.user.role] || "/employee");
     } catch (err) {
@@ -39,74 +34,85 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 font-sans antialiased">
-      {/* Container Principal */}
-      <motion.div 
-        className="relative w-full max-w-5xl h-[600px] bg-white rounded-3xl shadow-2xl overflow-hidden flex"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        
-        {/* SECTION IMAGE (Se réduit au survol) */}
-        <motion.div 
-          className="relative h-full flex flex-col justify-end p-10 text-white overflow-hidden"
-          animate={{ width: isHovered ? "50%" : "100%" }}
-          transition={{ type: "spring", stiffness: 100, damping: 20 }}
-        >
-          {/* Fond d'écran : Le visage de la femme sera plus visible */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center z-0"
-            style={{ backgroundImage: `url(${djezzyFutureImg})` }}
-          >
-            <div className="absolute inset-0 bg-black/40"></div>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#f7f3ef] px-4 relative overflow-hidden">
+      {/* Blobs */}
+     
+      <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
 
-          {/* LE TEXTE DE BIENVENUE : Ajusté pour être plus discret et plus bas */}
-          <div className="z-10 relative bg-black/30 backdrop-blur-md p-6 rounded-2xl max-w-lg mt-auto self-start">
-            {/* J'ai rétréci le texte ici (text-2xl au lieu de text-4xl) */}
-            <h1 className="text-2xl font-bold mb-3 leading-snug tracking-tight">Le futur est maintenant.</h1>
-            {/* J'ai rétréci la description ici (text-base au lieu de text-lg) */}
-            <p className="text-base opacity-90 leading-relaxed max-w-sm">Connectez-vous à votre espace sécurisé.</p>
-          </div>
-        </motion.div>
-
-        {/* SECTION FORMULAIRE (Le fond est déjà blanc par défaut, rien à faire) */}
-        <div className="w-1/2 h-full p-12 flex flex-col justify-center">
-          <div className="mb-8">
-            <img src={djezzyLogoImg} alt="Djezzy Logo" className="h-35 w-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Connexion</h2>
-            <p className="text-gray-500">Accès réservé au personnel Djezzy</p>
-          </div>
-
-          {error && <p className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm border-l-4 border-red-500 font-medium">{error}</p>}
-
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Email professionnel</label>
-              <input 
-                type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full mt-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all focus:bg-white"
-                placeholder="prenom.nom@djezzy.dz"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Mot de passe</label>
-              <input 
-                type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full mt-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all focus:bg-white"
-                placeholder="••••••••"
-              />
-            </div>
-            <button 
-              disabled={loading}
-              className="w-full mt-4 bg-[#E31D2B] hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 text-lg tracking-wide"
-            >
-              {loading ? "Vérification..." : "Se connecter"}
-            </button>
-          </form>
+        {/* Header: logo left + title center aligned */}
+        <div className="flex items-center mb-2">
+          <img src={djezzyLogoImg} alt="Djezzy" className="h-12 w-auto flex-shrink-0" />
+          <h1 className="flex-1 text-center text-2xl font-extrabold text-gray-800 -ml-12">
+            Connexion
+          </h1>
         </div>
 
-      </motion.div>
+        <p className="text-center text-sm text-gray-400 mb-7">
+          Connectez-vous avec vos coordonnées professionnelles
+        </p>
+
+        {/* Error */}
+        {error && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-5">
+            <AlertCircle size={16} className="flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Email professionnel
+            </label>
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 focus-within:border-red-400 focus-within:bg-white transition-all">
+              <Mail size={17} className="text-gray-400 flex-shrink-0" />
+              <input
+                type="email" required value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="prenom.nom@djezzy.dz"
+                className="flex-1 bg-transparent py-3 text-sm text-gray-800 outline-none placeholder-gray-300"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Mot de passe
+            </label>
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 focus-within:border-red-400 focus-within:bg-white transition-all">
+              <Lock size={17} className="text-gray-400 flex-shrink-0" />
+              <input
+                type="password" required value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="flex-1 bg-transparent py-3 text-sm text-gray-800 outline-none placeholder-gray-300"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit" disabled={loading}
+            className="w-full mt-2 flex items-center justify-center gap-2 bg-[#E31D2B] hover:bg-red-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-200 transition-all active:scale-95 text-base"
+          >
+            <LogIn size={18} />
+            {loading ? "Vérification..." : "Se connecter"}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="flex items-center justify-center gap-2 mt-6 text-xs text-gray-400">
+          
+          <span>Besoin d'aide ?</span>
+          <a
+            href="mailto:serviceIT_Help@djezzy.dz"
+            className="text-[#E31D2B] font-semibold hover:underline"
+          >
+            Contacter le service technique
+          </a>
+        </div>
+
+      </div>
     </div>
   );
 }

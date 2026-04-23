@@ -59,45 +59,62 @@ export default function MesTicketsPage() {
   const [error, setError] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [hoveredTicketId, setHoveredTicketId] = useState(null);
+  
+  // ── États pour les options dynamiques depuis la DB (restauré de l'ancien code) ──
   const [dbEnums, setDbEnums] = useState({ statuts: [], priorites: [], categories: [] });
   const [dbServices, setDbServices] = useState([]);
+  
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
   const [filterService, setFilterService] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
 
+  // ── Fetch data avec les enums et services depuis la DB ──
   const fetchData = async () => {
     setLoading(true);
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      if (!user?.id) { navigate("/login"); return; }
+      if (!user?.id) {
+        navigate("/login");
+        return;
+      }
 
-      const [enumRes, serviceRes, ticketRes] = await Promise.all([
-        fetch("http://localhost:3001/api/tech/enums"),
-        fetch("http://localhost:3001/api/tech/services"),
-        fetch(`http://localhost:3001/api/tickets/my/${user.id}`),
-      ]);
-      setDbEnums(await enumRes.json());
-      setDbServices(await serviceRes.json());
+      // ✅ Restauré: fetch des enums et services depuis la DB
+      const enumRes = await fetch("http://localhost:3001/api/tech/enums");
+      const enumData = await enumRes.json();
+      setDbEnums(enumData);
+
+      const serviceRes = await fetch("http://localhost:3001/api/tech/services");
+      const servicesData = await serviceRes.json();
+      setDbServices(servicesData);
+
+      const ticketRes = await fetch(`http://localhost:3001/api/tickets/my/${user.id}`);
       if (!ticketRes.ok) throw new Error("Erreur lors de la récupération des tickets");
-      setTicketsData(await ticketRes.json());
+      const ticketData = await ticketRes.json();
+      setTicketsData(ticketData);
+
     } catch (err) {
+      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, [navigate]);
+  useEffect(() => {
+    fetchData();
+  }, [navigate]);
 
+  // ── Filtrage et tri ──
   const filteredTickets = useMemo(() => {
     return ticketsData
-      .filter(t =>
-        (!filterStatus   || t.status   === filterStatus)   &&
-        (!filterPriority || t.priority === filterPriority) &&
-        (!filterService  || t.service  === filterService)  &&
-        (!filterCategory || t.category === filterCategory)
-      )
+      .filter(t => {
+        const matchesStatus = !filterStatus || t.status === filterStatus;
+        const matchesPriority = !filterPriority || t.priority === filterPriority;
+        const matchesService = !filterService || t.service === filterService;
+        const matchesCategory = !filterCategory || t.category === filterCategory;
+        return matchesStatus && matchesPriority && matchesService && matchesCategory;
+      })
       .sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation));
   }, [ticketsData, filterStatus, filterPriority, filterService, filterCategory]);
 
@@ -141,27 +158,51 @@ export default function MesTicketsPage() {
       <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", padding: "18px 22px", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end" }}>
         <FilterSelect label="Statut" value={filterStatus} onChange={setFilterStatus}>
           <option value="">Tous les statuts</option>
-          {dbEnums.statuts?.map(s => <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>)}
+          {dbEnums.statuts?.map(s => (
+            <option key={s} value={s}>
+              {STATUS_CONFIG[s]?.label || s}
+            </option>
+          ))}
         </FilterSelect>
 
         <FilterSelect label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
           <option value="">Toutes les catégories</option>
-          {dbEnums.categories?.map(c => <option key={c} value={c}>{c}</option>)}
+          {dbEnums.categories?.map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
         </FilterSelect>
 
         <FilterSelect label="Priorité" value={filterPriority} onChange={setFilterPriority}>
           <option value="">Toutes les priorités</option>
-          {dbEnums.priorites?.map(p => <option key={p} value={p}>{PRIORITY_CONFIG[p]?.label || p}</option>)}
+          {dbEnums.priorites?.map(p => (
+            <option key={p} value={p}>
+              {PRIORITY_CONFIG[p]?.label || p}
+            </option>
+          ))}
         </FilterSelect>
 
         <FilterSelect label="Service" value={filterService} onChange={setFilterService}>
           <option value="">Tous les services</option>
-          {dbServices.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+          {dbServices.map(s => (
+            <option key={s.id} value={s.name}>{s.name}</option>
+          ))}
         </FilterSelect>
 
         <button
           onClick={() => { setFilterStatus(""); setFilterPriority(""); setFilterService(""); setFilterCategory(""); }}
-          style={{ padding: "8px 16px", border: "1.5px solid #d9d4cc", borderRadius: 8, fontSize: 13, fontWeight: 500, color: hasFilters ? "#dc2626" : "#94a3b8", background: "#fff", cursor: "pointer", marginTop: "auto", borderColor: hasFilters ? "#fca5a5" : "#d9d4cc", transition: "all 0.15s" }}>
+          style={{ 
+            padding: "8px 16px", 
+            border: "1.5px solid #d9d4cc", 
+            borderRadius: 8, 
+            fontSize: 13, 
+            fontWeight: 500, 
+            color: hasFilters ? "#dc2626" : "#94a3b8", 
+            background: "#fff", 
+            cursor: "pointer", 
+            marginTop: "auto", 
+            borderColor: hasFilters ? "#fca5a5" : "#d9d4cc", 
+            transition: "all 0.15s" 
+          }}>
           Réinitialiser
         </button>
 

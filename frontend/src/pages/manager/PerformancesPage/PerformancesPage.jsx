@@ -6,7 +6,8 @@ import {
   AreaChart, Area, ReferenceLine
 } from 'recharts';
 import {
-  MdTrendingUp, MdTimer, MdCheckCircle, MdFileDownload, MdAssignment
+  MdTrendingUp, MdTimer, MdCheckCircle, MdFileDownload, MdPeople,
+  MdBarChart, MdAssignment
 } from 'react-icons/md';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -14,24 +15,44 @@ import * as XLSX from 'xlsx';
 
 const getDynamicColor = (name, index) => {
   const map = {
-    'open': '#3b82f6', 'in_progress': '#8b5cf6', 'resolved': '#22c55e',
-    'closed': '#10b981', 'rejected': '#ef4444', 'pending': '#f59e0b',
-    'critical': '#ef4444', 'high': '#f97316', 'medium': '#f59e0b', 'low': '#22c55e'
+    'open': '#2563eb', 'in_progress': '#7c3aed', 'resolved': '#16a34a',
+    'closed': '#059669', 'rejected': '#dc2626', 'pending': '#d97706',
+    'pending_supplier': '#0891b2', 'critical': '#dc2626', 'high': '#f97316',
+    'medium': '#d97706', 'low': '#16a34a', 'incident': '#e11d48', 'demande': '#0ea5e9'
   };
-  return map[name?.toLowerCase()] || ['#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'][index % 5];
+  return map[name?.toLowerCase()] || ['#2563eb', '#7c3aed', '#0891b2', '#db2777', '#4b5563'][index % 5];
 };
 
+// ── Custom dot for area chart ────────────────────────────────────────────────
 const CustomDot = (props) => {
-  const { cx, cy } = props;
-  return <circle cx={cx} cy={cy} r={4} fill="#3b82f6" stroke="#fff" strokeWidth={2} />;
+  const { cx, cy, value } = props;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={5} fill="#2563eb" stroke="#fff" strokeWidth={2} />
+    </g>
+  );
 };
 
+// ── Custom label above dot ───────────────────────────────────────────────────
+const CustomLabel = (props) => {
+  const { x, y, value } = props;
+  return (
+    <text x={x} y={y - 10} fill="#2563eb" fontSize={11} fontWeight={700} textAnchor="middle">
+      {value}
+    </text>
+  );
+};
+
+// ── Monthly tooltip ──────────────────────────────────────────────────────────
 const MonthlyTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0f172a] text-white p-3 rounded-xl shadow-xl text-[11px] border border-slate-700">
-      <p className="opacity-70 mb-1 uppercase tracking-widest">{label}</p>
-      <p className="text-base font-bold">{payload[0].value} tickets</p>
+    <div style={{
+      background: '#1e3a8a', borderRadius: 10, padding: '10px 16px',
+      boxShadow: '0 4px 20px rgba(37,99,235,0.3)', color: '#fff'
+    }}>
+      <p style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>{label}</p>
+      <p style={{ fontSize: 20, fontWeight: 700 }}>{payload[0].value} <span style={{ fontSize: 12, fontWeight: 400 }}>tickets</span></p>
     </div>
   );
 };
@@ -39,13 +60,15 @@ const MonthlyTooltip = ({ active, payload, label }) => {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-lg text-[12px]">
-      {label && <p className="text-slate-400 font-bold mb-2 uppercase">{label}</p>}
+    <div style={{
+      background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+      padding: '10px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
+    }}>
+      {label && <p style={{ color: '#6b7280', fontSize: 11, marginBottom: 5 }}>{label}</p>}
       {payload.map((p, i) => (
-        <div key={i} className="flex justify-between gap-4 my-1">
-          <span style={{ color: p.color }} className="font-medium">{p.name}:</span>
-          <span className="font-bold text-slate-900">{p.value}</span>
-        </div>
+        <p key={i} style={{ color: p.color, fontSize: 13, fontWeight: 600, margin: '2px 0' }}>
+          {p.name}: <span style={{ color: '#111827' }}>{p.value}</span>
+        </p>
       ))}
     </div>
   );
@@ -60,16 +83,20 @@ export default function PerformancesPage() {
       try {
         const res = await axios.get(`http://localhost:3001/api/manager/stats/${user.id}`);
         setStats(res.data);
-      } catch (err) { console.error("Erreur stats:", err); }
+      } catch (err) {
+        console.error("Erreur stats:", err);
+      }
     };
     fetchStats();
   }, [user.id]);
 
-  const sortedMonthlyStats = useMemo(() => {
-    if (!stats?.monthlyStats) return [];
-    const order = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-    return [...stats.monthlyStats].sort((a, b) => order.indexOf(a.month) - order.indexOf(b.month));
-  }, [stats]);
+const sortedMonthlyStats = useMemo(() => {
+  if (!stats?.monthlyStats) return [];
+  // Must match the "months" array in your Node.js backend exactly
+  const order = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+  
+  return [...stats.monthlyStats].sort((a, b) => order.indexOf(a.month) - order.indexOf(b.month));
+}, [stats]);
 
   const avgMonthly = useMemo(() => {
     if (!sortedMonthlyStats.length) return 0;
@@ -79,11 +106,25 @@ export default function PerformancesPage() {
   const exportPDF = () => {
     if (!stats) return;
     const doc = new jsPDF('p', 'pt', 'a4');
-    doc.text(`Rapport : ${stats.serviceName}`, 40, 50);
+    doc.setFontSize(20);
+    doc.text(`Rapport de Performance : ${stats.serviceName}`, 40, 50);
     autoTable(doc, {
       startY: 80,
       head: [['KPI', 'Valeur']],
-      body: [['Total Tickets', stats.totalTickets], ['Résolution', `${stats.resolutionRate}%`]],
+      body: [
+        ['Total Tickets', stats.totalTickets],
+        ['Taux de Résolution', `${stats.resolutionRate}%`],
+        ['Tickets Dans SLA', stats.slaStats[0].value],
+        ['Tickets Hors SLA', stats.slaStats[1].value],
+      ],
+      theme: 'striped'
+    });
+    doc.text('Performance Techniciens', 40, doc.lastAutoTable.finalY + 30);
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 40,
+      head: [['Technicien', 'Résolus', 'Rejetés', 'Taux (%)']],
+      body: stats.techPerformance.map(t => [t.name, t.resolu, t.rejete, `${t.resolutionRate}%`]),
+      headStyles: { fillColor: [37, 99, 235] }
     });
     doc.save(`Performance_${stats.serviceName}.pdf`);
   };
@@ -91,54 +132,64 @@ export default function PerformancesPage() {
   const exportExcel = () => {
     if (!stats) return;
     const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.statusStats), "Statuts");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.techPerformance), "Techniciens");
-    XLSX.writeFile(wb, `Stats_${stats.serviceName}.xlsx`);
+    XLSX.writeFile(wb, `Stats_Service_${stats.serviceName}.xlsx`);
   };
 
-  if (!stats) return <div className="p-10 text-slate-400 font-bold animate-pulse text-sm uppercase tracking-widest">Chargement des analyses...</div>;
+  if (!stats) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+      Chargement du tableau de bord...
+    </div>
+  );
 
   const slaIn = stats.slaStats[0].value;
   const slaOut = stats.slaStats[1].value;
   const slaPct = Math.round((slaIn / (slaIn + slaOut || 1)) * 100);
 
   return (
-    <div className="p-6 font-sans">
+    <div style={{ minHeight: '100vh', background: '#f9fafb', padding: '32px', fontFamily: "'Inter', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        .monthly-chart-wrap { background: linear-gradient(135deg, #eff6ff 0%, #fff 60%); border-radius: 16px; padding: 24px; border: 1px solid #dbeafe; }
+        .monthly-stat-badge { background: #2563eb; color: #fff; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 600; }
+        .monthly-stat-badge.avg { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+      `}</style>
+
       {/* Header */}
-      <div className="flex justify-between items-end mb-8">
-        <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+         <div>
           <h1 className="text-2xl font-bold text-[#0f172a] mb-1">Analyses & Performances</h1>
           <p className="text-sm text-slate-500">{stats.serviceName} • Vue Managériale</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+        <div style={{ display: 'flex', gap: 12 }}>
+        <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
             <MdFileDownload className="text-emerald-500" size={18} /> Excel
           </button>
           <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 bg-[#0f172a] text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition-all shadow-md">
             <MdFileDownload className="text-red-400" size={18} /> Rapport PDF
-          </button>
-        </div>
+          </button> </div>
       </div>
 
-      {/* KPI Cards - Style Capture 1 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <KpiCard label="Total Global" value={stats.totalTickets} icon={<MdAssignment />} type="blue" />
-        <KpiCard label="Taux Résolution" value={`${stats.resolutionRate}%`} icon={<MdTrendingUp />} type="purple" />
-        <KpiCard label="Dans les Délais" value={slaIn} icon={<MdCheckCircle />} type="green" />
-        <KpiCard label="Retards (SLA)" value={slaOut} icon={<MdTimer />} type="red" />
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <KpiCard label="Total Global" value={stats.totalTickets} color="#2563eb" icon={<MdAssignment />} />
+        <KpiCard label="Taux Résolution" value={`${stats.resolutionRate}%`} color="#7c3aed" icon={<MdTrendingUp />} />
+        <KpiCard label="Dans les Délais" value={slaIn} color="#16a34a" icon={<MdCheckCircle />} />
+        <KpiCard label="Retards (SLA)" value={slaOut} color="#dc2626" icon={<MdTimer />} />
       </div>
 
-      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Efficacité de l'équipe</p>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <SectionLabel>Efficacité de l'équipe</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
         <Card title="Volume de travail par Technicien">
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats.techPerformance}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="resolu" name="Résolus" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={20} />
-              <Bar dataKey="rejete" name="Rejetés" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar dataKey="resolu" name="Résolus" fill="#16a34a" radius={[4, 4, 0, 0]} barSize={20} />
+              <Bar dataKey="rejete" name="Rejetés" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={20} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -147,11 +198,11 @@ export default function PerformancesPage() {
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats.techPerformance} layout="vertical">
               <XAxis type="number" hide />
-              <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} width={100} />
+              <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} width={100} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="resolutionRate" name="Taux %" radius={[0, 4, 4, 0]} barSize={15}>
+              <Bar dataKey="resolutionRate" name="Taux" radius={[0, 4, 4, 0]} barSize={15}>
                 {stats.techPerformance.map((entry, index) => (
-                  <Cell key={index} fill="#3b82f6" />
+                  <Cell key={index} fill={getDynamicColor('resolved')} />
                 ))}
               </Bar>
             </BarChart>
@@ -159,16 +210,15 @@ export default function PerformancesPage() {
         </Card>
       </div>
 
-      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Répartition & Tendances</p>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <SectionLabel>Répartition des flux</SectionLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
         <Card title="État Actuel des Tickets">
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={stats.statusStats}>
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <YAxis axisLine={false} tickLine={false} hide />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+              <YAxis axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={30}>
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={30}>
                 {stats.statusStats.map((entry, index) => (
                   <Cell key={index} fill={getDynamicColor(entry.name, index)} />
                 ))}
@@ -178,108 +228,116 @@ export default function PerformancesPage() {
         </Card>
 
         <Card title="Distribution par Type">
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
-              <Pie data={stats.typeStats} innerRadius={60} outerRadius={85} paddingAngle={8} dataKey="value">
+              <Pie data={stats.typeStats} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                 {stats.typeStats.map((entry, index) => (
-                  <Cell key={index} fill={getDynamicColor(entry.name, index)} stroke="none" />
+                  <Cell key={index} fill={getDynamicColor(entry.name, index)} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip />
+              <Legend iconType="circle" formatter={(value) => `${value}`} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="flex flex-wrap justify-center gap-4 mt-2">
+          <div style={{ textAlign: 'center', marginTop: -10 }}>
             {stats.typeStats.map((t, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getDynamicColor(t.name, i) }} />
-                <span className="text-[10px] font-bold text-slate-500 uppercase">{t.name}: {t.percentage}%</span>
-              </div>
+              <span key={i} style={{ fontSize: 12, color: '#6b7280', margin: '0 8px' }}>
+                {t.name}: <strong>{t.percentage}%</strong>
+              </span>
             ))}
           </div>
         </Card>
 
         <Card title="Santé du Service (SLA)">
-          <div className="flex flex-col items-center justify-center py-6">
-            <div className={`text-5xl font-bold mb-2 ${slaPct > 80 ? 'text-green-500' : 'text-red-500'}`}>{slaPct}%</div>
-            <p className="text-slate-400 text-sm font-medium mb-6 uppercase tracking-tighter">Conformité aux délais</p>
-            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
-               <div className={`h-full ${slaPct > 80 ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${slaPct}%` }} />
-            </div>
-            <div className="flex gap-6">
-              <div className="text-center">
-                <p className="text-xs text-slate-400 uppercase font-bold">OK</p>
-                <p className="text-lg font-bold text-green-600">{slaIn}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-400 uppercase font-bold">Retards</p>
-                <p className="text-lg font-bold text-red-600">{slaOut}</p>
-              </div>
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <p style={{ fontSize: 48, fontWeight: 800, color: slaPct > 80 ? '#16a34a' : '#dc2626' }}>{slaPct}%</p>
+            <p style={{ color: '#6b7280', fontSize: 14 }}>Conformité aux délais</p>
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 15 }}>
+              <div style={{ fontSize: 12 }}><span style={{ color: '#16a34a' }}>●</span> {slaIn} OK</div>
+              <div style={{ fontSize: 12 }}><span style={{ color: '#dc2626' }}>●</span> {slaOut} Retards</div>
             </div>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Évolution Mensuelle</h3>
-            <div className="flex gap-2">
-              <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold">Moy: {avgMonthly}/mois</span>
-            </div>
-          </div>
-          <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={sortedMonthlyStats}>
-                <defs>
-                  <linearGradient id="colorCurve" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                <Tooltip content={<MonthlyTooltip />} />
-                <ReferenceLine y={avgMonthly} stroke="#cbd5e1" strokeDasharray="5 5" />
-                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorCurve)" dot={<CustomDot />} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+<SectionLabel>Tendances Temporelles</SectionLabel>
+<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+  
+  {/* NEW: Monthly Curve Chart */}
+  <div className="monthly-chart-wrap">
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <p style={{ fontSize: 14, fontWeight: 700, color: '#1e3a8a', margin: 0 }}>Evolution Mensuelle des Tickets</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <span className="monthly-stat-badge">Total: {stats.totalTickets}</span>
+        <span className="monthly-stat-badge avg">Moy: {avgMonthly}/mois</span>
+      </div>
+    </div>
+    
+    <ResponsiveContainer width="100%" height={280}>
+      <AreaChart data={sortedMonthlyStats}>
+        <defs>
+          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dbeafe" />
+        <XAxis 
+          dataKey="month" 
+          axisLine={false} 
+          tickLine={false} 
+          tick={{ fontSize: 11, fill: '#1e40af', fontWeight: 500 }} 
+        />
+        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+        <Tooltip content={<MonthlyTooltip />} />
+        
+        {/* The Curve */}
+        <Area 
+          type="monotone" 
+          dataKey="value" 
+          stroke="#2563eb" 
+          strokeWidth={3} 
+          fillOpacity={1} 
+          fill="url(#colorValue)" 
+          dot={<CustomDot />}
+          activeDot={{ r: 8 }}
+          label={<CustomLabel />}
+        />
+        
+        {/* Optional: Average line */}
+        <ReferenceLine y={avgMonthly} stroke="#94a3b8" strokeDasharray="3 3" label={{ position: 'right', value: 'Moyenne', fill: '#94a3b8', fontSize: 10 }} />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
 
-        <Card title="Priorités des demandes">
-           <ResponsiveContainer width="100%" height={230}>
+        <Card title="Priorités">
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie data={stats.priorityStats} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                 {stats.priorityStats.map((entry, index) => (
                   <Cell key={index} fill={getDynamicColor(entry.name)} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px' }} />
+              <Tooltip />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
         </Card>
+</div>
+
       </div>
-    </div>
   );
 }
 
-function KpiCard({ label, value, icon, type }) {
-  const styles = {
-    blue:   { bg: 'bg-blue-50', text: 'text-blue-500' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-500' },
-    green:  { bg: 'bg-green-50', text: 'text-green-500' },
-    red:    { bg: 'bg-red-50', text: 'text-red-500' },
-  };
+function KpiCard({ label, value, color, icon }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center gap-4 transition-transform hover:scale-[1.02]">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${styles[type].bg} ${styles[type].text}`}>
+    <div style={{ background: '#fff', padding: '20px', borderRadius: 12, border: '1px solid #e5e7eb', display: 'flex', gap: 16, alignItems: 'center' }}>
+      <div style={{ width: 48, height: 48, borderRadius: 10, background: `${color}15`, color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
         {icon}
       </div>
       <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mb-0.5">{label}</p>
-        <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
+        <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>{label}</p>
+        <p style={{ fontSize: 24, fontWeight: 700, color: '#111827', margin: 0 }}>{value}</p>
       </div>
     </div>
   );
@@ -287,9 +345,25 @@ function KpiCard({ label, value, icon, type }) {
 
 function Card({ title, children }) {
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-      <h3 className="text-sm font-bold text-slate-800 mb-6 uppercase tracking-widest border-l-4 border-blue-500 pl-3 leading-none">{title}</h3>
+    <div style={{ background: '#fff', padding: '24px', borderRadius: 12, border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+      <p style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 20 }}>{title}</p>
       {children}
     </div>
   );
+}
+
+function SectionLabel({ children }) {
+  return (
+    <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '24px 0 12px' }}>
+      {children}
+    </p>
+  );
+}
+
+function btnStyle(color) {
+  return {
+    display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 8,
+    border: `1px solid ${color}20`, background: `${color}10`, color, cursor: 'pointer',
+    fontSize: 13, fontWeight: 600, transition: 'all 0.2s'
+  };
 }

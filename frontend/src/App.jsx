@@ -102,7 +102,7 @@ export default function App() {
             <ChefLayout />
           </PrivateRoute>
         }>
-          <Route index element={<AccueilChef />} />
+         <Route index element={<Navigate to="statistiques" replace />} />
           <Route path="repartition" element={<RepartitionPage />} />
           <Route path="statistiques" element={<StatistiqueGlobal />} />
           <Route path="profile" element={<ProfilePage />} /> {/* ✅ added */}
@@ -114,7 +114,7 @@ export default function App() {
     <ManagerLayout />
   </PrivateRoute>
 }>
-  <Route index element={<AccueilManager />} />
+ <Route index element={<Navigate to="tickets-service" replace />} />
   <Route path="profile" element={<ProfilePage />} />
   <Route path="tickets-service" element={<TicketsService />} />
   <Route path="tickets-service/:id" element={<TicketsDetails />} />
@@ -127,7 +127,7 @@ export default function App() {
             <AdminLayout />
           </PrivateRoute>
         }>
-          <Route index element={<UsersPage />}/>
+        <Route index element={<Navigate to="utilisateurs" replace />} />
           <Route path="utilisateurs" element={<UsersPage />} />
           <Route path="tickets" element={<TicketsAdmin />} />
 <Route path="departements" element={<Departements />} />

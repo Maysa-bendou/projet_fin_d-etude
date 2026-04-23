@@ -44,114 +44,78 @@ export default function DepartementsPage() {
   }, [departments, searchTerm]);
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ width: 36, height: 36, border: '3px solid #e5e7eb', borderTop: '3px solid #3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div className="flex justify-center items-center h-screen bg-[#e6e5e3]">
+      <div className="w-9 h-9 border-4 border-slate-200 border-t-red-700 rounded-full animate-spin" />
     </div>
   );
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh', padding: '40px 32px' }}>
+    <div className="min-h-screen bg-[#f9f6f2] p-8 md:p-10 font-sans">
 
-      {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+      {/* HEADER PAGE */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 37, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: '0 0 4px 0' }}>
-            Gestion des Départements
-          </h1>
-          <p style={{ fontSize: 13, color: '#6b7280', margin: 0, fontWeight: 500 }}>
+          <h1 className="text-2xl font-bold text-slate 900">Gestion des Départements</h1>
+          <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
             Structure organisationnelle de l'entreprise
           </p>
         </div>
 
+        {/* 1: BOUTON ROUGE 700 */}
         <button
           onClick={() => setIsAddModalOpen(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '11px 20px',
-            background: '#3b82f6', color: '#fff',
-            border: 'none', borderRadius: 12,
-            fontSize: 13, fontWeight: 700, cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(59,130,246,0.25)',
-            transition: 'background 0.2s',
-            fontFamily: 'Inter, sans-serif'
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
-          onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
+          className="flex items-center gap-2 px-5 py-2.5 bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-lg hover:bg-red-800 shadow-md transition-all active:scale-95"
         >
-          <MdAddBusiness style={{ fontSize: 18 }} />
+          <MdAddBusiness className="text-base" />
           Ajouter département
         </button>
       </div>
 
       {error && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '12px 20px', marginBottom: 20, color: '#dc2626', fontSize: 13, fontWeight: 600 }}>
+        <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-3 mb-6 text-red-600 text-sm font-semibold">
           {error}
         </div>
       )}
 
       {/* CARD PRINCIPALE */}
-      <div style={{
-        background: '#fff',
-        border: '1px solid #e5e7eb',
-        borderRadius: 16,
-        overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-      }}>
+      <div className="bg-white border border-gray-300 rounded-xl shadow-sm overflow-hidden">
 
         {/* Header card : titre + recherche + refresh */}
-        <div style={{
-          padding: '20px 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16
-        }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: 0 }}>
+        <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
+          <h2 className="text-base font-bold text-slate-800">
             Mes Départements
           </h2>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: '#f9fafb', border: '1px solid #e5e7eb',
-              borderRadius: 99, padding: '8px 16px', minWidth: 240
-            }}>
-              <MdSearch style={{ fontSize: 16, color: '#9ca3af', flexShrink: 0 }} />
+          <div className="flex items-center gap-3">
+            {/* 3: BARRE DE RECHERCHE EN BEIGE #f9f6f2 */}
+            <div className="flex items-center gap-2 bg-[#f9f6f2] border border-gray-300 rounded-lg px-4 py-2 min-w-[280px] focus-within:ring-2 focus-within:ring-slate-300 transition-all">
+              <MdSearch className="text-slate-500 text-lg" />
               <input
                 type="text"
                 placeholder="Rechercher un département..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                style={{
-                  border: 'none', outline: 'none', background: 'transparent',
-                  fontSize: 13, color: '#374151', width: '100%',
-                  fontFamily: 'Inter, sans-serif'
-                }}
+                className="bg-transparent border-none outline-none text-sm text-slate-700 w-full placeholder:text-slate-500"
               />
             </div>
 
             <button
               onClick={fetchDepartments}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 36, height: 36, borderRadius: 10,
-                background: '#f9fafb', border: '1px solid #e5e7eb',
-                color: '#9ca3af', cursor: 'pointer', transition: 'color 0.2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = '#3b82f6'}
-              onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+              className="p-2.5 bg-[#f9f6f2] border border-gray-300 text-slate-500 rounded-lg hover:text-red-700 transition-colors shadow-sm"
+              title="Actualiser"
             >
-              <MdRefresh style={{ fontSize: 18 }} />
+              <MdRefresh className="text-xl" />
             </button>
           </div>
         </div>
 
-        {/* INNER CARD — tableau avec sa propre bordure et son header beige */}
-        <div style={{ padding: '0 20px 20px 20px' }}>
-          <div style={{
-            border: '1px solid #e5e7eb',
-            borderRadius: 12,
-            overflow: 'hidden'
-          }}>
-            <DepartmentsTable departments={filteredDepartments} onRowClick={setSelectedDepartment} />
+        {/* 2: INNER CARD - TABLEAU AVEC BORDURES MOINS ARRONDIES */}
+        <div className="p-5 pt-0">
+          <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+            <DepartmentsTable 
+              departments={filteredDepartments} 
+              onRowClick={setSelectedDepartment} 
+            />
           </div>
         </div>
 

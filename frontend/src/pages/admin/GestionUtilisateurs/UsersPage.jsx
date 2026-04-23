@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { MdSearch, MdPersonAdd, MdFilterList, MdRefresh } from "react-icons/md";
+import { MdSearch, MdPersonAdd, MdRefresh } from "react-icons/md";
 import UsersTable from "./UsersTable";
 import UserModal from "./UserModal";
 
@@ -35,9 +35,9 @@ function UsersPage() {
 
   const filteredUsers = useMemo(() => {
     const s = searchTerm.toLowerCase();
-    return users.filter(u => 
-      `${u.surname} ${u.name}`.toLowerCase().includes(s) || 
-      u.id.toString().includes(s) || 
+    return users.filter(u =>
+      `${u.surname} ${u.name}`.toLowerCase().includes(s) ||
+      u.id.toString().includes(s) ||
       (u.role || '').toLowerCase().includes(s)
     );
   }, [users, searchTerm]);
@@ -50,64 +50,70 @@ function UsersPage() {
 
   return (
     <div className="min-h-screen bg-[#f9f6f2] p-8 font-sans">
-      
-      {/* ── HEADER DE LA PAGE ── */}
-      <div className="max-w-7xl mx-auto mb-10 flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Gestion des Utilisateurs</h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium">Administration de l'annuaire et des rôles</p>
-        </div>
-        
+
+      {/* 🔥 TITRE GLOBAL (HORS TABLEAU) */}
+       <h1 className="text-2xl font-bold text-slate-900">Gestion des Utilisateurs</h1>
+      <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
+            Administration de l'annuaire et des roles
+          </p>
+
+      {/* BOUTON AJOUT */}
+      <div className="max-w-7xl mx-auto mb-5 flex justify-end">
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-[#11a75c] text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#0e8f4d] shadow-lg shadow-emerald-100 transition-all active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-lg hover:opacity-90 shadow-md transition-all active:scale-95"
         >
-          <MdPersonAdd size={18} />
+          <MdPersonAdd size={17} />
           Ajouter utilisateur
         </button>
       </div>
 
-      {/* ── CONTENEUR PRINCIPAL ── */}
-      <div className="max-w-7xl mx-auto bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-        
-        {/* BARRE DE RECHERCHE ET ACTIONS */}
-        <div className="p-8 border-b border-slate-50">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="relative flex-1 max-w-lg">
-              <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+      {/* CONTENEUR PRINCIPAL */}
+      <div className="max-w-7xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+
+        {/* HEADER (SANS "Annuaire du personnel") */}
+        <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-end gap-4 border-b border-slate-100">
+
+          {/* Recherche + refresh */}
+          <div className="flex items-center gap-3">
+
+            <div className="relative">
+              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
-                placeholder="Rechercher par nom, ID ou rôle..."
+                placeholder="Rechercher un utilisateur..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-[#f8fafc] border border-slate-200 rounded-[1.2rem] text-sm focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all text-slate-600 placeholder:text-slate-400"
+                className="w-72 pl-9 pr-4 py-2.5 bg-[#f9f6f2] border border-[#e8e4df] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e8e4df] focus:border-[#d0cac3] transition-all text-slate-600 placeholder:text-slate-400"
               />
             </div>
-            
-            <div className="flex items-center gap-3">
-              <button onClick={fetchData} className="p-3 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-colors border border-slate-100">
-                <MdRefresh size={20} />
-              </button>
-              <button className="p-3 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-colors border border-slate-100">
-                <MdFilterList size={20} />
-              </button>
-            </div>
+
+            {/* Refresh */}
+            <button
+              onClick={fetchData}
+              className="p-2.5 bg-[#f9f6f2] text-slate-500 rounded-lg hover:bg-[#f0ece6] transition-colors border border-[#e8e4df]"
+            >
+              <MdRefresh size={18} />
+            </button>
+
           </div>
         </div>
 
-        {/* SECTION DU TABLEAU */}
-        <div className="p-8 pt-4">
-            <div className="mb-6 flex justify-between items-center px-2">
-                <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Annuaire du personnel</h2>
-                <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase">
-                  {filteredUsers.length} Comptes actifs
-                </span>
-            </div>
-            
-            {/* Ici on entoure le tableau pour gérer ses arrondis */}
-            <div className="border border-slate-100 rounded-[1.8rem] overflow-hidden shadow-sm">
-                <UsersTable users={filteredUsers} onRowClick={setSelectedUser} />
-            </div>
+        {/* SOUS-TITRE */}
+        <div className="px-8 pt-5 pb-2 flex justify-between items-center">
+          <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            Liste des collaborateurs
+          </span>
+          <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase">
+            {filteredUsers.length} Comptes
+          </span>
+        </div>
+
+        {/* TABLEAU */}
+        <div className="px-8 pb-8 pt-2">
+          <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <UsersTable users={filteredUsers} onRowClick={setSelectedUser} />
+          </div>
         </div>
       </div>
 

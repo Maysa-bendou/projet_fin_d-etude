@@ -81,27 +81,38 @@ export default function DepartmentModal({ department, setDepartment, setDepartme
     }
   };
 
+  // 🔥 style inputs cohérent avec UserModal
+  const inputStyle = "w-full px-4 py-2 bg-white border border-gray-200 rounded-lg text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 transition-all disabled:bg-gray-100/50";
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">
-          {isEdit ? "Modifier Département" : "Nouveau Département"}
-        </h2>
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      
+      {/* MODAL */}
+      <div className="bg-[#fefdfd] border border-gray-300 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
+        {/* HEADER */}
+        <div className="px-6 py-5 border-b border-gray-200 bg-white/50">
+          <h2 className="text-xl font-bold text-slate-800">
+            {isEdit ? "Modifier Département" : "Nouveau Département"}
+          </h2>
+        </div>
 
-        <div className="space-y-4">
+        {/* BODY */}
+        <div className="p-6 space-y-4">
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Nom du département *
             </label>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={inputStyle}
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={loading}
@@ -109,12 +120,12 @@ export default function DepartmentModal({ department, setDepartment, setDepartme
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Description
             </label>
             <textarea
               rows="4"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+              className={inputStyle}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={loading}
@@ -122,33 +133,40 @@ export default function DepartmentModal({ department, setDepartment, setDepartme
           </div>
         </div>
 
-        <div className="flex gap-3 mt-8 pt-6 border-t">
+        {/* FOOTER */}
+        <div className="px-6 py-4 bg-white/30 border-t border-gray-200 flex justify-end gap-3">
+
+          {/* Annuler */}
           <button
-            className="flex-1 bg-gray-100 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors"
             onClick={() => setDepartment(null)}
+            className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-700"
             disabled={loading}
           >
             Annuler
           </button>
+
+          {/* Supprimer */}
           {isEdit && (
             <button
-              className="flex-1 bg-red-100 text-red-700 font-medium py-3 px-4 rounded-lg hover:bg-red-200 transition-colors"
               onClick={handleDelete}
+              className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
               disabled={loading}
             >
               Supprimer
             </button>
           )}
+
+          {/* Ajouter / Modifier */}
           <button
-            className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium py-3 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
             onClick={handleSubmit}
+            className="px-6 py-2.5 bg-[#e53935] text-white text-[11px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#d32f2f] shadow-md transition-all active:scale-95"
             disabled={loading || !name.trim()}
           >
             {loading ? "..." : isEdit ? "Modifier" : "Créer"}
           </button>
+
         </div>
       </div>
     </div>
   );
 }
-

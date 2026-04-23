@@ -1,9 +1,8 @@
 import React from 'react';
 
 function UsersTable({ users = [], onRowClick }) {
-  // Style pour les lignes du tableau
   const cellStyle = "px-8 py-5 whitespace-nowrap text-sm";
-  const headerCellStyle = "px-8 py-4 text-left text-[11px] font-black text-[#94a3b8] uppercase tracking-[0.15em]";
+
   if (!users.length) {
     return (
       <div className="text-center py-24 bg-white">
@@ -21,29 +20,27 @@ function UsersTable({ users = [], onRowClick }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
-        {/* EN-TÊTE BEIGE COMME DEMANDÉ */}
+        {/* ── EN-TÊTE — gris slate-500 comme dans la capture ── */}
         <thead className="bg-[#f9f6f2] border-b border-[#eeebe7]">
           <tr>
-            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ID</th>
-            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Collaborateur</th>
-            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Rôle</th>
-            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Département</th>
-            <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Création</th>
-            <th className="px-8 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Statut</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">ID</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Collaborateur</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Rôle</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Département</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Création</th>
+            <th className="px-8 py-4 text-center text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Statut</th>
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-slate-100">
           {users.map((u) => (
             <tr
               key={u.id}
               onClick={() => onRowClick(u)}
               className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
             >
-              {/* ID */}
               <td className={`${cellStyle} font-medium text-slate-400`}>#{u.id}</td>
 
-              {/* NOM COMPLET AVEC AVATAR STYLE DJEZZY */}
               <td className="px-8 py-5 whitespace-nowrap">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold text-[11px] shrink-0">
@@ -58,32 +55,29 @@ function UsersTable({ users = [], onRowClick }) {
                 </div>
               </td>
 
-              {/* RÔLE */}
               <td className="px-8 py-5 whitespace-nowrap">
                 <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider rounded-lg border border-slate-200/50">
                   {u.role}
                 </span>
               </td>
-              {/* DÉPARTEMENT */}
+
               <td className="px-8 py-5 whitespace-nowrap text-sm font-semibold text-slate-600">
                 {u.department || "—"}
               </td>
 
-              {/* DATE */}
               <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-slate-500">
-                {new Date(u.created_at).toLocaleDateString('fr-FR', { 
-                  day: '2-digit', 
-                  month: 'short', 
-                  year: 'numeric' 
+                {new Date(u.created_at).toLocaleDateString('fr-FR', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
                 })}
               </td>
 
-              {/* STATUT (Pastille animée) */}
               <td className="px-8 py-5 whitespace-nowrap text-center">
                 <div className="flex justify-center">
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                    u.is_active 
-                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                    u.is_active
+                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                       : 'bg-rose-50 text-rose-600 border border-rose-100'
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>

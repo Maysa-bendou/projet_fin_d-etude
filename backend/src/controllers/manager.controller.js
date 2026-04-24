@@ -124,46 +124,37 @@ const getManagerStats = async (req, res) => {
       percentage: totalTickets > 0 ? Math.round((t._count.id / totalTickets) * 100) : 0
     }));
 
-// 9. Monthly Stats (Full Year for the current year)
-const currentYear = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+    // 9. Monthly Stats (Full Year for the current year)
+    const currentYear = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1);
+    const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
 
-const startOfYear = new Date(currentYear, 0, 1); // January 1st
-const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59); // December 31st
+    const monthlyRaw = await prisma.tickets.findMany({
+      where: { 
+        service_id: sId, 
+        created_at: {
+          gte: startOfYear,
+          lte: endOfYear
+        }
+      },
+      select: { created_at: true }
+    });
 
+    const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
+    const monthlyGroups = {};
+    months.forEach(m => { monthlyGroups[m] = 0; });
 
-const monthlyRaw = await prisma.tickets.findMany({
-  where: { 
-    service_id: sId, 
-    created_at: {
-      gte: startOfYear,
-      lte: endOfYear
-    }
-  },
-  select: { created_at: true }
-});
+    monthlyRaw.forEach(t => {
+      const monthIndex = new Date(t.created_at).getMonth();
+      const monthName = months[monthIndex];
+      monthlyGroups[monthName]++;
+    });
 
-const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
-
-// 1. Initialize the object with 0 for every month of the year
-const monthlyGroups = {};
-months.forEach(m => {
-  monthlyGroups[m] = 0;
-});
-
-// 2. Fill in the actual data from the database
-monthlyRaw.forEach(t => {
-  const monthIndex = new Date(t.created_at).getMonth();
-  const monthName = months[monthIndex];
-  monthlyGroups[monthName]++;
-});
-
-// 3. Convert to array for the chart
-// Result format: [{ month: "Janvier", count: 5 }, { month: "Février", count: 12 }, ...]
-const monthlyStats = months.map(monthName => ({
-  month: monthName,
-  value: monthlyGroups[monthName]
-}));
+    const monthlyStats = months.map(monthName => ({
+      month: monthName,
+      value: monthlyGroups[monthName]
+    }));
 
     // Response
     res.json({
@@ -175,9 +166,9 @@ const monthlyStats = months.map(monthName => ({
         { name: 'Dépassé', value: overdueCount }
       ],
       techPerformance,
-      statusStats,   // Contains all DB statuses
-      priorityStats, // Contains all DB priorities
-      categoryStats, // Contains all DB categories
+      statusStats,
+      priorityStats,
+      categoryStats,
       typeStats,
       monthlyStats
     });
@@ -188,4 +179,25 @@ const monthlyStats = months.map(monthName => ({
   }
 };
 
-module.exports = { getManagerStats };
+// ✅ Nombre de tickets actifs d'un technicien (statut != closed / resolved / rejected)
+const getActiveTechnicianTicketsCount = async (req, res) => {
+  try {
+    const techId = parseInt(req.params.techId);
+    console.log("🔍 techId:", techId); // ← add this
+
+    const count = await prisma.tickets.count({
+      where: {
+        assigned_to: techId,
+        status: { notIn: ["closed", "resolved", "rejected"] }
+      }
+    });
+
+    console.log("✅ count for", techId, ":", count); // ← and this
+    res.json({ count });
+  } catch (err) {
+    console.error("Active tickets count error:", err);
+    res.status(500).json({ error: "Erreur lors du comptage des tickets actifs" });
+  }
+};
+
+module.exports = { getManagerStats, getActiveTechnicianTicketsCount };

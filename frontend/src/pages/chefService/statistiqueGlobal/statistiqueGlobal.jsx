@@ -92,17 +92,7 @@ export default function StatistiqueGlobal() {
           </div>
         </div>
 
-        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, flexShrink: 0, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <MdAccessTime style={{ fontSize: 24, color: '#3b82f6' }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 1px 0' }}>Délai Moyen (MTTR)</p>
-            <p style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic', margin: '0 0 8px 0' }}>Temps moyen jusqu'à résolution</p>
-            <p style={{ fontSize: 26, fontWeight: 800, color: '#3b82f6', margin: '0 0 6px 0', lineHeight: 1 }}>{globalAvgTime}h</p>
-            <p style={{ fontSize: 10, color: '#9ca3af', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Calculé sur les tickets clôturés</p>
-          </div>
-        </div>
+
       </div>
 
       {/* OUTER CARD */}
@@ -127,8 +117,7 @@ export default function StatistiqueGlobal() {
                   {[
                     { label: 'Nom du Service', align: 'left' },
                     { label: 'Tickets Liés',   align: 'center' },
-                    { label: 'Efficacité',      align: 'center' },
-                    { label: 'Temps de Traitement', align: 'center' },
+                    { label: 'Taux resolution',      align: 'center' },
                   ].map((col, i) => (
                     <th key={i} style={{
                       padding: '11px 24px', fontSize: 11, fontWeight: 700,
@@ -168,20 +157,7 @@ export default function StatistiqueGlobal() {
                       </span>
                     </td>
 
-                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>
-                          {service.resolutionRate}%
-                        </span>
-                        <div style={{ width: 80, background: '#f3f4f6', height: 4, borderRadius: 99 }}>
-                          <div style={{ width: `${service.resolutionRate}%`, background: '#16a34a', height: '100%', borderRadius: 99 }} />
-                        </div>
-                      </div>
-                    </td>
 
-                    <td style={{ padding: '16px 24px', textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#3b82f6' }}>
-                      {service.avgTime}h
-                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -57,7 +57,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/employee" },
+    { icon: LayoutDashboard, label: "Tableau De Bord", path: "/employee" },
     { icon: PlusCircle, label: "Créer Ticket", path: "/employee/create-ticket" },
     { icon: Ticket, label: "Mes Tickets", path: "/employee/mes-tickets" },
     { icon: User, label: "Profil", path: "/employee/profile" },

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-
+import DOMPurify from "dompurify";
 /* ─── helpers ─────────────────────────────────────────────────────── */
 function statusCls(s) {
   return {
@@ -29,7 +29,7 @@ const URGENCY_FR  = { high: "Urgente", medium: "Normale", low: "Faible" };
 
 const TYPE_META = {
   solution:         { label: "Solution",            dot: "#378add", bg: "#e6f1fb", border: "#b5d4f4", text: "#0c447c" },
-  info:             { label: "Demande d'info",       dot: "#ba7517", bg: "#faeeda", border: "#fac775", text: "#633806" },
+  info:             { label: "Commentaire",       dot: "#ba7517", bg: "#faeeda", border: "#fac775", text: "#633806" },
   confirm:          { label: "Confirmation demandée",dot: "#639922", bg: "#eaf3de", border: "#c0dd97", text: "#27500a" },
   emp_reply:        { label: "Votre réponse",        dot: "#888780", bg: "var(--color-bg-secondary)", border: "var(--color-border)", text: "var(--color-text-muted)" },
   confirmed:        { label: "Résolution confirmée", dot: "#3b6d11", bg: "#eaf3de", border: "#c0dd97", text: "#27500a" },
@@ -99,7 +99,7 @@ function ConvBubble({ item }) {
     <div style={{ display:"flex", marginBottom:12, justifyContent: isEmployee ? "flex-end" : "flex-start" }}>
       <div style={{ maxWidth:"72%", display:"flex", flexDirection:"column", alignItems: isEmployee ? "flex-end" : "flex-start" }}>
         <div style={{ padding:"10px 14px", borderRadius:16, fontSize:13, lineHeight:1.55, ...bubbleStyle }}>
-          <div dangerouslySetInnerHTML={{ __html: item.message }} />
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.message) }} />
           <FileLinks files={item.files} isEmployee={isEmployee} />
         </div>
         <p style={{ fontSize:10, color:"var(--color-text-muted)", marginTop:4, padding:"0 2px" }}>
@@ -128,6 +128,7 @@ export default function TicketDetailsPage() {
   const [replyFiles, setReplyFiles] = useState([]);
   const [sendingReply, setSendingReply] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
 
   const fileInputRef = useRef(null);
   const convEndRef   = useRef(null);
@@ -153,7 +154,9 @@ export default function TicketDetailsPage() {
     if (ticket) setEditFields({ titre:ticket.title, description:ticket.description, impact:ticket.impact, urgence:ticket.urgency });
   }, [ticket]);
 
-  const isClosed = ticket?.status === "closed" || ticket?.status === "resolved";
+
+// 👇 existing code continues
+
   const techName = ticket?.technician
     ? ((ticket.technician.name || "") + " " + (ticket.technician.surname || "")).trim()
     : "Non assigné";
@@ -169,12 +172,29 @@ export default function TicketDetailsPage() {
   const lastInfoRequest  = [...comments].reverse().find(c => c.comment_type === "info");
 
   const handleFieldChange = (field, value) => setEditFields(prev => ({ ...prev, [field]: value }));
+const handleReopen = async () => {
+  try {
+    const res = await fetch(`http://localhost:3001/api/tickets/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "open" }),
+    });
 
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Erreur reopen");
+    }
+
+    fetchTicket();
+  } catch (e) {
+    alert(e.message);
+  }
+};
   const handleUpdateTicket = async () => {
     setUpdating(true);
     try {
       const payload = { title:editFields.titre, description:editFields.description, impact:editFields.impact, urgency:editFields.urgence };
-      if (ticket.status === "closed") payload.status = "open";
+  
       const res = await fetch("http://localhost:3001/api/tickets/" + id, {
         method:"PUT", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload),
       });
@@ -236,7 +256,16 @@ export default function TicketDetailsPage() {
   );
   if (error)  return <div style={{ color:"#a32d2d", textAlign:"center", padding:48 }}>{error}</div>;
   if (!ticket) return null;
+  const isClosed = ticket?.status === "closed";
 
+const closedDate = ticket?.closed_at
+  ? new Date(ticket.closed_at)
+  : null;
+
+const canReopen =
+  isClosed &&
+  closedDate &&
+  (Date.now() - closedDate.getTime()) <= 30 * 24 * 60 * 60 * 1000;
   return (
     <div style={css.page}>
       <div style={css.inner}>
@@ -273,10 +302,30 @@ export default function TicketDetailsPage() {
                 </button>
               </>
             ) : (
-              <button onClick={() => setIsEditing(true)} style={css.btnOutline}>
-                {ticket.status === "closed" ? "Réouvrir le ticket" : "Modifier"}
-              </button>
-            )}
+  <>
+    {ticket.status !== "closed" && (
+      <button onClick={() => setIsEditing(true)} style={css.btnOutline}>
+        Modifier
+      </button>
+    )}
+
+    {canReopen && (
+  <button onClick={handleReopen} style={css.btnPrimary}>
+    Réouvrir le ticket
+  </button>
+)}
+
+{isClosed && !canReopen && (
+  <button
+    style={{ ...css.btnPrimary, opacity: 0.5, cursor: "not-allowed" }}
+    disabled
+  >
+    Délai dépassé (30 jours)
+  </button>
+)}
+  </>
+)}
+                 
           </div>
         </div>
 
@@ -416,11 +465,11 @@ export default function TicketDetailsPage() {
               )}
 
               {/* reply box */}
-              {lastInfoRequest && !isClosed && (
+              { !isClosed && (
                 <div style={{ border:"0.5px solid rgba(0,0,0,0.12)", borderRadius:10, overflow:"hidden" }}>
                   <textarea rows={3} value={replyMsg}
                     onChange={e => setReplyMsg(e.target.value)}
-                    placeholder="Répondre au technicien..."
+                    placeholder="Envoyer au technicien..."
                     style={{ width:"100%", padding:"10px 14px", border:"none", outline:"none", fontSize:13, color:"#2c2c2a", fontFamily:"inherit", resize:"none", background:"#fff", lineHeight:1.55 }}
                   />
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 10px", background:"#f5f4f0", borderTop:"0.5px solid rgba(0,0,0,0.06)" }}>
@@ -444,11 +493,13 @@ export default function TicketDetailsPage() {
                 </div>
               )}
 
-              {isClosed && (
-                <p style={{ textAlign:"center", color:"#888780", padding:"16px 0", fontSize:13 }}>
-                  Ticket fermé — aucune action possible.
-                </p>
-              )}
+             {isClosed && (
+  <p style={{ textAlign:"center", color:"#888780", padding:"16px 0", fontSize:13 }}>
+    {canReopen
+      ? "Ticket fermé — vous pouvez le réouvrir sous 30 jours."
+      : "Ticket fermé — délai de réouverture dépassé."}
+  </p>
+)}
             </div>
 
           </div>

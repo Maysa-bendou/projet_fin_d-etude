@@ -102,6 +102,7 @@ model tickets {
   solution_date_resolved           DateTime?                    @db.Timestamptz(6)
   confirmation_requested           Boolean?                     @default(false)
   closing_note                     String?
+  closed_at                        DateTime?                    @db.Timestamp(6)
   notifications                    notifications[]
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]

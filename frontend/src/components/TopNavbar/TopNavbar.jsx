@@ -135,10 +135,7 @@ export default function TopNavbar({ pageTitle = "" }) {
             Support Panel
           </span>
           <div className="flex items-center gap-2 text-slate-500">
-            <Clock size={14} className="text-blue-500" />
-            <span className="text-sm font-bold tabular-nums">
-              {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
+            
           </div>
         </div>
 

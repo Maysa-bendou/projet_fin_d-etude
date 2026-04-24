@@ -149,7 +149,7 @@ router.post("/create", uploadCreate.array("files", 10), async (req, res) => {
 
     // ✅ 4. Notifications
     if (service_id) {
-      await Promise.all([
+      await Promise.allSettled([
         notifyAllTechsOfService(service_id, ticket.id, ticket.title),
         notifyAllManagersOfService(service_id, ticket.id, ticket.title),
       ]);
@@ -234,11 +234,22 @@ router.put("/:id/status", async (req, res) => {
     }
 
     const ticket = await prisma.tickets.update({
-      where: { id },
-      data,
-    });
+  where: { id },
+  data,
+});
 
-    res.json(ticket);
+await prisma.ticket_comments.create({
+  data: {
+    ticket_id: id,
+    user_id: req.body.user_id || null,
+    comment: `Statut changé → ${status}`,
+    comment_type: "status",
+  },
+});
+
+res.json(ticket);
+
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to update status" });
@@ -329,9 +340,10 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { title, description, impact, urgency, status } = req.body;
-const changes = [];
-    // 🔴 1. Fetch current ticket
+    const { title, description, impact, urgency, status, user_id } = req.body;
+
+    const changes = [];
+
     const existingTicket = await prisma.tickets.findUnique({
       where: { id }
     });
@@ -340,119 +352,100 @@ const changes = [];
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    // 🔴 2. Check reopen rule (ONLY when reopening)
-    if (existingTicket.status === "closed" && status === "open") {
+    // ✅ REOPEN RULE
+   let commentType = req.body._reopen ? "reopen" : "update";
+
+if (existingTicket.status === "closed" && status === "open") {
   if (!existingTicket.closed_at) {
     return res.status(400).json({ error: "Missing closed date" });
   }
-  if (existingTicket.status === "closed" && status === "open") {
-  await prisma.ticket_comments.create({
-    data: {
-      ticket_id: id,
-      user_id: req.body.user_id || null,
-      comment: "Ticket réouvert par l'utilisateur",
-      comment_type: "status",
-    },
-  });
-}
 
-
-  const closedDate = new Date(existingTicket.closed_at);
-  const now = new Date();
-
-  const diffDays = (now - closedDate) / (1000 * 60 * 60 * 24);
+  const diffDays = (Date.now() - new Date(existingTicket.closed_at)) / (1000 * 60 * 60 * 24);
 
   if (diffDays > 30) {
-    return res.status(400).json({
-      error: "Reopen deadline expired (1 month)"
-    });
+    return res.status(400).json({ error: "Reopen deadline expired" });
   }
+
+  changes.push("Ticket réouvert");
+  commentType = "reopen"; // 🔥 KEY DIFFERENCE
 }
 
-    // 🔴 3. Validate fields
-const isReopening = status === "open" && existingTicket.status === "closed";
+    // ✅ TRACK CHANGES
+    if (title && title !== existingTicket.title) {
+      changes.push("Titre modifié");
+    }
 
-if (
-  status !== "open" &&
-  (!title || !description || !impact || !urgency)
-) {
-  return res.status(400).json({ error: "All fields are required" });
-}
-    // 🔴 4. Recalculate priority
+    if (description && description !== existingTicket.description) {
+      changes.push("Description modifiée");
+    }
+
+    if (impact && impact !== existingTicket.impact) {
+      changes.push(`Impact: ${existingTicket.impact} → ${impact}`);
+    }
+
+    if (urgency && urgency !== existingTicket.urgency) {
+      changes.push(`Urgence: ${existingTicket.urgency} → ${urgency}`);
+    }
+
+    if (status && status !== existingTicket.status) {
+      changes.push(`Statut: ${existingTicket.status} → ${status}`);
+    }
+
+    // ✅ PRIORITY
     const PRIORITY_MATRIX = {
-      high:   { high: "critical", medium: "high",   low: "medium" },
-      medium: { high: "high",     medium: "medium", low: "low"   },
-      low:    { high: "medium",   medium: "low",    low: "low"   },
+      high:   { high: "critical", medium: "high", low: "medium" },
+      medium: { high: "high", medium: "medium", low: "low" },
+      low:    { high: "medium", medium: "low", low: "low" },
     };
 
     let priority = existingTicket.priority;
 
-if (impact && urgency) {
-  priority = PRIORITY_MATRIX[impact]?.[urgency] || existingTicket.priority;
-}
-    // 🔴 5. Update ticket
+    if (impact && urgency) {
+      priority = PRIORITY_MATRIX[impact]?.[urgency] || priority;
+    }
+
+    // ✅ UPDATE
     const updateData = {
-  title,
-  description,
-  impact,
-  urgency,
+  ...(title && { title }),
+  ...(description && { description }),
+  ...(impact && { impact }),
+  ...(urgency && { urgency }),
+  ...(status && { status }),
   priority,
-  status: status || undefined,
   updated_at: new Date(),
 };
 
-// ✅ handle closed_at here too
-if (status === "closed") {
-  updateData.closed_at = new Date();
-}
-if (status === "closed") {
-  updateData.closed_at = new Date();
-}
-// OPTIONAL (clean): reset when reopening
-if (existingTicket.status === "closed" && status === "open") {
-  updateData.closed_at = null;
-}
+    if (status === "closed") {
+      updateData.closed_at = new Date();
+    }
 
-const updatedTicket = await prisma.tickets.update({
-  where: { id },
-  data: updateData,
-});
+    if (existingTicket.status === "closed" && status === "open") {
+      updateData.closed_at = null;
+    }
 
-    res.json({
-      id: updatedTicket.id,
-      title: updatedTicket.title,
-      description: updatedTicket.description,
-      impact: updatedTicket.impact,
-      urgency: updatedTicket.urgency,
-      priority: updatedTicket.priority,
-      status: updatedTicket.status,
-      updatedAt: updatedTicket.updated_at,
+    const updatedTicket = await prisma.tickets.update({
+      where: { id },
+      data: updateData,
     });
+
+    // ✅ CREATE COMMENT IF CHANGES
+    if (changes.length > 0) {
+      await prisma.ticket_comments.create({
+        data: {
+          ticket_id: id,
+          user_id: user_id || null,
+          comment: changes.join(" | "),
+         comment_type: commentType, // 🔥 IMPORTANT
+        },
+      });
+    }
+
+    res.json(updatedTicket);
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors de la mise à jour" });
   }
-
-  if (title && title !== existingTicket.title) {
-  changes.push(`Titre modifié`);
-}
-
-if (description && description !== existingTicket.description) {
-  changes.push(`Description modifiée`);
-}
-
-if (impact && impact !== existingTicket.impact) {
-  changes.push(`Impact changé: ${existingTicket.impact} → ${impact}`);
-}
-
-if (urgency && urgency !== existingTicket.urgency) {
-  changes.push(`Urgence changée: ${existingTicket.urgency} → ${urgency}`);
-}
-
-if (status && status !== existingTicket.status) {
-  changes.push(`Statut changé: ${existingTicket.status} → ${status}`);
-}
 });
 
 // ── Assignation ───────────────────────────────────────────────────────────
@@ -467,24 +460,22 @@ router.put("/:id/assign", async (req, res) => {
       select: { title: true, created_by: true },
     });
 
-    const updatedTicket = await prisma.tickets.update({
-      where: { id: ticketId },
-      data: {
-        assigned_to: techId,
-        status: action === "taken" ? "in_progress" : "open",
-      },
-    });
-    // 🟢 CREATE COMMENT IF CHANGES
-if (changes.length > 0) {
-  await prisma.ticket_comments.create({
-    data: {
-      ticket_id: id,
-      user_id: req.body.user_id || null, // ou current user
-      comment: changes.join(" | "),
-      comment_type: "status",
-    },
-  });
-}
+   const updatedTicket = await prisma.tickets.update({
+  where: { id: ticketId },
+  data: {
+    assigned_to: techId,
+    status: action === "taken" ? "in_progress" : "open",
+  },
+});
+
+await prisma.ticket_comments.create({
+  data: {
+    ticket_id: ticketId,
+    user_id: assigned_by || null,
+    comment: action === "taken" ? "Technicien a pris en charge le ticket" : "Ticket assigné à un technicien",
+    comment_type: "status",
+  },
+});
 
     await prisma.ticket_assignments_history.create({
       data: {

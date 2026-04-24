@@ -35,19 +35,18 @@ const getTicketDetailTech = async (req, res) => {
             },
           },
         },
-        ticket_comments: {
-          orderBy: { created_at: "asc" },
-          include: {
-            users: { select: { id: true, name: true, surname: true, role: true } },
-            ticket_attachments: true,
-          },
-        },
-        ticket_attachments: {
-          orderBy: { uploaded_at: "asc" },
-          include: {
-            users: { select: { id: true, name: true, surname: true } },
-          },
-        },
+ticket_comments: {
+  orderBy: { created_at: "asc" },
+  include: {
+    users: { select: { id: true, name: true, surname: true, role: true } }
+  },
+},
+ticket_attachments: {
+  orderBy: { uploaded_at: "asc" },
+  include: {
+    users: { select: { id: true, name: true, surname: true } },
+  },
+},
       },
     });
 
@@ -88,28 +87,34 @@ const getTicketDetailTech = async (req, res) => {
       service: ticket.services?.name ?? null,
       serviceId: ticket.services?.id ?? null,
       assignedBy,
-      comments: ticket.ticket_comments.map((c) => ({
-        id: c.id,
-        message: c.comment,
-        comment_type: c.comment_type ?? "comment",
-        author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole: c.users?.role ?? "",
-        authorId: c.users?.id,
-        date: c.created_at,
-        files: c.ticket_attachments.map(a => {
-          const relativePath = a.file_path
-            ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
-            : null;
-          return { fileName: a.file_name, filePath: relativePath };
-        }),
-      })),
-      attachments: ticket.ticket_attachments.map((a) => ({
-        id: a.id,
-        fileName: a.file_name,
-        filePath: a.file_path,
-        uploadedBy: `${a.users?.name ?? ""} ${a.users?.surname ?? ""}`.trim(),
-        uploadedAt: a.uploaded_at,
-      })),
+comments: (ticket.ticket_comments || []).map((c) => ({
+  id: c.id,
+  message: c.comment,
+  comment_type: c.comment_type ?? "comment",
+  author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
+  authorRole: c.users?.role ?? "",
+  authorId: c.users?.id,
+  date: c.created_at,
+
+  files: (c.ticket_attachments || []).map(a => {
+    const relativePath = a.file_path
+      ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
+      : null;
+
+    return {
+      fileName: a.file_name,
+      filePath: relativePath,
+    };
+  }),
+})),
+
+attachments: (ticket.ticket_attachments || []).map((a) => ({
+  id: a.id,
+  fileName: a.file_name,
+  filePath: a.file_path,
+  uploadedBy: `${a.users?.name ?? ""} ${a.users?.surname ?? ""}`.trim(),
+  uploadedAt: a.uploaded_at,
+})),
     });
   } catch (err) {
     console.error(err);

@@ -100,8 +100,8 @@ model tickets {
   sla_date_limite                  DateTime?                    @db.Timestamptz(6)
   sla_statut                       String?                      @default("en_cours")
   solution_date_resolved           DateTime?                    @db.Timestamptz(6)
-  confirmation_requested           Boolean?                     @default(false)
   closing_note                     String?
+  confirmation_requested           Boolean?                     @default(false)
   notifications                    notifications[]
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]

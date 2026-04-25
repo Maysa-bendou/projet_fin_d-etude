@@ -22,14 +22,13 @@ const prioriteStyle = {
   "Basse":    "bg-green-100 text-green-700",
   "Normale":  "bg-yellow-100 text-yellow-700",
   "Haute":    "bg-red-100 text-red-700",
-  "Critique": "bg-red-200 text-red-800",
 };
 
 const categorieStyle = {
   "Logiciels": "bg-purple-100 text-purple-800",
   "Hardware":  "bg-blue-100 text-blue-800",
   "Réseau":    "bg-teal-100 text-teal-800",
-  "Accès":     "bg-pink-100 text-pink-800",
+  "Messagerie":     "bg-pink-100 text-pink-800",
   "Sécurité":  "bg-orange-100 text-orange-800",
   "Compte":    "bg-yellow-100 text-yellow-800",
 };
@@ -55,7 +54,7 @@ const statusEN = {
 };
 
 const priorityFR = { low: "Basse", medium: "Normale", high: "Haute", critical: "Critique" };
-const categoryFR = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", account: "Compte" };
+const categoryFR = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", messagerie: "Messagerie" };
 
 const STAT_CARDS = [
   { label: "Total",                  key: null,                      cls: "text-gray-700"   },
@@ -499,10 +498,10 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
                 <th className="px-4 py-3 font-medium">ID</th>
                 <th className="px-4 py-3 font-medium">Titre</th>
                 <th className="px-4 py-3 font-medium">Catégorie</th>
+                 <th className="px-4 py-3 font-medium">Priorité</th>
+                  <th className="px-4 py-3 font-medium">Statut</th>
+                  <th className="px-4 py-3 font-medium">SLA </th>
                 <th className="px-4 py-3 font-medium">Employé</th>
-                <th className="px-4 py-3 font-medium">Priorité</th>
-                <th className="px-4 py-3 font-medium">Statut</th>
-                <th className="px-4 py-3 font-medium">SLA restant</th>
                 <th className="px-4 py-3 font-medium">Créé le</th>
                 <th className="px-4 py-3 font-medium">
                   {activeTab === "archives" ? "Date clôture" : "Assigné le"}
@@ -527,10 +526,7 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
                       {t.categorie ?? "N/A"}
                     </span>
                   </td>
-
-                  <td className="px-4 py-3 text-gray-600 text-xs">{t.employe || "N/A"}</td>
-
-                  <td className="px-4 py-3">
+  <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${prioriteStyle[t.priorite] ?? "bg-gray-100 text-gray-600"}`}>
                       {t.priorite ?? "N/A"}
                     </span>
@@ -548,8 +544,7 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
                       ))}
                     </select>
                   </td>
-
-                  <td className="px-4 py-3">
+                   <td className="px-4 py-3">
                     {activeTab === "archives"
                       ? <span className="text-gray-300 text-xs">—</span>
                       :<SlaBar
@@ -560,6 +555,11 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
 />}
                   </td>
 
+                  <td className="px-4 py-3 text-gray-600 text-xs">{t.employe || "N/A"}</td>
+
+                
+
+                 
                   <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(t.createdAt)}</td>
 
                   <td className="px-4 py-3 text-gray-400 text-xs">

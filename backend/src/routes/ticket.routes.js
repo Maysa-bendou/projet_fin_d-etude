@@ -12,6 +12,7 @@ const {
   notifyAllTechsOfService,
   notifyTechAssigned,
   notifyEmployeeAssigned,
+  notifyTechTicketUpdated, 
 } = require("../controllers/notification.service");
 
 
@@ -70,10 +71,10 @@ router.post("/create", uploadCreate.array("files", 10), async (req, res) => {
       return res.status(400).json({ error: "Champs manquants" });
 
     const PRIORITY_MATRIX = {
-      high:   { high: "critical", medium: "high",   low: "medium" },
-      medium: { high: "high",     medium: "medium", low: "low"    },
-      low:    { high: "medium",   medium: "low",    low: "low"    },
-    };
+  high:   { high: "high",   medium: "high",   low: "medium" },
+  medium: { high: "high",   medium: "medium", low: "low"    },
+  low:    { high: "medium", medium: "low",    low: "low"    },
+};
 
     const priority = PRIORITY_MATRIX[impact]?.[urgency];
     console.log("👉 priority calculé:", priority);
@@ -371,8 +372,16 @@ if (existingTicket.status === "closed" && status === "open") {
     return res.status(400).json({ error: "Reopen deadline expired" });
   }
 
+  // ── Limite 2 réouvertures ──
+  const reopenCount = await prisma.ticket_comments.count({
+    where: { ticket_id: id, comment_type: "reopen" },
+  });
+  if (reopenCount >= 2) {
+    return res.status(400).json({ error: "Reopen limit reached" });
+  }
+
   changes.push("Ticket réouvert");
-  commentType = "reopen"; // 🔥 KEY DIFFERENCE
+  commentType = "reopen";
 }
 
     // ✅ TRACK CHANGES
@@ -396,28 +405,36 @@ if (existingTicket.status === "closed" && status === "open") {
       changes.push(`Statut: ${existingTicket.status} → ${status}`);
     }
 
-    // ✅ PRIORITY
     const PRIORITY_MATRIX = {
-      high:   { high: "critical", medium: "high", low: "medium" },
-      medium: { high: "high", medium: "medium", low: "low" },
-      low:    { high: "medium", medium: "low", low: "low" },
-    };
+  high:   { high: "high",   medium: "high",   low: "medium" },
+  medium: { high: "high",   medium: "medium", low: "low"    },
+  low:    { high: "medium", medium: "low",    low: "low"    },
+};
+   let priority = existingTicket.priority;
 
-    let priority = existingTicket.priority;
-
-    if (impact && urgency) {
-      priority = PRIORITY_MATRIX[impact]?.[urgency] || priority;
-    }
+if (impact && urgency) {
+  const computed = PRIORITY_MATRIX[impact]?.[urgency];
+  if (computed) priority = computed; // ← garde l'ancienne si calcul échoue
+}
 
     // ✅ UPDATE
-    const updateData = {
+ const updateData = {
   ...(title && { title }),
   ...(description && { description }),
   ...(impact && { impact }),
   ...(urgency && { urgency }),
   ...(status && { status }),
-  priority,
+  ...(priority && { priority }),
   updated_at: new Date(),
+  // ✅ Réinitialise la confirmation si réouverture
+  ...(existingTicket.status === "closed" && status === "open" && {
+    confirmation_requested: false,
+    is_resolved_confirmed: false,
+    
+    sla_statut: "en_cours",
+    closed_at: null,
+     
+  }),
 };
 
     if (status === "closed") {
@@ -435,15 +452,32 @@ if (existingTicket.status === "closed" && status === "open") {
 
     // ✅ CREATE COMMENT IF CHANGES
     if (changes.length > 0) {
-      await prisma.ticket_comments.create({
-        data: {
-          ticket_id: id,
-          user_id: user_id || null,
-          comment: changes.join(" | "),
-         comment_type: commentType, // 🔥 IMPORTANT
-        },
-      });
-    }
+  const isReopen = commentType === "reopen";
+  await prisma.ticket_comments.create({
+    data: {
+      ticket_id: id,
+      user_id: user_id || null,
+      comment: isReopen
+        ? " Ticket réouvert par l'employé"
+        : ` Modifié par l'employé : ${changes.join(" | ")}`,
+      comment_type: commentType,
+    },
+  });
+}
+
+   // ── Notifier le technicien si réouverture ou modification ──
+    if (updatedTicket.assigned_to && changes.length > 0) {
+
+      const employee = user_id ? await prisma.users.findUnique({
+        where: { id: parseInt(user_id) },
+        select: { name: true, surname: true },
+      }) : null;
+      const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
+     const isReopen = commentType === "reopen";
+await notifyTechTicketUpdated(
+  updatedTicket.assigned_to, id, updatedTicket.title, empName,
+  isReopen ? "reopen" : "update"
+); }
 
     res.json(updatedTicket);
 
@@ -452,6 +486,8 @@ if (existingTicket.status === "closed" && status === "open") {
     res.status(500).json({ error: "Erreur lors de la mise à jour" });
   }
 });
+
+// ── Assignation ───────────────────────────
 
 // ── Assignation ───────────────────────────────────────────────────────────
 router.put("/:id/assign", async (req, res) => {

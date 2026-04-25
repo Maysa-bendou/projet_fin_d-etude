@@ -385,6 +385,7 @@ data.comments.forEach((c) => {
           techniciens={techniciens}
           awaitingConfirm={awaitingConfirm}
           solutionBlocked={solutionBlocked}
+          fetchTicket={fetchTicket}
         />
       </div>
     </div>

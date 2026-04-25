@@ -26,7 +26,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/tech", technicienRoutes);
-app.use("/api/tech", techRoutes);
+
 
 app.use("/api/users", userRoutes);
 app.use("/api/departments", departmentRoutes);

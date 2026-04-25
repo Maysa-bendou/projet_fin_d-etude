@@ -138,20 +138,24 @@ export default function TicketDetailsPage() {
   const [replyFiles, setReplyFiles] = useState([]);
   const [sendingReply, setSendingReply] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [reopenCount, setReopenCount] = useState(0);
 
   const fileInputRef = useRef(null);
   const convEndRef   = useRef(null);
 
   const fetchTicket = async () => {
-    setLoading(true); setError(null);
-    try {
-      const res = await fetch("http://localhost:3001/api/tickets/" + id);
-      if (!res.ok) throw new Error("Ticket non trouvé");
-      setTicket(await res.json());
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
-  };
-
+  setLoading(true); setError(null);
+  try {
+    const res = await fetch("http://localhost:3001/api/tickets/" + id);
+    if (!res.ok) throw new Error("Ticket non trouvé");
+    const data = await res.json();
+    setTicket(data);
+    const count = (data.comments ?? []).filter(c => c.comment_type === "reopen").length;
+    setReopenCount(count);
+  } catch (e) { setError(e.message); }
+  finally { setLoading(false); }
+};
+      
   useEffect(() => { fetchTicket(); }, [id]);
   useEffect(() => { convEndRef.current?.scrollIntoView({ behavior:"smooth" }); }, [ticket?.comments?.length]);
 
@@ -181,8 +185,12 @@ export default function TicketDetailsPage() {
         method:"PUT", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ status:"open", user_id:currentUser.id, _reopen:true }),
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.error || "Erreur reopen"); }
-      fetchTicket();
+    if (!res.ok) {
+  const e = await res.json();
+  if (e.error === "Reopen limit reached") throw new Error("Vous avez atteint la limite de 2 réouvertures pour ce ticket.");
+  if (e.error === "Reopen deadline expired") throw new Error("Le délai de 30 jours pour réouvrir ce ticket est dépassé.");
+  throw new Error(e.error || "Erreur reopen");
+}  fetchTicket();
     } catch (e) { alert(e.message); }
   };
 
@@ -191,8 +199,7 @@ export default function TicketDetailsPage() {
     try {
       const res = await fetch("http://localhost:3001/api/tickets/" + id, {
         method:"PUT", headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ title:editFields.titre, description:editFields.description, impact:editFields.impact, urgency:editFields.urgence }),
-      });
+       body: JSON.stringify({ title:editFields.titre, description:editFields.description, impact:editFields.impact, urgency:editFields.urgence, user_id:currentUser.id }),  });
       if (!res.ok) throw new Error("Erreur mise à jour");
       setIsEditing(false); fetchTicket();
     } catch (e) { alert(e.message); }
@@ -242,8 +249,9 @@ export default function TicketDetailsPage() {
 
   const isClosed   = ticket.status === "closed";
   const closedDate = ticket.closed_at ? new Date(ticket.closed_at) : null;
-  const canReopen  = isClosed && closedDate && (Date.now() - closedDate.getTime()) <= 30*24*60*60*1000;
-
+  const canReopen = isClosed && closedDate 
+  && (Date.now() - closedDate.getTime()) <= 30*24*60*60*1000
+  && reopenCount < 2;
   /* shared styles */
   const card = { background:"#fff", borderRadius:12, border:"1px solid #d9d4cc", padding:18 };
   const sectionLabel = { fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", marginBottom:14, display:"block" };
@@ -294,9 +302,12 @@ export default function TicketDetailsPage() {
                   {canReopen && (
                     <button onClick={handleReopen} style={btnPrimary}><HiOutlineArrowPath size={13} /> Réouvrir</button>
                   )}
-                  {isClosed && !canReopen && (
-                    <button disabled style={{ ...btnPrimary, opacity:.45, cursor:"not-allowed" }}><HiOutlineLockClosed size={13} /> Délai dépassé</button>
-                  )}
+                 {isClosed && !canReopen && (
+  <button disabled style={{ ...btnPrimary, opacity:.45, cursor:"not-allowed" }}>
+    <HiOutlineLockClosed size={13} />
+    {reopenCount >= 2 ? "Limite réouvertures atteinte" : "Délai dépassé"}
+  </button>
+)}
                 </>
               )}
             </div>
@@ -322,7 +333,52 @@ export default function TicketDetailsPage() {
                 </div>
               </div>
             </div>
+{/* ── SOLUTION FINALE (ticket fermé) ── */}
+{isClosed && ticket.solution && (
+  <div style={{ ...card, border:"1px solid #bbf7d0", background:"#f0fdf4" }}>
+    <span style={{ ...sectionLabel, color:"#15803d" }}>✓ Solution apportée</span>
 
+    {/* Texte de la solution */}
+    <div style={{ fontSize:13, color:"#166534", lineHeight:1.7, marginBottom:12 }}
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.solution) }} />
+
+    {/* Pièces jointes liées à la solution */}
+    {(() => {
+      const files = (ticket.comments ?? [])
+        .filter(c => ["solution", "comment"].includes(c.comment_type))
+        .flatMap(c => c.files ?? []);
+      return files.length > 0 ? (
+        <div style={{ borderTop:"1px solid #bbf7d0", paddingTop:10 }}>
+          <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#15803d", marginBottom:8 }}>
+            Pièces jointes
+          </p>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+            {files.map((f, i) => (
+              <a key={f.id ?? i}
+                href={"http://localhost:3001/" + f.filePath}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 10px",
+                  borderRadius:6, background:"#dcfce7", color:"#15803d", textDecoration:"none", fontWeight:500 }}>
+                <HiOutlinePaperClip size={10} /> {f.fileName}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null;
+    })()}
+
+    {/* Note de fermeture si présente */}
+    {ticket.closing_note && (
+      <div style={{ marginTop:10, borderTop:"1px solid #bbf7d0", paddingTop:10 }}>
+        <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#15803d", marginBottom:4 }}>
+          Note de fermeture
+        </p>
+        <p style={{ fontSize:12, color:"#166534", margin:0 }}>{ticket.closing_note}</p>
+      </div>
+    )}
+  </div>
+)}
             {/* détails */}
             <div style={card}>
               <span style={sectionLabel}>Détails du ticket</span>
@@ -530,8 +586,11 @@ export default function TicketDetailsPage() {
                 <div style={{ textAlign:"center", padding:"14px 0", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   <HiOutlineLockClosed size={13} color="#94a3b8" />
                   <p style={{ fontSize:13, color:"#94a3b8", margin:0 }}>
-                    {canReopen ? "Ticket fermé — vous pouvez le réouvrir sous 30 jours." : "Ticket fermé — délai de réouverture dépassé."}
-                  </p>
+                   {canReopen 
+  ? "Ticket fermé — vous pouvez le réouvrir sous 30 jours." 
+  : reopenCount >= 2 
+    ? "Ticket fermé — limite de 2 réouvertures atteinte." 
+    : "Ticket fermé — délai de réouverture dépassé."}  </p>
                 </div>
               )}
             </div>

@@ -85,18 +85,17 @@ const getDashboardData = async (req, res) => {
         by:    ['priority'],
         where: {
           assigned_to: userId,
-          status:      { notIn: CLOSED_STATUSES },
+          status:      { in: ['open','in_progress','pending','pending_supplier','resolved'] },
         },
         _count: { id: true },
       });
 
       const PRIORITY_LABELS = {
-        critical: 'Critique',
         high:     'Haute',
         medium:   'Moyenne',
         low:      'Faible',
       };
-      const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low'];
+      const PRIORITY_ORDER = ['high', 'medium', 'low'];
 
       const priorityData = PRIORITY_ORDER.map(p => ({
         name:  PRIORITY_LABELS[p] || p,
@@ -108,33 +107,29 @@ const getDashboardData = async (req, res) => {
       // On agrège par mois et par statut pour l'année courante
       const statusByMonth = await prisma.$queryRaw`
         SELECT
-          EXTRACT(MONTH FROM created_at)::int AS month,
+          EXTRACT(MONTH FROM assigned_at)::int AS month,
           status,
-          COUNT(*)::int                        AS cnt
+          COUNT(*)::int AS cnt
         FROM tickets
         WHERE assigned_to = ${userId}
-          AND created_at >= ${yearStart}
-          AND created_at <  ${new Date(now.getFullYear() + 1, 0, 1)}
+          AND assigned_at >= ${yearStart}
+          AND assigned_at < ${new Date(now.getFullYear() + 1, 0, 1)}
+          AND assigned_at IS NOT NULL
         GROUP BY month, status
         ORDER BY month
       `;
 
-      // Construire tableau mois × statut
       const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
-      const currentMonth = now.getMonth() + 1; // 1-based
+      const currentMonth = now.getMonth() + 1;
 
       const statusTimelineData = Array.from({ length: currentMonth }, (_, i) => {
         const month = i + 1;
-        const rows  = statusByMonth.filter(r => r.month === month);
-        return {
-          name:            MONTHS_FR[i],
-          'En cours':      rows.find(r => r.status === 'in_progress')?._count?.id
-                           || rows.find(r => r.status === 'in_progress')?.cnt || 0,
-          'En attente':    (rows.find(r => r.status === 'pending')?.cnt || 0)
-                           + (rows.find(r => r.status === 'pending_supplier')?.cnt || 0),
-          'Résolu':        rows.find(r => r.status === 'resolved')?.cnt || 0,
-          'Ouvert':        rows.find(r => r.status === 'open')?.cnt || 0,
-        };
+        const rows  = statusByMonth.filter(r => Number(r.month) === month);
+        const total = rows.reduce((s, r) => s + Number(r.cnt), 0);
+        const resolved = rows
+          .filter(r => r.status === 'resolved' || r.status === 'closed')
+          .reduce((s, r) => s + Number(r.cnt), 0);
+        return { name: MONTHS_FR[i], 'Tickets': total, 'Résolu': resolved };
       });
 
       // ── Graphe catégories : filtré par service du technicien ──────────────
@@ -146,7 +141,7 @@ const getDashboardData = async (req, res) => {
 
       const categoryFilter = {
         assigned_to: userId,
-        status:      { notIn: CLOSED_STATUSES },
+        status:      { in: ['open','in_progress','pending','pending_supplier','resolved'] },
         ...(techUser?.service_id && { service_id: techUser.service_id }),
       };
 
@@ -157,12 +152,12 @@ const getDashboardData = async (req, res) => {
       });
 
       const CATEGORY_LABELS = {
-        hardware: 'Matériel',
-        software: 'Logiciel',
-        network:  'Réseau',
-        security: 'Sécurité',
-        account:  'Compte',
-        access:   'Accès',
+        hardware:  'Matériel',
+        software:  'Logiciel',
+        network:   'Réseau',
+        security:  'Sécurité',
+        access:    'Accès',
+        messaging: 'Messagerie',
       };
 
       const categoryData = categoryCounts.map(c => ({

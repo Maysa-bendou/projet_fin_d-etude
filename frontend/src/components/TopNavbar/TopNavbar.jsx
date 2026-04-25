@@ -216,8 +216,19 @@ export default function TopNavbar({ pageTitle = "" }) {
                       return (
                         <button
                           key={n.id}
-                          onClick={() => markRead(n.id)}
-                          className={`w-full flex gap-3 px-5 py-4 text-left hover:bg-slate-50 transition border-none bg-transparent cursor-pointer ${!n.is_read ? "bg-blue-50/30" : ""}`}
+                          onClick={() => {
+  markRead(n.id);
+  setNotifOpen(false);
+  if (n.ticket_id) {
+    const path =
+      rolePath === "technician" ? `/technician/ticket-technicien/${n.ticket_id}` :
+      rolePath === "manager"    ? `/manager/tickets-service/${n.ticket_id}` :
+      rolePath === "chef"       ? `/manager/tickets-service/${n.ticket_id}` :
+      rolePath === "employee"   ? `/employee/ticket/${n.ticket_id}` :
+      null;
+    if (path) navigate(path);
+  }
+}} className={`w-full flex gap-3 px-5 py-4 text-left hover:bg-slate-50 transition border-none bg-transparent cursor-pointer ${!n.is_read ? "bg-blue-50/30" : ""}`}
                         >
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
                             <Icon size={14} />
@@ -235,11 +246,7 @@ export default function TopNavbar({ pageTitle = "" }) {
                   )}
                 </div>
 
-                <div className="px-5 py-3 border-t border-slate-50 text-center">
-                  <button className="text-[11px] text-blue-600 hover:underline bg-transparent border-none cursor-pointer font-semibold">
-                    Voir toutes les notifications
-                  </button>
-                </div>
+              
               </div>
             )}
           </div>

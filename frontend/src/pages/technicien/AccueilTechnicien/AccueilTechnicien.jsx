@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AlertTriangle, Loader, Clock, LayoutGrid, UserCheck, ArrowUpRight, Flame } from "lucide-react";
 
@@ -8,7 +7,6 @@ const MOCK = {
   stats: { overdue: 3, inProgress: 7, pending: 4, total: 18 },
   charts: {
     priorityData: [
-      { name:"Critique", key:"critical", value:3 },
       { name:"Haute",    key:"high",    value:6 },
       { name:"Moyenne",  key:"medium",  value:7 },
       { name:"Faible",   key:"low",     value:2 },
@@ -20,10 +18,10 @@ const MOCK = {
       { name:"Compte",   value:2 },
     ],
     statusTimelineData: [
-      { name:"Jan","En cours":2,"Résolu":1 },
-      { name:"Fév","En cours":4,"Résolu":3 },
-      { name:"Mar","En cours":3,"Résolu":5 },
-      { name:"Avr","En cours":7,"Résolu":4 },
+      { name:"Jan", 'Tickets':4,  'Résolu':1 },
+      { name:"Fév", 'Tickets':7,  'Résolu':3 },
+      { name:"Mar", 'Tickets':5,  'Résolu':5 },
+      { name:"Avr", 'Tickets':10, 'Résolu':4 },
     ],
   },
   recentActivities: [
@@ -44,7 +42,6 @@ const timeAgo = (d) => {
 };
 
 const PRIO = {
-  critical: { c:"#ef4444", bg:"#fef2f2", l:"Critique" },
   high:     { c:"#f97316", bg:"#fff7ed", l:"Haute" },
   medium:   { c:"#eab308", bg:"#fefce8", l:"Moyenne" },
   low:      { c:"#22c55e", bg:"#f0fdf4", l:"Faible" },
@@ -72,23 +69,73 @@ const Ring = ({ pct, color, size=76, sw=7 }) => {
 };
 
 const Spark = ({ data }) => {
-  const vals = data.map(d=>(d["En cours"]||0)+(d["Résolu"]||0));
-  const max = Math.max(...vals,1), w=110, h=36;
-  const pts = vals.map((v,i)=>`${(i/(vals.length-1||1))*w},${h-(v/max)*(h-4)}`).join(" ");
+  const [hovered, setHovered] = useState(null);
+  if (!data.length) return null;
+  const w = 120, h = 50;
+  const n = data.length;
+  const pts = data.map((m, i) => ({
+  assigned: m['Tickets'] || m['assigned'] || 0,
+  resolved: m['Résolu']  || m['resolved'] || 0,
+  rest: Math.max(
+    0,
+    (m['Tickets'] || m['assigned'] || 0) -
+    (m['Résolu'] || m['resolved'] || 0)
+  ),
+}));
+  const maxVal = Math.max(...pts.map(p => p.assigned), 1);
+  const x = i => (i / (n - 1 || 1)) * w;
+  const y = v => h - (v / maxVal) * (h - 6);
+  const polyline = (key, color) => {
+    const d = pts.map((p, i) => `${x(i)},${y(p[key])}`).join(" ");
+    return <polyline fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" points={d}/>;
+  };
+
   return (
-    <svg width={w} height={h} style={{overflow:"visible"}}>
-      <defs>
-        <linearGradient id="sg" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#3b82f6" stopOpacity=".4"/>
-          <stop offset="100%" stopColor="#8b5cf6"/>
-        </linearGradient>
-      </defs>
-      <polyline fill="none" stroke="url(#sg)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" points={pts}/>
-      {vals.map((v,i)=>(
-        <circle key={i} cx={(i/(vals.length-1||1))*w} cy={h-(v/max)*(h-4)} r={3}
-          fill={i===vals.length-1?"#8b5cf6":"#3b82f6"} stroke="#fff" strokeWidth={1.5}/>
-      ))}
-    </svg>
+    <div style={{ position:"relative" }}>
+      <svg width="100%" viewBox={`0 0 ${w} ${h + 16}`} style={{ overflow:"visible" }}>
+        {/* grid lines */}
+        {[0,.5,1].map(t => (
+          <line key={t} x1={0} y1={y(maxVal*t)} x2={w} y2={y(maxVal*t)}
+            stroke="#f1f5f9" strokeWidth={1}/>
+        ))}
+        {/* 3 lines */}
+        {polyline("assigned","#6366f1")}
+        {polyline("resolved","#10b981")}
+        {polyline("rest","#f59e0b")}
+        {/* dots + month labels */}
+        {pts.map((p, i) => (
+          <g key={i} onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)} style={{ cursor:"default" }}>
+            <rect x={x(i)-6} y={0} width={12} height={h+16} fill="transparent"/>
+            {[["assigned","#6366f1"],["resolved","#10b981"],["rest","#f59e0b"]].map(([k,c]) => (
+              <circle key={k} cx={x(i)} cy={y(p[k])} r={hovered===i ? 4 : 2.5}
+                fill={c} stroke="#fff" strokeWidth={1.5}
+                style={{ transition:"r .1s" }}/>
+            ))}
+            <text x={x(i)} y={h+13} textAnchor="middle" fontSize={7} fontWeight="700" fill="#94a3b8">
+              {data[i].name}
+            </text>
+          </g>
+        ))}
+      </svg>
+      {/* Tooltip */}
+      {hovered !== null && (() => {
+        const p = pts[hovered], m = data[hovered];
+        const lp = Math.min(Math.max((hovered/(n-1||1))*100, 10), 85);
+        return (
+          <div style={{ position:"absolute", bottom:"calc(100% + 4px)", left:`${lp}%`,
+            transform:"translateX(-50%)", background:"#0f172a", borderRadius:8,
+            padding:"8px 12px", fontSize:11, color:"#f1f5f9", whiteSpace:"nowrap",
+            boxShadow:"0 4px 16px #0003", pointerEvents:"none", zIndex:10 }}>
+            <p style={{ margin:"0 0 5px", fontWeight:700, color:"#94a3b8", fontSize:10 }}>{m.name}</p>
+            <p style={{ margin:"0 0 2px" }}><span style={{ color:"#818cf8" }}>●</span> Assignés : <b>{p.assigned}</b></p>
+            <p style={{ margin:"0 0 2px" }}><span style={{ color:"#34d399" }}>●</span> Résolus/Fermés : <b>{p.resolved}</b></p>
+            <p style={{ margin:0, borderTop:"1px solid #1e293b", paddingTop:4 }}>
+              <span style={{ color:"#fbbf24" }}>●</span> Restants : <b>{p.rest}</b>
+            </p>
+          </div>
+        );
+      })()}
+    </div>
   );
 };
 
@@ -151,7 +198,7 @@ export default function AccueilTechnicien() {
           </h1>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:10,padding:"7px 14px",fontSize:11,fontWeight:600,color:"#64748b",boxShadow:"0 1px 3px #0001"}}>
-           {new Date().toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"long"})}
+          {new Date().toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"long"})}
         </div>
       </div>
 
@@ -231,19 +278,18 @@ export default function AccueilTechnicien() {
           ))}
         </div>
 
-        {/* Tendance */}
-        <div className="c" style={{animationDelay:".24s",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"20px",boxShadow:"0 1px 4px #0001"}}>
-          <p style={{margin:"0 0 4px",fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"2px"}}>Tendance · {new Date().getFullYear()}</p>
-          <p style={{margin:"0 0 20px",fontSize:11,color:"#cbd5e1",fontWeight:500}}>tickets créés par mois</p>
-          <div style={{marginBottom:20}}><Spark data={charts.statusTimelineData||[]}/></div>
-          <div style={{borderTop:"1.5px solid #f1f5f9",paddingTop:12}}>
-            {charts.statusTimelineData?.slice(-4).reverse().map(m=>(
-              <div key={m.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <span style={{fontSize:11,fontWeight:600,color:"#94a3b8"}}>{m.name}</span>
-                <span style={{fontSize:12,fontWeight:800,color:"#334155"}}>{(m["En cours"]||0)+(m["Résolu"]||0)}</span>
+        <div className="c" style={{animationDelay:".24s",background:"#fff",border:"1.5px solid #e2e8f0",borderRadius:16,padding:"16px",boxShadow:"0 1px 4px #0001"}}>
+          <p style={{margin:"0 0 2px",fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"2px"}}>Volume d'activité mensuel</p>
+          <p style={{margin:"0 0 10px",fontSize:10,color:"#cbd5e1",fontWeight:500}}>Assignés vs résolus/fermés · {new Date().getFullYear()}</p>
+          <div style={{display:"flex",gap:10,marginBottom:12}}>
+            {[{c:"#6366f1",l:"Assignés"},{c:"#10b981",l:"Résolus/Fermés"},{c:"#f59e0b",l:"Restants"}].map(({c,l})=>(
+              <div key={l} style={{display:"flex",alignItems:"center",gap:4}}>
+                <div style={{width:12,height:3,borderRadius:2,background:c}}/>
+                <span style={{fontSize:9,color:"#94a3b8",fontWeight:600}}>{l}</span>
               </div>
             ))}
           </div>
+          <Spark data={charts.statusTimelineData||[]}/>
         </div>
       </div>
 

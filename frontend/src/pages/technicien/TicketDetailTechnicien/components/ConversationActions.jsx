@@ -18,9 +18,8 @@ function ConfirmedCloseForm({ ticket, onClose, closing, conversation }) {
   const [note, setNote] = useState("");
 
   // Trouver les fichiers attachés au message de type "solution"
-  const solutionFiles = conversation
-    .filter(c => c.type === "solution")
-    .flatMap(c => c.files ?? []);
+  const lastSolution = [...conversation].reverse().find(c => c.type === "solution");
+const solutionFiles = lastSolution?.files ?? [];
     const handleDeleteFile = async (fileId) => {
   try {
     await fetch(`http://localhost:3001/api/tech/attachments/${fileId}`, {
@@ -122,7 +121,7 @@ export default function ConversationActions({
   setActiveTab, setRespondMode, setSolution, setInfoMsg, setSolutionFiles, setInfoFiles,
   handleSend, handleRedirect, handleManualClose, setShowManualClose,
   setRedirectTechId, setRedirectServiceId, setRedirectCategory, setRedirectNote,
-  isClosed, ticket, services, techniciens, solutionBlocked, awaitingConfirm,
+  isClosed, ticket, services, techniciens, solutionBlocked, awaitingConfirm,fetchTicket,
 }) {
   const solutionBlockedLocal = solutionBlocked || false;
 
@@ -192,15 +191,41 @@ export default function ConversationActions({
                   <p className="text-sm font-semibold">Ticket fermé — aucune action disponible</p>
                 </div>
                 {ticket.solution && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                      <CheckCircle2 size={11}/> Solution finale
-                    </p>
-                    <div className="text-[12px] text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
-                  </div>
-                )}
-                {ticket.closing_note && (
+  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+    <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+      <CheckCircle2 size={11}/> Solution finale
+    </p>
+    <div className="text-[12px] text-gray-700 leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+
+    {/* Pièces jointes liées à la solution/fermeture */}
+    {(() => {
+      // Dernier message solution ou comment de fermeture uniquement
+const lastMsg = [...conversation]
+  .reverse()
+  .find(c => ["solution", "comment"].includes(c.type));
+const files = lastMsg?.files ?? [];
+      return files.length > 0 ? (
+        <div className="mt-2 pt-2 border-t border-green-200 flex flex-col gap-1">
+          <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1 flex items-center gap-1">
+            <Paperclip size={10}/> Pièces jointes
+          </p>
+          {files.map((f, i) => (
+            <a key={f.id ?? i}
+              href={`http://localhost:3001/${f.filePath}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-[11px] text-blue-600 hover:underline px-2 py-1 rounded hover:bg-green-100 transition truncate"
+            >
+              <Paperclip size={10} className="shrink-0"/> {f.fileName}
+            </a>
+          ))}
+        </div>
+      ) : null;
+    })()}
+  </div>
+)}
+{ticket.closing_note && (
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Note de fermeture</p>
                     <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
@@ -222,7 +247,33 @@ export default function ConversationActions({
                     <MessageSquare size={12}/> Commentaire
                   </button>
                 </div>
-
+{/* ── Solution précédente après réouverture ── */}
+{!isClosed && ticket.solution && (
+  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest flex items-center gap-1">
+      <Info size={11}/> Solution précédente (ticket réouvert)
+    </p>
+    <div className="text-[12px] text-gray-700 leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+    <div className="flex gap-2 pt-1">
+      <button
+        onClick={async () => {
+          await fetch(`http://localhost:3001/api/tech/tickets/${ticket.id}/clear-solution`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+          });
+          await fetchTicket(true);  // ← besoin de passer fetchTicket en prop
+        }}
+        className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+      >
+        Supprimer
+      </button>
+      <span className="text-[11px] text-amber-600 flex items-center">
+        ou envoyez une nouvelle solution ci-dessous pour la remplacer.
+      </span>
+    </div>
+  </div>
+)}
                 {/* Notices */}
                 {respondMode === "solution" && solutionBlockedLocal && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 flex items-start gap-2">
@@ -291,10 +342,53 @@ export default function ConversationActions({
           {/* ── REDIRECT tab ── */}
           {activeTab === "redirect" && (
             isClosed ? (
-              <div className="flex items-center gap-2 text-gray-400 text-[12px]">
-                <Lock size={13}/> Ticket fermé
-              </div>
-            ) : (
+  <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold">
+      <Lock size={15}/> Fermé
+    </div>
+    {ticket.solution && (
+      <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+        <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+          <CheckCircle2 size={11}/> Solution finale
+        </p>
+        <div className="text-[12px] text-gray-700 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+
+        {/* Pièces jointes */}
+        {(() => {
+         // Dernier message solution ou comment de fermeture uniquement
+const lastMsg = [...conversation]
+  .reverse()
+  .find(c => ["solution", "comment"].includes(c.type));
+const files = lastMsg?.files ?? [];
+          return files.length > 0 ? (
+            <div className="mt-2 pt-2 border-t border-green-200 flex flex-col gap-1">
+              <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1 flex items-center gap-1">
+                <Paperclip size={10}/> Pièces jointes
+              </p>
+              {files.map((f, i) => (
+                <a key={f.id ?? i}
+                  href={`http://localhost:3001/${f.filePath}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[11px] text-blue-600 hover:underline px-2 py-1 rounded hover:bg-green-100 transition truncate"
+                >
+                  <Paperclip size={10} className="shrink-0"/> {f.fileName}
+                </a>
+              ))}
+            </div>
+          ) : null;
+        })()}
+      </div>
+    )}
+    {ticket.closing_note && (
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+        <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Note</p>
+        <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
+      </div>
+    )}
+  </div>
+) : (
               <>
                 <div className="flex items-start gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-[11px] text-purple-700">
                   <Forward size={13} className="shrink-0 mt-0.5"/>

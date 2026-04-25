@@ -163,7 +163,7 @@ enum category_enum {
   network
   access
   security
-  account
+  messagerie
 }
 
 enum impact_enum {
@@ -176,7 +176,6 @@ enum priority_enum {
   low
   medium
   high
-  critical
 }
 
 enum request_type_enum {

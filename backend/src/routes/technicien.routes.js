@@ -39,5 +39,16 @@ router.get("/techniciens",                 getAllTechniciens);
 router.get("/assigned/:techId",            getAssignedTickets);
 router.get("/enums",                       getEnums);
 router.delete("/attachments/:id", deleteAttachment);
-
+router.put("/tickets/:id/clear-solution", async (req, res) => {
+  try {
+    const prisma = require("../prismaClient");
+    await prisma.tickets.update({
+      where: { id: parseInt(req.params.id) },
+      data: { solution: null, updated_at: new Date() },
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 module.exports = router;

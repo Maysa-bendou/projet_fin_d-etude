@@ -1,7 +1,7 @@
 import { 
   User, Mail, Building2, Briefcase, Phone, DoorOpen, Hash, 
   Tag, Layers, AlertTriangle, FileText, Calendar, Clock,
-  Lock, Circle, LogIn, XCircle
+  Lock, Circle, LogIn, XCircle, Forward
 } from "lucide-react";
 import UserTooltip from "./utils/UserTooltip";
 import { PRIORITY_CLASS, PRIORITY_FR, IMPACT_FR, URGENCY_FR, CATEGORY_FR, TYPE_FR, STATUS_CLASS, STATUS_FR } from "./constants";
@@ -147,10 +147,35 @@ const fmtDateTime = (d) =>
             {STATUS_FR[status] ?? status}
           </span>
         </div>
+    {ticket.redirect_note && (
+  <div className="flex flex-col gap-1 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2.5">
+    <div className="flex items-center gap-2 text-[11px] font-semibold text-purple-700">
+      <Forward size={13} className="shrink-0"/>
+      Ticket redirigé
+    </div>
+    <p className="text-[11px] text-purple-600 pl-5">
+      {ticket.redirectInfo?.reason ?? ticket.redirect_note}
+    </p>
+    {ticket.redirectInfo && (
+      <div className="flex items-center gap-3 pl-5 text-[10px] text-purple-400 font-medium">
+        {ticket.redirectInfo.by && (
+          <span>Par : <span className="text-purple-600 font-semibold">{ticket.redirectInfo.by}</span></span>
+        )}
+        {ticket.redirectInfo.from && (
+          <span>Ancien tech : <span className="text-purple-600 font-semibold">{ticket.redirectInfo.from}</span></span>
+        )}
+        {ticket.redirectInfo.date && (
+          <span>{new Date(ticket.redirectInfo.date).toLocaleDateString("fr-FR", { day:"2-digit", month:"short" })}</span>
+        )}
+      </div>
+    )}
+  </div>
+)}
         <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
           <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Description</p>
           <p className="text-[13px] text-gray-700 leading-relaxed">{ticket.description ?? "Aucune description."}</p>
         </div>
+        
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
             { Icon:AlertTriangle, label:"Priorité", custom: ticket.priority

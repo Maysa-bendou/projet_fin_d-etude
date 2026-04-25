@@ -8,11 +8,12 @@ const TYPE_OPTIONS = [
   { value: "service_request", label: "Demande de service" },
 ];
 const CATEGORY_OPTIONS = [
-  { value: "hardware",  label: "Matériel" },
-  { value: "software",  label: "Logiciels" },
-  { value: "network",   label: "Réseau" },
-  { value: "access",    label: "Accès" },
-  { value: "security",  label: "Sécurité" },
+  { value: "hardware",   label: "Matériel" },
+  { value: "software",   label: "Logiciels" },
+  { value: "network",    label: "Réseau" },
+  { value: "access",     label: "Accès" },
+  { value: "security",   label: "Sécurité" },
+  { value: "messagerie", label: "Collaboration & Messagerie" },
 ];
 const IMPACT_OPTIONS = [
   { value: "low",    label: "Une personne" },

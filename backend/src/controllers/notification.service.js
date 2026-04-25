@@ -131,8 +131,8 @@ async function notifyTechTicketUpdated(techId, ticketId, ticketTitle, employeeNa
     ticketId,
     type:     action === "reopen" ? "reopen" : "updated",
     message:  action === "reopen"
-      ? `🔄 ${employeeName} a réouvert le ticket "${ticketTitle}".`
-      : `✏️ ${employeeName} a modifié le ticket "${ticketTitle}".`,
+      ? ` ${employeeName} a réouvert le ticket "${ticketTitle}".`
+      : ` ${employeeName} a modifié le ticket "${ticketTitle}".`,
   });
 }
 
@@ -195,13 +195,21 @@ async function notifyAllTechsOfService(serviceId, ticketId, ticketTitle) {
     techs.map(t => notifyTechNewTicketInService(t.id, ticketId, ticketTitle))
   );
 }
-
+async function notifyEmployeeRedirected(employeeId, ticketId, ticketTitle) {
+  await createNotification({
+    userId:   employeeId,
+    ticketId,
+    type:     "redirect",
+    message:  `Votre ticket "${ticketTitle}" a été redirigé vers un autre service.`,
+  });
+}
 module.exports = {
   // Employé
   notifyEmployeeAssigned,
   notifyEmployeeStatusChanged,
   notifyEmployeeSolution,
   notifyEmployeeInfoRequest,
+  notifyEmployeeRedirected, 
   // Technicien
   notifyTechAssigned,
   notifyTechNewTicketInService,

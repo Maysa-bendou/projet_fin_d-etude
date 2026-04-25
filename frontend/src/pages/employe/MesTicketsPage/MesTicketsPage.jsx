@@ -8,25 +8,11 @@ import {
   HiOutlineFunnel,
 } from "react-icons/hi2";
 import RefreshButton from "../../../components/common/RefreshButton";
-
+// AJOUTER après les imports existants
+import { PRIORITY_CONFIG, STATUS_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
 // ── Config ─────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  open:             { label: "Ouvert",              bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  in_progress:      { label: "En cours",            bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
-  resolved:         { label: "Résolu",              bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
-  closed:           { label: "Fermé",               bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
-  rejected:         { label: "Rejeté",              bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
-  pending:          { label: "En attente",          bg: "#fefce8", color: "#a16207", border: "#fde68a" },
-  pending_supplier: { label: "Attente fournisseur", bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
-};
-
-const PRIORITY_CONFIG = {
-  critical: { label: "Critique", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
-  high:     { label: "Haute",    color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
-  medium:   { label: "Normale",  color: "#ca8a04", bg: "#fefce8", border: "#fde68a" },
-  low:      { label: "Basse",    color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
-};
 
 const THIS_YEAR = new Date().getFullYear();
 
@@ -240,8 +226,7 @@ const TicketTable = ({ tickets, navigate, hoveredTicketId, setHoveredTicketId, a
           </thead>
           <tbody>
             {tickets.map((t, idx) => {
-              const sc = STATUS_CONFIG[t.status];
-              const pc = PRIORITY_CONFIG[t.priority];
+             
               const lastDate = activeTab === "archives"
   ? fmtDate(t.closed_at)
   : fmtDate(t.updated_at || t.created_at);
@@ -285,18 +270,13 @@ const TicketTable = ({ tickets, navigate, hoveredTicketId, setHoveredTicketId, a
 
                   {/* Priority */}
                   <td style={CELL}>
-                    {pc
-                      ? <span style={{ background: pc.bg, color: pc.color, border: `1px solid ${pc.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>{pc.label}</span>
-                      : <span style={{ color: "#d1d5db" }}>—</span>
-                    }
+                    <Pill config={PRIORITY_CONFIG} value={t.priority} />
                   </td>
 
                   {/* Status */}
                   <td style={CELL}>
-                    {sc
-                      ? <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>{sc.label}</span>
-                      : <span style={{ background: "#f3f4f6", color: "#6b7280", borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>{t.status}</span>
-                    }
+                   <Pill config={STATUS_CONFIG} value={t.status} />
+
                   </td>
 
                   {/* Date création — same format as last column */}

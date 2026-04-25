@@ -6,33 +6,16 @@ import {
   HiOutlineTicket, HiOutlineArchiveBox, HiOutlineChevronDown,
   HiOutlineArrowPath, HiOutlineFunnel, HiOutlineMagnifyingGlass, HiOutlineXMark,
 } from "react-icons/hi2";
+
 import RefreshButton from "../../../components/common/RefreshButton";
+import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
 
 // ── Constants (module-level, never re-created) ─────────────────────────────
 
 const THIS_YEAR = new Date().getFullYear();
 
-const STATUS_CONFIG = {
-  open:             { label: "Ouvert",           bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  in_progress:      { label: "En cours",         bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
-  pending:          { label: "En attente",        bg: "#fefce8", color: "#a16207", border: "#fde68a" },
-  pending_supplier: { label: "Att. fournisseur", bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
-  resolved:         { label: "Résolu",           bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
-  closed:           { label: "Fermé",            bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
-  rejected:         { label: "Rejeté",           bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
-};
 
-const PRIORITY_CONFIG = {
-  critical: { label: "Critique", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
-  high:     { label: "Haute",    color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
-  medium:   { label: "Normale",  color: "#ca8a04", bg: "#fefce8", border: "#fde68a" },
-  low:      { label: "Basse",    color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
-};
-
-const CATEGORY_LABEL = {
-  hardware: "Matériel", software: "Logiciel",
-  network: "Réseau",   security: "Sécurité",  access: "Accès",
-};
 
 const LABEL_STYLE = {
   fontSize: 11, fontWeight: 700, color: "#94a3b8",
@@ -193,8 +176,7 @@ const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) 
 // ── TicketRow (memoized — no re-render unless ticket data changes) ──────────
 
 const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
-  const sc = STATUS_CONFIG[t.status];
-  const pc = PRIORITY_CONFIG[t.priority];
+
   const technician = t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers;
   const empName  = t.employee ? `${t.employee.name || ""} ${t.employee.surname || ""}`.trim() : null;
   const techName = technician ? `${technician.name || ""} ${technician.surname || ""}`.trim() : null;
@@ -224,23 +206,17 @@ const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
       {/* Catégorie */}
       <TD>
         <span style={{ background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
-          {CATEGORY_LABEL[t.category || t.categorie] || t.category || "—"}
-        </span>
+        <Pill config={CATEGORY_CONFIG} value={t.category || t.categorie} />  </span>
       </TD>
 
       {/* Priorité */}
       <TD>
-        {pc
-          ? <span style={{ background: pc.bg, color: pc.color, border: `1px solid ${pc.border}`, borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>{pc.label}</span>
-          : <span style={{ color: "#d1d5db" }}>—</span>}
+       <Pill config={PRIORITY_CONFIG} value={t.priority} />
       </TD>
 
       {/* Statut */}
       <TD>
-        {sc
-          ? <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>{sc.label}</span>
-          : <span style={{ background: "#f3f4f6", color: "#6b7280", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>{t.status}</span>}
-      </TD>
+       <Pill config={STATUS_CONFIG} value={t.status} />   </TD>
 
       {/* SLA */}
       <td style={{ padding: "11px 14px", width: 120 }}>
@@ -539,8 +515,7 @@ const TicketsServicePage = () => {
 
             <FilterSelect label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
               <option value="">Toutes les catégories</option>
-              {dbEnums.categories?.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c] || c}</option>)}
-            </FilterSelect>
+            {dbEnums.categories?.map(c => <option key={c} value={c}>{CATEGORY_CONFIG[c]?.label || c}</option>)} </FilterSelect>
 
             <FilterSelect label="Assignation" value={filterAssignment} onChange={setFilterAssignment}>
               <option value="">Toutes</option>

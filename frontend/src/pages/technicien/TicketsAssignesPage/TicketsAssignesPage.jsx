@@ -9,28 +9,28 @@ import {
 const THIS_YEAR = new Date().getFullYear();
 
 const statutStyle = {
-  "Ouvert":                 "bg-blue-100 text-blue-700",
-  "En cours":               "bg-yellow-100 text-yellow-700",
-  "En attente":             "bg-purple-100 text-purple-700",
-  "En attente fournisseur": "bg-orange-100 text-orange-700",
-  "Résolu":                 "bg-green-100 text-green-700",
-  "Fermé":                  "bg-gray-200 text-gray-600",
-  "Rejeté":                 "bg-red-100 text-red-700",
+  "Ouvert":                 "bg-blue-100 text-blue-700",     // #1d4ed8
+  "En cours":               "bg-violet-100 text-violet-700", // #7c3aed
+  "En attente":             "bg-yellow-100 text-yellow-700", // #a16207
+  "En attente fournisseur": "bg-orange-100 text-orange-700", // #c2410c
+  "Résolu":                 "bg-green-100 text-green-700",   // #15803d
+  "Fermé":                  "bg-gray-100 text-gray-500",     // #6b7280
+  "Rejeté":                 "bg-red-100 text-red-600",       // #dc2626
 };
 
 const prioriteStyle = {
-  "Basse":    "bg-green-100 text-green-700",
-  "Normale":  "bg-yellow-100 text-yellow-700",
-  "Haute":    "bg-red-100 text-red-700",
+  "Haute":   "bg-orange-100 text-orange-600",   // #ea580c
+  "Normale": "bg-yellow-100 text-yellow-600",   // #ca8a04
+  "Basse":   "bg-green-100 text-green-700",     // #16a34a
 };
 
 const categorieStyle = {
-  "Logiciels": "bg-purple-100 text-purple-800",
-  "Hardware":  "bg-blue-100 text-blue-800",
-  "Réseau":    "bg-teal-100 text-teal-800",
-  "Messagerie":     "bg-pink-100 text-pink-800",
-  "Sécurité":  "bg-orange-100 text-orange-800",
-  "Compte":    "bg-yellow-100 text-yellow-800",
+  "Hardware":                  "bg-blue-100 text-blue-700",    // #1d4ed8
+  "Logiciels":                 "bg-violet-100 text-violet-700",// #7c3aed
+  "Réseau":                    "bg-teal-100 text-teal-700",    // #0f766e
+  "Sécurité":                  "bg-orange-100 text-orange-700",// #c2410c
+  "Accès":                     "bg-indigo-100 text-indigo-700",// #4338ca
+  "Collaboration & Messagerie":"bg-pink-100 text-pink-700",    // #db2777
 };
 
 const statusFR = {
@@ -53,9 +53,8 @@ const statusEN = {
   "Rejeté":                 "rejected",
 };
 
-const priorityFR = { low: "Basse", medium: "Normale", high: "Haute", critical: "Critique" };
-const categoryFR = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", messagerie: "Messagerie" };
-
+const priorityFR = { low: "Basse", medium: "Normale", high: "Haute" }; // ← supprimer critical
+const categoryFR = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", messagerie: "Collaboration & Messagerie" };
 const STAT_CARDS = [
   { label: "Total",                  key: null,                      cls: "text-gray-700"   },
   { label: "Ouvert",                 key: "Ouvert",                  cls: "text-blue-600"   },

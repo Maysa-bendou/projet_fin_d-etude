@@ -20,7 +20,8 @@ const userRoutes = require("./routes/user.routes");
 const technicienRoutes = require("./routes/technicien.routes");
 const departmentRoutes = require("./routes/department.routes");
 const adminRoutes = require("./routes/admin.routes");
-
+const cron = require("node-cron");
+const { checkSlaAlerts } = require("./controllers/sla.cron");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
@@ -47,6 +48,18 @@ const notificationRoutes = require("./routes/notification.routes");
 app.use("/api/notifications", notificationRoutes);
 const accueilRoutes = require('./routes/accueil.routes'); // adapte le chemin
 app.use('/api/accueil', accueilRoutes);
+
+
+
+// Vérifie les SLA toutes les minutes
+cron.schedule("* * * * *", async () => {
+  try {
+    await checkSlaAlerts();
+  } catch (err) {
+    console.error("❌ SLA cron error:", err);
+  }
+});
+
 
 const PORT = 3001;
 app.listen(PORT, () => {

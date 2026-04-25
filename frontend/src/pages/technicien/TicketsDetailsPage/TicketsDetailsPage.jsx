@@ -1,23 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MdArrowBack, MdPerson, MdEmail, MdBusiness, MdWork, MdPhone, MdLocationOn, MdTimer, MdCheckCircle, MdWarning } from "react-icons/md";
-
-const PRIORITY_STYLE = {
-  critical: { label: "Critique", color: "#A32D2D", bg: "#FCEBEB" },
-  high:     { label: "Haute",    color: "#854F0B", bg: "#FAEEDA" },
-  medium:   { label: "Moyenne",  color: "#185FA5", bg: "#E6F1FB" },
-  low:      { label: "Basse",    color: "#3B6D11", bg: "#EAF3DE" },
-};
-
-const STATUS_STYLE = {
-  open:             { label: "Ouvert",              color: "#185FA5", bg: "#E6F1FB" },
-  in_progress:      { label: "En cours",            color: "#854F0B", bg: "#FAEEDA" },
-  pending:          { label: "En attente",          color: "#6b7280", bg: "#f3f4f6" },
-  pending_supplier: { label: "Attente fournisseur", color: "#0F6E56", bg: "#E1F5EE" },
-  resolved:         { label: "Résolu",              color: "#3B6D11", bg: "#EAF3DE" },
-  closed:           { label: "Fermé",               color: "#3B6D11", bg: "#EAF3DE" },
-  rejected:         { label: "Rejeté",              color: "#A32D2D", bg: "#FCEBEB" },
-};
+import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG, IMPACT_CONFIG, URGENCY_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
 
 const TicketDetailPage = () => {
   const { id } = useParams();
@@ -65,8 +50,8 @@ const TicketDetailPage = () => {
   );
 
   const t = ticket;
-  const statusStyle = STATUS_STYLE[t.status] || STATUS_STYLE.open;
-  const priorityStyle = PRIORITY_STYLE[t.priority] || PRIORITY_STYLE.low;
+  const statusStyle = STATUS_CONFIG[t.status] || STATUS_CONFIG.open;
+ const priorityStyle = PRIORITY_CONFIG[t.priority] || PRIORITY_CONFIG.low;
   const employee = t.employee || t.users_tickets_created_byTousers;
   const isAssigned = !!(t.technician?.id || t.technicienId);
   const isAssignedToMe = (t.technician?.id === currentUser?.id) || (t.technicienId === currentUser?.id);
@@ -224,9 +209,7 @@ const TicketDetailPage = () => {
                 <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 4px 0' }}>Référence Ticket</p>
                 <h1 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>#{id} — {t.title}</h1>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, padding: '5px 14px', borderRadius: 99, background: statusStyle.bg, color: statusStyle.color, whiteSpace: 'nowrap', border: `1px solid ${statusStyle.color}30` }}>
-                {statusStyle.label}
-              </span>
+             <Pill config={STATUS_CONFIG} value={t.status} />
             </div>
 
             {/* Description */}
@@ -252,13 +235,12 @@ const TicketDetailPage = () => {
                   <tbody>
                     <tr>
                       <td style={{ padding: '14px 16px' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 99, background: priorityStyle.bg, color: priorityStyle.color }}>{priorityStyle.label}</span>
-                      </td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.category || '—'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.service || 'IT Support'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.impact || '—'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.urgency || '—'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
+                      <Pill config={PRIORITY_CONFIG} value={t.priority} />  </td>
+                    <td style={{ padding: '14px 16px' }}> <Pill config={CATEGORY_CONFIG} value={t.category} /> </td>
+                     <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
+  {t.service?.name || t.service || 'IT Support'}
+</td> <td><Pill config={IMPACT_CONFIG} value={t.impact} /></td>
+<Pill config={URGENCY_CONFIG} value={t.urgency} /> <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
                         {new Date(t.createdAt || t.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
                     </tr>
@@ -292,6 +274,41 @@ const TicketDetailPage = () => {
                 </div>
               </div>
             )}
+            {/* ── NOTE DE REDIRECTION ── */}
+{t.redirect_note && (
+  <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+      Ticket redirigé
+    </p>
+    <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {t.service && (
+        <div style={{ fontSize: 13, color: '#374151' }}>
+          <span style={{ fontWeight: 700, color: '#6b21a8' }}>Service : </span>
+          {t.service?.name || t.service}
+        </div>
+      )}
+      {t.technician && (
+        <div style={{ fontSize: 13, color: '#374151' }}>
+          <span style={{ fontWeight: 700, color: '#6b21a8' }}>Technicien : </span>
+          {t.technician.name} {t.technician.surname}
+        </div>
+      )}
+    {t.redirected_at && (
+  <div style={{ fontSize: 13, color: '#374151' }}>
+    <span style={{ fontWeight: 700, color: '#6b21a8' }}>Date de redirection : </span>
+    {new Date(t.redirected_at).toLocaleDateString('fr-FR', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    })}
+  </div>
+)}
+<div style={{ fontSize: 13, color: '#374151', borderTop: '1px solid #e9d5ff', paddingTop: 8, marginTop: 4 }}>
+  <span style={{ fontWeight: 700, color: '#6b21a8' }}>Raison : </span>
+  {t.redirect_note}
+</div>
+    </div>
+  </div>
+)}
 
             {/* Footer : technicien + bouton */}
             <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>

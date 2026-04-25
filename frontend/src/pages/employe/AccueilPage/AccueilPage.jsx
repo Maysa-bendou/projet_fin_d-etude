@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { MdHistory, MdCheckCircle, MdHourglassEmpty, MdAutorenew } from 'react-icons/md';
-
+import { PRIORITY_CONFIG, STATUS_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
 const StatCard = ({ title, value, IconComponent, bgColor, iconColor }) => (
   <div style={{
     background: '#fff', borderRadius: 14, border: '1.5px solid #d9d4cc',
@@ -21,33 +22,8 @@ const StatCard = ({ title, value, IconComponent, bgColor, iconColor }) => (
   </div>
 );
 
-const PRIORITY_MAP = {
-  high:     { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: 'Haute' },
-  medium:   { bg: '#fefce8', color: '#ca8a04', border: '#e6ce77', label: 'Moyenne' },
-  low:      { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0', label: 'Basse' },
-  critical: { bg: '#fdf4ff', color: '#7e22ce', border: '#e9d5ff', label: 'Critique' },
-};
 
-const STATUS_MAP = {
-  open:             { bg: '#e6f1fb', color: '#0c447c', border: '#b5d4f4', label: 'Ouvert' },
-  in_progress:      { bg: '#faeeda', color: '#633806', border: '#fac775', label: 'En cours' },
-  resolved:         { bg: '#eaf3de', color: '#27500a', border: '#c0dd97', label: 'Résolu' },
-  rejected:         { bg: '#fcebeb', color: '#791f1f', border: '#f7c1c1', label: 'Rejeté' },
-  pending:          { bg: '#eeedfe', color: '#26215c', border: '#afa9ec', label: 'En attente' },
-  pending_supplier: { bg: '#f5f3ff', color: '#4c1d95', border: '#ddd6fe', label: 'Fournisseur' },
-};
 
-const Pill = ({ map, value }) => {
-  const s = map[(value || '').toLowerCase()] ?? { bg: '#f1f5f9', color: '#64748b', border: '#e2e8f0', label: value || '-' };
-  return (
-    <span style={{
-      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
-    }}>
-      {s.label}
-    </span>
-  );
-};
 
 const AccueilPage = () => {
   const navigate = useNavigate();
@@ -169,9 +145,8 @@ const AccueilPage = () => {
                     <td style={{ padding: '13px 14px', fontSize: 13, color: '#64748b', whiteSpace: 'nowrap' }}>
                       {ticket.services?.name ?? '—'}
                     </td>
-                    <td style={{ padding: '13px 14px' }}><Pill map={PRIORITY_MAP} value={ticket.priority} /></td>
-                    <td style={{ padding: '13px 14px' }}><Pill map={STATUS_MAP}   value={ticket.status} /></td>
-                    <td style={{ padding: '13px 14px', fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                   <td style={{ padding: '13px 14px' }}><Pill config={PRIORITY_CONFIG} value={ticket.priority} /></td>
+<td style={{ padding: '13px 14px' }}><Pill config={STATUS_CONFIG}   value={ticket.status} /></td> <td style={{ padding: '13px 14px', fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
                       {fmtDate(ticket.created_at)}
 
                     </td>

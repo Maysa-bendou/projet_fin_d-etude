@@ -82,7 +82,7 @@ setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0); 
         rawDate: new Date(data.createdAt),
       });
 
-      const CONV_EXCLUDED = new Set(["status", "update", "reopen"]);
+      const CONV_EXCLUDED = new Set(["status", "update", "reopen" ,"redirect"]);
 
 data.comments.forEach((c) => {
   const type = c.comment_type ?? "comment";
@@ -265,30 +265,31 @@ data.comments.forEach((c) => {
 
   // ── Redirection ───────────────────────────────────────────────────────────
   const handleRedirect = async () => {
-    if (!redirectTechId && !redirectServiceId) return;
-    setRedirecting(true);
-    try {
-      const res = await fetch(`${API}/tickets/${id}/redirect`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          newTechId: redirectTechId || null,
-          newServiceId: redirectServiceId || null,
-          newCategory: redirectCategory || null,
-          note: redirectNote,
-          assignedById: currentUser?.id,
-        }),
-      });
-      if (!res.ok) throw new Error();
-      setRedirectTechId(""); setRedirectServiceId(""); setRedirectCategory(""); setRedirectNote("");
-      await fetchTicket(true); // ← rafraîchit après redirection
-    } catch (_) {
-      alert("Erreur lors de la redirection.");
-    } finally {
-      setRedirecting(false);
-    }
-  };
-
+  if (!redirectServiceId) return;
+  setRedirecting(true);
+  try {
+    const res = await fetch(`${API}/tickets/${id}/redirect`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        newTechId: redirectTechId || null,
+        newServiceId: redirectServiceId || null,
+        newCategory: redirectCategory || null,
+        note: redirectNote,
+        assignedById: currentUser?.id,
+      }),
+    });
+    if (!res.ok) throw new Error();
+    
+    // ← naviguer vers la liste, le ticket n'apparaîtra plus
+    navigate(`/${currentUser.role}/tickets-service`);
+    
+  } catch (_) {
+    alert("Erreur lors de la redirection.");
+  } finally {
+    setRedirecting(false);
+  }
+};
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="flex flex-col items-center gap-3">

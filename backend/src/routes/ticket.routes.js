@@ -50,12 +50,12 @@ router.post("/:id/employee-reply", upload.array("files", 10), employeeReply);
 
 // ── Mapping catégorie → service_id ────────────────────────────────────────
 const CATEGORY_SERVICE_MAP = {
-  hardware: 1,
-  software: 1,
-  account:  1,
-  network:  2,
-  security: 3,
-  access:   4,
+  hardware:   1,  // IT Support
+  software:   1,  // IT Support
+  network:    2,  // IT Network
+  security:   3,  // IT Security
+  access:     5,  // Service Desk
+  messagerie: 4,  // IT Collaboration Systems
 };
 
 // ── POST /create ──────────────────────────────────────────────────────────
@@ -298,6 +298,9 @@ router.get("/:id", async (req, res) => {
       },
     });
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    const redirectComment = ticket.ticket_comments
+  .filter(c => c.comment_type === "redirect")
+  .at(-1) ?? null;
     res.json({
       id:                     ticket.id,
       title:                  ticket.title,
@@ -315,6 +318,8 @@ router.get("/:id", async (req, res) => {
       closed_at:               ticket.closed_at,
       solution:               ticket.solution,
       closing_note:           ticket.closing_note,
+      redirected_at:          redirectComment?.created_at ?? null,
+      redirect_note: ticket.redirect_note,
       is_resolved_confirmed:  ticket.is_resolved_confirmed,
       confirmation_requested: ticket.confirmation_requested,
       employee:               ticket.users_tickets_created_byTousers,

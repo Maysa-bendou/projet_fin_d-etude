@@ -36,6 +36,22 @@ router.put("/tickets/:id/close-manual",    upload.array("files", 10), closeTicke
 router.put("/tickets/:id/redirect",        redirectTicket);
 router.get("/services",                    getServices);
 router.get("/techniciens",                 getAllTechniciens);
+
+
+router.get("/techniciens/service/:serviceId", async (req, res) => {  // ← ici
+  try {
+    const prisma = require("../prismaClient");
+    const techs = await prisma.users.findMany({
+      where: { role: "technician", is_active: true, service_id: parseInt(req.params.serviceId) },
+      select: { id: true, name: true, surname: true },
+      orderBy: { name: "asc" },
+    });
+    res.json(techs);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 router.get("/assigned/:techId",            getAssignedTickets);
 router.get("/enums",                       getEnums);
 router.delete("/attachments/:id", deleteAttachment);

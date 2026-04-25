@@ -20,19 +20,12 @@ import {
   HiOutlineWrenchScrewdriver,
   HiOutlineCalendarDays,
 } from "react-icons/hi2";
-
+import Pill from "../../../components/common/Pill";
+// AJOUTER après les imports existants
+import { PRIORITY_CONFIG, STATUS_CONFIG, IMPACT_CONFIG, URGENCY_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
 /* ─── helpers ─────────────────────────────────────────────────────── */
-function statusCls(s) {
-  return { in_progress:"badge-yellow", resolved:"badge-green", open:"badge-blue", rejected:"badge-red", closed:"badge-gray", pending:"badge-purple" }[s] ?? "badge-gray";
-}
-function priorityCls(p) {
-  return { critical:"badge-purple", high:"badge-red", medium:"badge-yellow", low:"badge-green" }[p?.toLowerCase()] ?? "badge-gray";
-}
 
-const STATUS_FR   = { open:"Ouvert", in_progress:"En cours", pending:"En attente", resolved:"Résolu", closed:"Fermé", rejected:"Rejeté" };
-const PRIORITY_FR = { critical:"Critique", high:"Haute", medium:"Normale", low:"Basse" };
-const IMPACT_FR   = { high:"Entreprise", medium:"Un service", low:"Une personne" };
-const URGENCY_FR  = { high:"Complètement bloqué", medium:"Partiellement bloqué", low:"Peut travailler" };
+
 
 const BADGE_STYLES = {
   "badge-yellow": { background:"#fef9ee", color:"#92400e", border:"1px solid #fde68a" },
@@ -284,7 +277,7 @@ export default function TicketDetailsPage() {
               ) : (
                 <h1 style={{ fontSize:18, fontWeight:700, color:"#0f172a", margin:0 }}>{ticket.title}</h1>
               )}
-              <Badge cls={statusCls(ticket.status)}>{STATUS_FR[ticket.status] ?? ticket.status}</Badge>
+             <Pill config={STATUS_CONFIG} value={ticket.status} />
             </div>
             <div style={{ display:"flex", gap:8 }}>
               {isEditing ? (
@@ -383,12 +376,12 @@ export default function TicketDetailsPage() {
             <div style={card}>
               <span style={sectionLabel}>Détails du ticket</span>
               <div>
-                <MetaRow label="Statut" icon={HiOutlineBolt}>
-                  <Badge cls={statusCls(ticket.status)}>{STATUS_FR[ticket.status] ?? ticket.status}</Badge>
-                </MetaRow>
-                <MetaRow label="Priorité" icon={HiOutlineExclamationTriangle}>
-                  <Badge cls={priorityCls(ticket.priority)}>{PRIORITY_FR[ticket.priority] ?? ticket.priority}</Badge>
-                </MetaRow>
+             <MetaRow label="Statut" icon={HiOutlineBolt}>
+  <Pill config={STATUS_CONFIG} value={ticket.status} />
+</MetaRow>
+               <MetaRow label="Priorité" icon={HiOutlineExclamationTriangle}>
+  <Pill config={PRIORITY_CONFIG} value={ticket.priority} />
+</MetaRow>
                 <MetaRow label="Impact" icon={HiOutlineUser}>
                   {isEditing ? (
                     <select value={editFields.impact} onChange={e => handleFieldChange("impact", e.target.value)}
@@ -397,7 +390,7 @@ export default function TicketDetailsPage() {
                       <option value="medium">Un service</option>
                       <option value="high">Entreprise</option>
                     </select>
-                  ) : (IMPACT_FR[ticket.impact] ?? ticket.impact)}
+                  )  : <Pill config={IMPACT_CONFIG} value={ticket.impact} />}
                 </MetaRow>
                 <MetaRow label="Urgence" icon={HiOutlineBolt}>
                   {isEditing ? (
@@ -407,11 +400,11 @@ export default function TicketDetailsPage() {
                       <option value="medium">Partiellement bloqué</option>
                       <option value="high">Complètement bloqué</option>
                     </select>
-                  ) : (URGENCY_FR[ticket.urgency] ?? ticket.urgency)}
+                  ) : <Pill config={URGENCY_CONFIG} value={ticket.urgency} />}
                 </MetaRow>
-                <MetaRow label="Catégorie" icon={HiOutlineTag}>
-                  <Badge cls="badge-purple">{ticket.category}</Badge>
-                </MetaRow>
+               <MetaRow label="Catégorie" icon={HiOutlineTag}>
+  <Pill config={CATEGORY_CONFIG} value={ticket.category} />
+</MetaRow>
                 <MetaRow label="Service IT" icon={HiOutlineWrenchScrewdriver}>
                   <Badge cls="badge-blue">{ticket.service ?? "N/A"}</Badge>
                 </MetaRow>

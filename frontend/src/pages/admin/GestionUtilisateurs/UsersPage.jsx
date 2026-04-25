@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { MdSearch, MdPersonAdd, MdRefresh } from "react-icons/md";
 import UsersTable from "./UsersTable";
 import UserModal from "./UserModal";
 
@@ -12,58 +13,27 @@ function UsersPage() {
   const [departments, setDepartments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Récupérer les utilisateurs
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("http://localhost:3001/api/users");
-        if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        const data = await res.json();
-        setUsers(data);
-      } catch (err) {
-        setError(err.message);
-        console.error("Users fetch error:", err);
-        setUsers([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUsers();
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [uRes, sRes, dRes] = await Promise.all([
+        fetch("http://localhost:3001/api/users"),
+        fetch("http://localhost:3001/api/users/services"),
+        fetch("http://localhost:3001/api/departments")
+      ]);
+      if (uRes.ok) setUsers(await uRes.json());
+      if (sRes.ok) setServices(await sRes.json());
+      if (dRes.ok) setDepartments(await dRes.json());
+    } catch (err) {
+      setError("Erreur de chargement");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Fetch services for dropdown
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const res = await fetch("http://localhost:3001/api/users/services");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setServices(data);
-      } catch (err) {
-        console.error("Services fetch error:", err);
-      }
-    };
-    fetchServices();
-  }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Fetch departments for dropdown
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const res = await fetch("http://localhost:3001/api/departments");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setDepartments(data);
-      } catch (err) {
-        console.error("Departments fetch error:", err);
-      }
-    };
-    fetchDepartments();
-  }, []);
-
-  // Ajouter utilisateur
+  // ✅ Ajouter utilisateur
   const addUser = async (newUser) => {
     try {
       const res = await fetch("http://localhost:3001/api/users", {
@@ -76,7 +46,7 @@ function UsersPage() {
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
       const createdUser = await res.json();
-      setUsers([createdUser, ...users]);
+      setUsers(prev => [createdUser, ...prev]);
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Add user error:", err);
@@ -84,7 +54,7 @@ function UsersPage() {
     }
   };
 
-  // Modifier utilisateur
+  // ✅ Modifier utilisateur
   const updateUser = async (updatedUser) => {
     try {
       const res = await fetch(`http://localhost:3001/api/users/${updatedUser.id}`, {
@@ -96,7 +66,7 @@ function UsersPage() {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
-      setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+      setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
       setSelectedUser(null);
     } catch (err) {
       console.error("Update user error:", err);
@@ -104,15 +74,12 @@ function UsersPage() {
     }
   };
 
-  // Toggle active
+  // ✅ Toggle actif/inactif
   const toggleActive = async (id) => {
     try {
       const res = await fetch(`http://localhost:3001/api/users/${id}/toggle-active`, { method: "PUT" });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
-      }
-      setUsers(users.map(u => u.id === id ? {...u, is_active: !u.is_active} : u));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: !u.is_active } : u));
       setSelectedUser(null);
     } catch (err) {
       console.error("Toggle error:", err);
@@ -121,82 +88,78 @@ function UsersPage() {
   };
 
   const filteredUsers = useMemo(() => {
-    if (!searchTerm.trim()) return users;
-    const lowerSearch = searchTerm.toLowerCase();
-    return users.filter(u => {
-      const fullName = `${u.surname || ''} ${u.name || ''}`.toLowerCase();
-      const createdDate = new Date(u.created_at || Date.now()).toLocaleDateString('fr-FR').toLowerCase();
-      return fullName.includes(lowerSearch) ||
-             u.id.toString().includes(lowerSearch) ||
-             u.role.toLowerCase().includes(lowerSearch) ||
-             (u.department || '').toLowerCase().includes(lowerSearch) ||
-             createdDate.includes(lowerSearch);
-    });
+    const s = searchTerm.toLowerCase();
+    return users.filter(u =>
+      `${u.surname} ${u.name}`.toLowerCase().includes(s) ||
+      u.id.toString().includes(s) ||
+      (u.role || '').toLowerCase().includes(s)
+    );
   }, [users, searchTerm]);
 
-  if (loading) return <div className="p-6 text-center">Chargement des utilisateurs...</div>;
-  if (error) return (
-    <div className="p-6">
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <div className="text-red-600 font-semibold mb-2">Erreur</div>
-        <div className="text-red-800">{error}</div>
-      </div>
+  if (loading) return (
+    <div className="flex justify-center items-center h-screen bg-[#f9f6f2]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
     </div>
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 mb-8">
-        <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent flex-1">Gestion des Utilisateurs</h1>
-          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-            <div className="relative flex-1 lg:w-80">
+    <div className="min-h-screen bg-[#f9f6f2] p-8 font-sans">
+
+      <h1 className="text-2xl font-bold text-slate-900">Gestion des Utilisateurs</h1>
+      <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
+        Administration de l'annuaire et des roles
+      </p>
+
+      <div className="max-w-7xl mx-auto mb-5 flex justify-end">
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-lg hover:opacity-90 shadow-md transition-all active:scale-95"
+        >
+          <MdPersonAdd size={17} />
+          Ajouter utilisateur
+        </button>
+      </div>
+
+      <div className="max-w-7xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+
+        <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-end gap-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
-                placeholder="Rechercher ID, nom, rôle, département, date..."
+                placeholder="Rechercher un utilisateur..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-lg shadow-sm"
+                className="w-72 pl-9 pr-4 py-2.5 bg-[#f9f6f2] border border-[#e8e4df] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e8e4df] focus:border-[#d0cac3] transition-all text-slate-600 placeholder:text-slate-400"
               />
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              {searchTerm && (
-                <button 
-                  onClick={() => setSearchTerm('')} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
             </div>
             <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-2xl hover:from-emerald-600 hover:to-emerald-700 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 whitespace-nowrap flex items-center gap-3 text-lg"
+              onClick={fetchData}
+              className="p-2.5 bg-[#f9f6f2] text-slate-500 rounded-lg hover:bg-[#f0ece6] transition-colors border border-[#e8e4df]"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Ajouter utilisateur
+              <MdRefresh size={18} />
             </button>
           </div>
         </div>
-        {error && (
-          <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-            <div className="text-red-800 font-medium">{error}</div>
+
+        <div className="px-8 pt-5 pb-2 flex justify-between items-center">
+          <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            Liste des collaborateurs
+          </span>
+          <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase">
+            {filteredUsers.length} Comptes
+          </span>
+        </div>
+
+        <div className="px-8 pb-8 pt-2">
+          <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <UsersTable users={filteredUsers} onRowClick={setSelectedUser} />
           </div>
-        )}
-        <div className="mt-8">
-          <div className="text-sm text-gray-500 mb-2">
-            {filteredUsers.length} utilisateur(s) trouvé(s) {searchTerm && `sur ${users.length}`}
-          </div>
-          <UsersTable users={filteredUsers} onRowClick={setSelectedUser} />
         </div>
       </div>
 
-      {/* Modal Ajouter */}
+      {/* ✅ Props saveUser et toggleActive bien passées */}
       {isAddModalOpen && (
         <UserModal
           services={services}
@@ -206,8 +169,6 @@ function UsersPage() {
           mode="add"
         />
       )}
-
-      {/* Modal Modifier */}
       {selectedUser && (
         <UserModal
           services={services}

@@ -1,23 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MdArrowBack, MdPerson, MdEmail, MdBusiness, MdWork, MdPhone, MdLocationOn, MdTimer, MdCheckCircle, MdWarning } from "react-icons/md";
-
-const PRIORITY_STYLE = {
-  critical: { label: "Critique", color: "#A32D2D", bg: "#FCEBEB" },
-  high:     { label: "Haute",    color: "#854F0B", bg: "#FAEEDA" },
-  medium:   { label: "Moyenne",  color: "#185FA5", bg: "#E6F1FB" },
-  low:      { label: "Basse",    color: "#3B6D11", bg: "#EAF3DE" },
-};
-
-const STATUS_STYLE = {
-  open:             { label: "Ouvert",              color: "#185FA5", bg: "#E6F1FB" },
-  in_progress:      { label: "En cours",            color: "#854F0B", bg: "#FAEEDA" },
-  pending:          { label: "En attente",          color: "#6b7280", bg: "#f3f4f6" },
-  pending_supplier: { label: "Attente fournisseur", color: "#0F6E56", bg: "#E1F5EE" },
-  resolved:         { label: "Résolu",              color: "#3B6D11", bg: "#EAF3DE" },
-  closed:           { label: "Fermé",               color: "#3B6D11", bg: "#EAF3DE" },
-  rejected:         { label: "Rejeté",              color: "#A32D2D", bg: "#FCEBEB" },
-};
+import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG, IMPACT_CONFIG, URGENCY_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
 
 const TicketDetailPage = () => {
   const { id } = useParams();
@@ -27,6 +12,7 @@ const TicketDetailPage = () => {
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [taking, setTaking] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     fetch(`http://localhost:3001/api/tickets/${id}`)
@@ -44,12 +30,10 @@ const TicketDetailPage = () => {
         body: JSON.stringify({ technicienId: currentUser.id, action: "taken" }),
       });
       if (response.ok) {
-        const updated = await response.json();
-        setTicket(prev => ({
-          ...prev,
-          status: updated.status || 'in_progress',
-          technician: { id: currentUser.id, name: currentUser.name, surname: currentUser.surname }
-        }));
+        const refreshed = await fetch(`http://localhost:3001/api/tickets/${id}`);
+        const data = await refreshed.json();
+        setTicket(data);
+        setShowModal(true);
       }
     } catch (err) {
       console.error(err);
@@ -66,45 +50,114 @@ const TicketDetailPage = () => {
   );
 
   const t = ticket;
+  const statusStyle = STATUS_CONFIG[t.status] || STATUS_CONFIG.open;
+ const priorityStyle = PRIORITY_CONFIG[t.priority] || PRIORITY_CONFIG.low;
   const employee = t.employee || t.users_tickets_created_byTousers;
   const isAssigned = !!(t.technician?.id || t.technicienId);
   const isAssignedToMe = (t.technician?.id === currentUser?.id) || (t.technicienId === currentUser?.id);
 
   const calculateSLA = () => {
-    if (!t.sla_date_limite) return { pct: 0, depasse: false, text: "N/A" };
-    const now = Date.now();
-    const due = new Date(t.sla_date_limite).getTime();
-    const debut = t.sla_date_debut ? new Date(t.sla_date_debut).getTime() : due - 24 * 3600000;
+    if (!t.sla_date_limite) return null;
+    const PAUSED   = ["pending", "pending_supplier"];
+    const TERMINAL = ["resolved", "closed", "rejected"];
+    const now      = Date.now();
+    const due      = new Date(t.sla_date_limite).getTime();
+    const debut    = t.sla_date_debut ? new Date(t.sla_date_debut).getTime() : due - 24 * 3600000;
+    const window   = due - debut;
+    if (TERMINAL.includes(t.status)) {
+      const closed   = t.closed_at ? new Date(t.closed_at).getTime() : due;
+      const exceeded = closed > due;
+      const delta    = Math.abs(closed - due);
+      const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
+      return { mode: "terminal", exceeded, text: exceeded ? `+${h}h ${m}m dépassé` : "Clôturé — respecté ✓", pct: exceeded ? 100 : Math.min(100, ((window - (due - closed)) / window) * 100) };
+    }
+    if (PAUSED.includes(t.status)) {
+      const elapsed  = t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null;
+      const frozen   = elapsed != null ? window - elapsed : Math.max(0, due - now);
+      const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+      return { mode: "paused", text: `⏸ ${h}h ${m}m figé`, pct: Math.min(100, ((window - frozen) / window) * 100) };
+    }
     const remaining = due - now;
-    const totalMs = due - debut;
-    const depasse = remaining <= 0;
-    const hours = Math.floor(Math.abs(remaining) / 3600000);
-    const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
-    return {
-      depasse,
-      text: depasse ? `+${hours}h ${minutes}m dépassé` : `${hours}h ${minutes}m restantes`,
-      pct: Math.min(100, Math.max(0, (remaining / totalMs) * 100)),
-    };
+    const exceeded  = remaining <= 0;
+    const abs       = Math.abs(remaining);
+    const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
+    return { mode: "active", exceeded, text: exceeded ? `+${h}h ${m}m dépassé` : `${h}h ${m}m restantes`, pct: Math.min(100, Math.max(0, (remaining / window) * 100)) };
   };
 
   const sla = calculateSLA();
-  const slaColor = sla.depasse ? '#dc2626' : sla.pct < 25 ? '#f97316' : sla.pct < 60 ? '#d97706' : '#16a34a';
-  const statusStyle = STATUS_STYLE[t.status] || { label: t.status, color: '#6b7280', bg: '#f3f4f6' };
-  const priorityStyle = PRIORITY_STYLE[t.priority] || { label: t.priority, color: '#6b7280', bg: '#f3f4f6' };
+
+  const slaColor = !sla ? "#9ca3af"
+    : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
+    : sla.mode === "paused"   ? "#7c3aed"
+    : sla.exceeded            ? "#dc2626"
+    : sla.pct > 50            ? "#16a34a"
+    : sla.pct > 20            ? "#d97706"
+    : "#f97316";
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh', padding: '40px 32px' }}>
+    <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100%', padding: '40px 32px' }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes scaleIn { from { opacity:0; transform:scale(0.93); } to { opacity:1; transform:scale(1); } }
+      `}</style>
+
+      {/* ── MODAL CONFIRMATION ── */}
+      {showModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(17,24,39,0.18)", backdropFilter: "blur(2px)" }}>
+          <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 24px 60px rgba(0,0,0,0.13)", maxWidth: 400, width: "100%", overflow: "hidden", animation: "scaleIn 0.22s ease" }}>
+
+            {/* Header vert — prise en charge réussie */}
+            <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", padding: "28px 32px 24px", textAlign: "center" }}>
+              <div style={{ width: 52, height: 52, background: "rgba(255,255,255,0.2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                <MdCheckCircle style={{ fontSize: 26, color: "#fff" }} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#fff", margin: "0 0 4px", lineHeight: 1.3 }}>
+                Ticket pris en charge
+              </h3>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.75)", margin: 0, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700 }}>
+                #{id} · En cours
+              </p>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "20px 24px 24px" }}>
+              <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px", textAlign: "center", lineHeight: 1.6 }}>
+                Vous êtes maintenant responsable de ce ticket. Que souhaitez-vous faire ?
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+                {/* Rester sur ce ticket */}
+                <button
+                  onClick={() => setShowModal(false)}
+                  style={{ padding: "12px 0", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", fontFamily: "Inter, sans-serif", background: "#3b82f6", color: "#fff", boxShadow: "0 2px 8px rgba(59,130,246,0.25)", transition: "background 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#2563eb"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#3b82f6"}
+                >
+                  Rester sur ce ticket
+                </button>
+
+                {/* Retour à la liste */}
+                <button
+                  onClick={() => navigate(-1)}
+                  style={{ padding: "12px 0", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "1.5px solid #e5e7eb", fontFamily: "Inter, sans-serif", background: "#fff", color: "#374151", transition: "all 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#d1d5db"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                >
+                  Retour à la liste des tickets
+                </button>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* BACK BUTTON */}
       <button
         onClick={() => navigate(-1)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: '#9ca3af', fontSize: 12, fontWeight: 700,
-          textTransform: 'uppercase', letterSpacing: '0.1em',
-          marginBottom: 24, padding: 0, fontFamily: 'Inter, sans-serif'
-        }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 24, padding: 0, fontFamily: 'Inter, sans-serif' }}
       >
         <MdArrowBack style={{ fontSize: 16 }} /> Retour aux tickets
       </button>
@@ -112,128 +165,83 @@ const TicketDetailPage = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20, alignItems: 'start' }}>
 
         {/* ── COLONNE GAUCHE : PROFIL EMPLOYÉ ── */}
-        <div style={{
-          background: '#fff', border: '1px solid #e5e7eb',
-          borderRadius: 16, overflow: 'hidden',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-          position: 'sticky', top: 24
-        }}>
-          {/* Header profil */}
-          <div style={{ padding: '28px 24px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: '50%',
-              background: '#eff6ff', border: '2px solid #dbeafe',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, fontWeight: 800, color: '#3b82f6',
-              margin: '0 auto 14px'
-            }}>
-              {employee?.name?.[0]}{employee?.surname?.[0]}
-            </div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 8px 0' }}>
-              {employee?.name} {employee?.surname}
-            </h2>
-            <span style={{
-              fontSize: 11, fontWeight: 700, color: '#3b82f6',
-              background: '#eff6ff', padding: '4px 12px',
-              borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.08em'
-            }}>
-              {employee?.role || "Employé"}
-            </span>
-          </div>
-
-          {/* Infos profil */}
-          <div style={{ padding: '16px 24px' }}>
-            {[
-              { icon: <MdEmail style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Email', value: employee?.email },
-              { icon: <MdBusiness style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Département', value: employee?.department || 'Djezzy Staff' },
-              { icon: <MdWork style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Poste', value: employee?.job_title },
-              { icon: <MdPhone style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Contact', value: employee?.phone },
-              { icon: <MdLocationOn style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Bureau', value: employee?.office },
-            ].map(({ icon, label, value }, i, arr) => (
-              <div key={label} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 10,
-                padding: '12px 0',
-                borderBottom: i < arr.length - 1 ? '1px solid #f3f4f6' : 'none'
-              }}>
-                <div style={{ marginTop: 2, flexShrink: 0 }}>{icon}</div>
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 2px 0' }}>{label}</p>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>{value || '—'}</p>
-                </div>
+        <div style={{ alignSelf: 'start', position: 'sticky', top: 0 }}>
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ padding: '28px 24px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#eff6ff', border: '2px solid #dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: '#3b82f6', margin: '0 auto 14px' }}>
+                {employee?.name?.[0]}{employee?.surname?.[0]}
               </div>
-            ))}
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#111827', margin: '0 0 8px 0' }}>
+                {employee?.name} {employee?.surname}
+              </h2>
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', background: '#eff6ff', padding: '4px 12px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {employee?.role || "Employé"}
+              </span>
+            </div>
+            <div style={{ padding: '16px 24px' }}>
+              {[
+                { icon: <MdEmail style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Email', value: employee?.email },
+                { icon: <MdBusiness style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Département', value: employee?.department || 'Djezzy Staff' },
+                { icon: <MdWork style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Poste', value: employee?.job_title },
+                { icon: <MdPhone style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Contact', value: employee?.phone },
+                { icon: <MdLocationOn style={{ fontSize: 15, color: '#9ca3af' }} />, label: 'Bureau', value: employee?.office },
+              ].map(({ icon, label, value }, i, arr) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 0', borderBottom: i < arr.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                  <div style={{ marginTop: 2, flexShrink: 0 }}>{icon}</div>
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 2px 0' }}>{label}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>{value || '—'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* ── COLONNE DROITE : DÉTAIL TICKET ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* CARD PRINCIPALE */}
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
 
             {/* Header ticket */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
               <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 4px 0' }}>
-                  Référence Ticket
-                </p>
-                <h1 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>
-                  #{id} — {t.title}
-                </h1>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 4px 0' }}>Référence Ticket</p>
+                <h1 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>#{id} — {t.title}</h1>
               </div>
-              <span style={{
-                fontSize: 11, fontWeight: 700, padding: '5px 14px', borderRadius: 99,
-                background: statusStyle.bg, color: statusStyle.color,
-                whiteSpace: 'nowrap', border: `1px solid ${statusStyle.color}30`
-              }}>
-                {statusStyle.label}
-              </span>
+             <Pill config={STATUS_CONFIG} value={t.status} />
             </div>
 
             {/* Description */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0' }}>
-                Description de l'incident
-              </p>
-              <div style={{
-                background: '#f9fafb', border: '1px solid #e5e7eb',
-                borderRadius: 12, padding: '14px 18px',
-                fontSize: 14, color: '#374151', lineHeight: 1.7,
-                fontStyle: 'italic'
-              }}>
-                "{t.description}"
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px 0' }}>Description de l'incident</p>
+              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: '14px 18px', fontSize: 14, color: '#374151', lineHeight: 1.7, fontStyle: 'italic' }}>
+                {t.description}
               </div>
             </div>
 
-            {/* Specs — inner card avec tableau beige */}
+            {/* Specs */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px 0' }}>
-                Informations du ticket
-              </p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px 0' }}>Informations du ticket</p>
               <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#f9f6f2', borderBottom: '1px solid #e8e4de' }}>
                       {['Priorité', 'Catégorie', 'Service', 'Impact', 'Urgence', 'Date Création'].map((col, i) => (
-                        <th key={i} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>
-                          {col}
-                        </th>
+                        <th key={i} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{col}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
                       <td style={{ padding: '14px 16px' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 99, background: priorityStyle.bg, color: priorityStyle.color }}>
-                          {priorityStyle.label}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.category || '—'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.service || 'IT Support'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.impact || '—'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{t.urgency || '—'}</td>
-                      <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
-                        {new Date(t.createdAt || t.created_at).toLocaleDateString('fr-FR')}
+                      <Pill config={PRIORITY_CONFIG} value={t.priority} />  </td>
+                    <td style={{ padding: '14px 16px' }}> <Pill config={CATEGORY_CONFIG} value={t.category} /> </td>
+                     <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
+  {t.service?.name || t.service || 'IT Support'}
+</td> <td><Pill config={IMPACT_CONFIG} value={t.impact} /></td>
+<Pill config={URGENCY_CONFIG} value={t.urgency} /> <td style={{ padding: '14px 16px', fontSize: 13, color: '#374151', fontWeight: 500 }}>
+                        {new Date(t.createdAt || t.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
                     </tr>
                   </tbody>
@@ -242,41 +250,70 @@ const TicketDetailPage = () => {
             </div>
 
             {/* SLA */}
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <MdTimer style={{ fontSize: 15, color: slaColor }} />
-                  Temps de résolution (SLA)
-                </p>
-                {sla.depasse && (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '3px 10px', borderRadius: 99, border: '1px solid #fecaca' }}>
-                    Dépassement détecté
-                  </span>
-                )}
+            {sla && (
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <MdTimer style={{ fontSize: 15, color: slaColor }} />
+                    Temps de résolution (SLA)
+                    {sla.mode === "paused" && <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#ede9fe', padding: '2px 8px', borderRadius: 99 }}>En pause</span>}
+                    {sla.mode === "terminal" && <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: 99 }}>Clôturé</span>}
+                  </p>
+                  {sla.mode === "active" && sla.exceeded && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '3px 10px', borderRadius: 99, border: '1px solid #fecaca' }}>Dépassement détecté</span>
+                  )}
+                </div>
+                <div style={{ background: '#f3f4f6', height: 6, borderRadius: 99, marginBottom: 12, overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.round(sla.pct)}%`, background: slaColor, height: '100%', borderRadius: 99, transition: 'width 1s ease' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: slaColor, margin: 0 }}>{sla.text}</p>
+                  <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, margin: 0 }}>
+                    Limite : {t.sla_date_limite ? new Date(t.sla_date_limite).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                  </p>
+                </div>
               </div>
-
-              <div style={{ background: '#f3f4f6', height: 6, borderRadius: 99, marginBottom: 12, overflow: 'hidden' }}>
-                <div style={{
-                  width: sla.depasse ? '100%' : `${100 - sla.pct}%`,
-                  background: slaColor, height: '100%', borderRadius: 99,
-                  transition: 'width 1s ease'
-                }} />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <p style={{ fontSize: 20, fontWeight: 800, color: slaColor, margin: 0 }}>{sla.text}</p>
-                <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, margin: 0 }}>
-                  Limite : {t.sla_date_limite ? new Date(t.sla_date_limite).toLocaleString('fr-DZ') : 'N/A'}
-                </p>
-              </div>
-            </div>
+            )}
+            {/* ── NOTE DE REDIRECTION ── */}
+{t.redirect_note && (
+  <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+      Ticket redirigé
+    </p>
+    <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {t.service && (
+        <div style={{ fontSize: 13, color: '#374151' }}>
+          <span style={{ fontWeight: 700, color: '#6b21a8' }}>Service : </span>
+          {t.service?.name || t.service}
+        </div>
+      )}
+      {t.technician && (
+        <div style={{ fontSize: 13, color: '#374151' }}>
+          <span style={{ fontWeight: 700, color: '#6b21a8' }}>Technicien : </span>
+          {t.technician.name} {t.technician.surname}
+        </div>
+      )}
+    {t.redirected_at && (
+  <div style={{ fontSize: 13, color: '#374151' }}>
+    <span style={{ fontWeight: 700, color: '#6b21a8' }}>Date de redirection : </span>
+    {new Date(t.redirected_at).toLocaleDateString('fr-FR', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    })}
+  </div>
+)}
+<div style={{ fontSize: 13, color: '#374151', borderTop: '1px solid #e9d5ff', paddingTop: 8, marginTop: 4 }}>
+  <span style={{ fontWeight: 700, color: '#6b21a8' }}>Raison : </span>
+  {t.redirect_note}
+</div>
+    </div>
+  </div>
+)}
 
             {/* Footer : technicien + bouton */}
             <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px 0' }}>
-                  Technicien assigné
-                </p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px 0' }}>Technicien assigné</p>
                 {isAssignedToMe ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <MdCheckCircle style={{ fontSize: 16, color: '#16a34a' }} />
@@ -287,29 +324,30 @@ const TicketDetailPage = () => {
                     {t.technician?.name ? `${t.technician.name} ${t.technician.surname}` : "En attente d'expert"}
                   </span>
                 )}
+                {t.assigned_at && (
+                  <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+                    Assigné le : {new Date(t.assigned_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+                {t.closed_at && (
+                  <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                    Clôturé le : {new Date(t.closed_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
               </div>
 
               <button
                 onClick={handleTakeCharge}
                 disabled={taking || isAssigned}
-                style={{
-                  padding: '11px 24px', borderRadius: 12,
-                  fontSize: 13, fontWeight: 700, cursor: isAssigned ? 'not-allowed' : 'pointer',
-                  border: 'none', fontFamily: 'Inter, sans-serif',
-                  background: isAssigned ? '#f3f4f6' : '#3b82f6',
-                  color: isAssigned ? '#9ca3af' : '#fff',
-                  boxShadow: isAssigned ? 'none' : '0 2px 8px rgba(59,130,246,0.25)',
-                  transition: 'background 0.2s',
-                  opacity: taking ? 0.7 : 1
-                }}
+                style={{ padding: '11px 24px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: isAssigned ? 'not-allowed' : 'pointer', border: 'none', fontFamily: 'Inter, sans-serif', background: isAssigned ? '#f3f4f6' : '#3b82f6', color: isAssigned ? '#9ca3af' : '#fff', boxShadow: isAssigned ? 'none' : '0 2px 8px rgba(59,130,246,0.25)', transition: 'background 0.2s', opacity: taking ? 0.7 : 1 }}
                 onMouseEnter={e => { if (!isAssigned) e.currentTarget.style.background = '#2563eb'; }}
                 onMouseLeave={e => { if (!isAssigned) e.currentTarget.style.background = '#3b82f6'; }}
               >
                 {taking ? "Traitement..." : isAssigned ? "Déjà Assigné" : "Prendre en charge"}
               </button>
             </div>
-          </div>
 
+          </div>
         </div>
       </div>
     </div>

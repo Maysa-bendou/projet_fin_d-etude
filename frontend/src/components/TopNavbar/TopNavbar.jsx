@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bell, ChevronDown, User, LogOut, CheckCircle2,
-  AlertCircle, Clock, Info, Ticket, Languages,
+  AlertCircle, Clock, Info, Ticket, Languages,Forward,
 } from "lucide-react";
 
 const ROLE_LABEL = {
@@ -34,6 +34,7 @@ function getNotifMeta(type) {
     case "rejected_confirm": return { icon: AlertCircle,  color: "text-red-600 bg-red-50"       };
     case "new_ticket":       return { icon: Ticket,       color: "text-blue-600 bg-blue-50"     };
     case "updated":          return { icon: Info,         color: "text-amber-600 bg-amber-50"   };
+    case "redirect":         return { icon: Forward,      color: "text-purple-600 bg-purple-50" }; // ← ici
     default:                 return { icon: Info,         color: "text-gray-600 bg-gray-50"     };
   }
 }
@@ -135,10 +136,7 @@ export default function TopNavbar({ pageTitle = "" }) {
             Support Panel
           </span>
           <div className="flex items-center gap-2 text-slate-500">
-            <Clock size={14} className="text-blue-500" />
-            <span className="text-sm font-bold tabular-nums">
-              {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
+            
           </div>
         </div>
 
@@ -219,8 +217,24 @@ export default function TopNavbar({ pageTitle = "" }) {
                       return (
                         <button
                           key={n.id}
-                          onClick={() => markRead(n.id)}
-                          className={`w-full flex gap-3 px-5 py-4 text-left hover:bg-slate-50 transition border-none bg-transparent cursor-pointer ${!n.is_read ? "bg-blue-50/30" : ""}`}
+                   onClick={() => {
+  markRead(n.id);
+  setNotifOpen(false);
+  if (n.ticket_id) {
+    if (rolePath === "technician") {
+      // assigned = ticket assigné directement → détail technicien
+      // tout le reste (new_ticket, redirect, etc.) → liste service
+      const path = n.type === "assigned"
+        ? `/technician/ticket-technicien/${n.ticket_id}`
+        : `/technician/tickets-service/${n.ticket_id}`;
+      navigate(path);
+    } else if (rolePath === "manager" || rolePath === "chef") {
+      navigate(`/manager/tickets-service/${n.ticket_id}`);
+    } else if (rolePath === "employee") {
+      navigate(`/employee/ticket/${n.ticket_id}`);
+    }
+  }
+}} className={`w-full flex gap-3 px-5 py-4 text-left hover:bg-slate-50 transition border-none bg-transparent cursor-pointer ${!n.is_read ? "bg-blue-50/30" : ""}`}
                         >
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
                             <Icon size={14} />
@@ -238,11 +252,7 @@ export default function TopNavbar({ pageTitle = "" }) {
                   )}
                 </div>
 
-                <div className="px-5 py-3 border-t border-slate-50 text-center">
-                  <button className="text-[11px] text-blue-600 hover:underline bg-transparent border-none cursor-pointer font-semibold">
-                    Voir toutes les notifications
-                  </button>
-                </div>
+              
               </div>
             )}
           </div>

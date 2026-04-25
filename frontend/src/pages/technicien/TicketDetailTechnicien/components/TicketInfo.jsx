@@ -1,23 +1,61 @@
 import { 
   User, Mail, Building2, Briefcase, Phone, DoorOpen, Hash, 
-  Tag, Layers, AlertTriangle, FileText, Calendar, Clock ,
-   Lock, Circle
+  Tag, Layers, AlertTriangle, FileText, Calendar, Clock,
+  Lock, Circle, LogIn, XCircle, Forward
 } from "lucide-react";
 import UserTooltip from "./utils/UserTooltip";
 import { PRIORITY_CLASS, PRIORITY_FR, IMPACT_FR, URGENCY_FR, CATEGORY_FR, TYPE_FR, STATUS_CLASS, STATUS_FR } from "./constants";
 
-function getSLAInfo(slaDateLimite, slaDateDebut) {
+function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElapsed) {
   if (!slaDateLimite) return null;
-  const deadline = new Date(slaDateLimite);
-  const debut = slaDateDebut ? new Date(slaDateDebut) : null;
-  const ms = deadline - new Date();
-  const totalMs = debut ? deadline - debut : 24 * 3600000;
+
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const due      = new Date(slaDateLimite).getTime();
+  const debut    = slaDateDebut ? new Date(slaDateDebut).getTime() : due - 24 * 3600000;
+  const window   = due - debut;
+  const now      = Date.now();
+
+  // ── Terminal : bilan figé ──
+  if (TERMINAL.includes(statut)) {
+    const closed   = closedAt ? new Date(closedAt).getTime() : due;
+    const exceeded = closed > due;
+    const delta    = Math.abs(closed - due);
+    const used     = exceeded ? window + delta : window - (due - closed);
+    return {
+      mode: "terminal",
+      exceeded,
+      diffH: Math.floor(delta / 3600000),
+      diffM: Math.floor((delta % 3600000) / 60000),
+      pct:   Math.min(100, Math.max(0, (used / window) * 100)),
+      deadline: new Date(slaDateLimite),
+    };
+  }
+
+  // ── Pause : figé ──
+  if (PAUSED.includes(statut)) {
+    const frozen  = slaPauseElapsed != null ? window - slaPauseElapsed : Math.max(0, due - now);
+    const elapsed = window - frozen;
+    return {
+      mode: "paused",
+      diffH: Math.floor(frozen / 3600000),
+      diffM: Math.floor((frozen % 3600000) / 60000),
+      pct:   Math.min(100, Math.max(0, (elapsed / window) * 100)),
+      deadline: new Date(slaDateLimite),
+    };
+  }
+
+  // ── Actif ──
+  const remaining = due - now;
+  const exceeded  = remaining <= 0;
+  const abs       = Math.abs(remaining);
   return {
-    deadline,
-    diffH:   Math.floor(Math.abs(ms) / 3600000),
-    diffM:   Math.floor((Math.abs(ms) % 3600000) / 60000),
-    pct:     Math.max(0, Math.min(100, (ms / totalMs) * 100)),
-    expired: ms < 0,
+    mode: "active",
+    exceeded,
+    diffH: Math.floor(abs / 3600000),
+    diffM: Math.floor((abs % 3600000) / 60000),
+    pct:   Math.max(0, Math.min(100, (remaining / window) * 100)),
+    deadline: new Date(slaDateLimite),
   };
 }
 export default function TicketInfo({ 
@@ -31,8 +69,29 @@ export default function TicketInfo({
   const emp = ticket.employee ?? {};
   const ini = `${emp.name?.[0] ?? "?"} ${emp.surname?.[0] ?? ""}`;
   const empName = `${emp.name ?? ""} ${emp.surname ?? ""}`.trim();
-const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut);
-  const fmtDate = (d) => new Date(d).toLocaleDateString("fr-DZ");
+const sla = getSLAInfo(
+  ticket.sla_date_limite,
+  ticket.sla_date_debut,
+  status,                        // ← statut local (déjà mis à jour)
+  ticket.closedAt,
+  ticket.sla_pause_elapsed_ms ?? null,
+);
+  const fmtDate = (d) =>
+  d
+    ? new Date(d).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "N/A";
+const fmtDateTime = (d) =>
+  d
+    ? new Date(d).toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "N/A";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch">
@@ -88,10 +147,35 @@ const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut);
             {STATUS_FR[status] ?? status}
           </span>
         </div>
+    {ticket.redirect_note && (
+  <div className="flex flex-col gap-1 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2.5">
+    <div className="flex items-center gap-2 text-[11px] font-semibold text-purple-700">
+      <Forward size={13} className="shrink-0"/>
+      Ticket redirigé
+    </div>
+    <p className="text-[11px] text-purple-600 pl-5">
+      {ticket.redirectInfo?.reason ?? ticket.redirect_note}
+    </p>
+    {ticket.redirectInfo && (
+      <div className="flex items-center gap-3 pl-5 text-[10px] text-purple-400 font-medium">
+        {ticket.redirectInfo.by && (
+          <span>Par : <span className="text-purple-600 font-semibold">{ticket.redirectInfo.by}</span></span>
+        )}
+        {ticket.redirectInfo.from && (
+          <span>Ancien tech : <span className="text-purple-600 font-semibold">{ticket.redirectInfo.from}</span></span>
+        )}
+        {ticket.redirectInfo.date && (
+          <span>{new Date(ticket.redirectInfo.date).toLocaleDateString("fr-FR", { day:"2-digit", month:"short" })}</span>
+        )}
+      </div>
+    )}
+  </div>
+)}
         <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
           <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Description</p>
           <p className="text-[13px] text-gray-700 leading-relaxed">{ticket.description ?? "Aucune description."}</p>
         </div>
+        
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
             { Icon:AlertTriangle, label:"Priorité", custom: ticket.priority
@@ -102,14 +186,18 @@ const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut);
             { Icon:AlertTriangle, label:"Impact", value: IMPACT_FR[ticket.impact] ?? ticket.impact ?? "N/A" },
             { Icon:AlertTriangle, label:"Urgence", value: URGENCY_FR[ticket.urgency] ?? ticket.urgency ?? "N/A" },
             { Icon:FileText, label:"Type", value: TYPE_FR[ticket.type] ?? ticket.type ?? "Incident" },
-            { Icon:User, label:"Assigné par", custom: ticket.assignedBy
-                ? ticket.assignedBy.type === "auto"
-                  ? <span className="text-[12px] font-semibold text-gray-500 italic">Auto / Système</span>
-                  : <UserTooltip user={ticket.assignedBy}>
-                      <span className="text-[12px] font-semibold text-blue-700 cursor-default underline decoration-dotted">{ticket.assignedBy.label}</span>
-                    </UserTooltip>
-                : null },
-            { Icon:Calendar, label:"Créé le", value: ticket.createdAt ? fmtDate(ticket.createdAt) : "N/A" },
+          { Icon: User, label: "Assigné par", custom: ticket.assignedBy
+    ? ticket.assignedBy.type === "auto"
+      ? <span className="text-[12px] font-semibold text-indigo-600 italic">Prise en charge directe</span>
+      : <UserTooltip user={ticket.assignedBy}>
+          <span className="text-[12px] font-semibold text-blue-700 cursor-default underline decoration-dotted">{ticket.assignedBy.label}</span>
+        </UserTooltip>
+    : null },
+{ Icon: Calendar, label: "Créé le",    value: ticket.createdAt  ? fmtDate(ticket.createdAt)       : "N/A" },
+{ Icon: LogIn,    label: "Assigné le", value: ticket.assignedAt ? fmtDateTime(ticket.assignedAt)   : "N/A" },
+...(isClosed && ticket.closedAt ? [
+  { Icon: XCircle, label: "Clôturé le", value: fmtDateTime(ticket.closedAt) }
+] : []),
           ].map(f => (
             <div key={f.label} className="bg-gray-50 rounded-xl p-2.5 border border-gray-100">
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -123,25 +211,58 @@ const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut);
 
         {/* SLA */}
         {sla && (
-          <div className="rounded-xl p-3 border bg-gray-50 border-gray-200">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-1.5">
-                <Clock size={12} className={sla.expired ? "text-red-500" : "text-gray-500"}/>
-                <p className="text-[11px] font-bold text-gray-700">SLA</p>
-              </div>
-              <span className={`text-[11px] font-bold ${sla.expired ? "text-red-600" : sla.pct > 50 ? "text-emerald-700" : sla.pct > 20 ? "text-amber-600" : "text-red-600"}`}>
-                {sla.expired ? `⚠ Dépassé de ${sla.diffH}h ${sla.diffM}m` : `${sla.diffH}h ${sla.diffM}m restants`}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
-              <div className={`h-1.5 rounded-full transition-all ${sla.expired ? "bg-red-500" : sla.pct > 50 ? "bg-emerald-500" : sla.pct > 20 ? "bg-amber-500" : "bg-red-500"}`}
-                style={{ width: sla.expired ? "100%" : `${sla.pct}%` }}/>
-            </div>
-            <p className="text-[10px] text-gray-400">
-             Limite : {sla.deadline.toLocaleString("fr-DZ")}
-            </p>
-          </div>
+  <div className="rounded-xl p-3 border bg-gray-50 border-gray-200">
+    <div className="flex justify-between items-center mb-2">
+      <div className="flex items-center gap-1.5">
+        <Clock size={12} className={sla.exceeded ? "text-red-500" : sla.mode === "paused" ? "text-purple-500" : "text-gray-500"}/>
+        <p className="text-[11px] font-bold text-gray-700">SLA</p>
+        {sla.mode === "paused" && (
+          <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">En pause</span>
         )}
+        {sla.mode === "terminal" && (
+          <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">Clôturé</span>
+        )}
+      </div>
+
+      {/* Label selon mode */}
+      {sla.mode === "terminal" && (
+        <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : "text-emerald-700"}`}>
+          {sla.exceeded
+            ? `Dépassé de ${sla.diffH}h ${sla.diffM}m`
+            : `Respecté ✓`}
+        </span>
+      )}
+      {sla.mode === "paused" && (
+        <span className="text-[11px] font-bold text-purple-600">
+          ⏸ {sla.diffH}h {sla.diffM}m figé
+        </span>
+      )}
+      {sla.mode === "active" && (
+        <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : sla.pct > 50 ? "text-emerald-700" : sla.pct > 20 ? "text-amber-600" : "text-red-600"}`}>
+          {sla.exceeded ? `⚠ Dépassé de ${sla.diffH}h ${sla.diffM}m` : `${sla.diffH}h ${sla.diffM}m restants`}
+        </span>
+      )}
+    </div>
+
+    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
+      <div
+        className={`h-1.5 rounded-full transition-all ${
+          sla.mode === "terminal"
+            ? sla.exceeded ? "bg-red-400" : "bg-emerald-500"
+            : sla.mode === "paused"
+            ? "bg-purple-400"
+            : sla.exceeded ? "bg-red-500" : sla.pct > 50 ? "bg-emerald-500" : sla.pct > 20 ? "bg-amber-500" : "bg-red-500"
+        }`}
+        style={{ width: `${Math.round(sla.pct)}%` }}
+      />
+    </div>
+
+    <p className="text-[10px] text-gray-400">
+      Limite : {sla.deadline.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+      {" "}à {sla.deadline.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+    </p>
+  </div>
+)}
 
         {/* Status selector */}
         <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-gray-100">

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Lock, Paperclip, X } from "lucide-react";
 
 export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
+  const [solution, setSolution] = useState(""); // ← AJOUTÉ
   const [note, setNote] = useState("");
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
@@ -33,10 +34,24 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
           </div>
         </div>
 
-        {/* Note */}
+        {/* ← AJOUTÉ : Solution obligatoire */}
         <div>
           <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
-            Note de fermeture (obligatoire)
+            Solution <span className="text-red-400">*</span>
+          </label>
+          <textarea
+            rows={4}
+            value={solution}
+            onChange={e => setSolution(e.target.value)}
+            placeholder="Décrivez la solution apportée..."
+            className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 resize-none focus:outline-none focus:border-blue-400 leading-relaxed"
+          />
+        </div>
+
+        {/* Note — rendue optionnelle ← MODIFIÉ */}
+        <div>
+          <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+            Note de fermeture <span className="text-gray-400 font-normal">(optionnelle)</span>
           </label>
           <textarea
             rows={3}
@@ -47,13 +62,12 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
           />
         </div>
 
-        {/* Pièces jointes */}
+        {/* Pièces jointes — inchangé */}
         <div>
           <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
             Pièces jointes (optionnel)
           </label>
 
-          {/* Liste des fichiers sélectionnés */}
           {files.length > 0 && (
             <div className="flex flex-col gap-1 mb-2">
               {files.map((f, i) => (
@@ -104,8 +118,8 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
             Annuler
           </button>
           <button
-            onClick={() => onConfirm(note, files)}
-            disabled={loading || !note.trim()}
+            onClick={() => onConfirm(note, files, solution)} // ← MODIFIÉ
+            disabled={loading || !solution.trim()} // ← MODIFIÉ
             className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-50 cursor-pointer transition flex items-center gap-2"
           >
             <Lock size={13} />

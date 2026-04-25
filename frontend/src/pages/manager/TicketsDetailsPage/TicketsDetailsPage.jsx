@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import {
+  MdArrowBack, MdEmail, MdBusiness, MdWork, MdPhone,
+  MdLocationOn, MdTimer, MdCheckCircle, MdPerson,
+  MdExpandMore, MdSwapHoriz,
+} from "react-icons/md";
+import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG, IMPACT_CONFIG, URGENCY_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
 
 const TicketDetailPage = () => {
   const { id } = useParams();
@@ -10,30 +17,20 @@ const TicketDetailPage = () => {
   const [ticket, setTicket] = useState(null);
   const [technicians, setTechnicians] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [showList, setShowList] = useState(false);
   const [selectedTech, setSelectedTech] = useState(null);
   const [techActiveTickets, setTechActiveTickets] = useState({});
-
-  // Modal State
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
 
-  useEffect(() => {
-    fetchTicket();
-    fetchTechnicians();
-  }, [id, sId]);
+  useEffect(() => { fetchTicket(); fetchTechnicians(); }, [id, sId]);
 
   const fetchTicket = async () => {
     try {
       const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
-      const data = await res.json();
-      setTicket(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      setTicket(await res.json());
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   const fetchTechnicians = async () => {
@@ -41,292 +38,403 @@ const TicketDetailPage = () => {
       const res = await fetch(`http://localhost:3001/api/tech/users/service/${sId}`);
       const data = await res.json();
       setTechnicians(data);
-
-      // Fetch active tickets count for each technician
       const activeMap = {};
-      await Promise.all(
-        data.map(async (tech) => {
-          try {
-            const countRes = await fetch(
-              `http://localhost:3001/api/manager/technician/${tech.id}/active-count`
-            );
-            if (countRes.ok) {
-              const countData = await countRes.json();
-              activeMap[tech.id] = countData.count ?? 0;
-            } else {
-              activeMap[tech.id] = 0;
-            }
-          } catch {
-            activeMap[tech.id] = 0;
-          }
-        })
-      );
+      await Promise.all(data.map(async (tech) => {
+        try {
+          const r = await fetch(`http://localhost:3001/api/manager/technician/${tech.id}/active-count`);
+          activeMap[tech.id] = r.ok ? (await r.json()).count ?? 0 : 0;
+        } catch { activeMap[tech.id] = 0; }
+      }));
       setTechActiveTickets(activeMap);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleAssign = async () => {
     if (!selectedTech) return;
-    const isUpdating = !!(ticket?.technician);
-    try {
-      const res = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          technicienId: selectedTech.id,
-          action: isUpdating ? "updated" : "assigned",
-          assigned_by: user.id,
-        }),
-      });
-
-      if (res.ok) {
-        setModalMessage(
-          `Ticket ${isUpdating ? "réassigné à" : "assigné à"} ${selectedTech.name} ${selectedTech.surname}`
-        );
-        setShowModal(true);
-      }
-    } catch (err) {
-      console.error(err);
+    const isUpdating = !!(ticket?.technician?.id);
+    const res = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        technicienId: selectedTech.id,
+        action: isUpdating ? "updated" : "assigned",
+        assigned_by: user.id,
+      }),
+    });
+    if (res.ok) {
+      setModalMessage(`Ticket ${isUpdating ? "réassigné à" : "assigné à"} ${selectedTech.name} ${selectedTech.surname}`);
+      setShowModal(true);
     }
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    navigate("/manager/tickets-service");
-  };
+  const handleCloseModal = () => { setShowModal(false); navigate("/manager/tickets-service"); };
 
-  const calculateSLA = () => {
-    if (!ticket?.sla_date_limite) return { pct: 0, depasse: false, text: "N/A" };
+  const calculateSLA = (t) => {
+    if (!t?.sla_date_limite) return null;
+    const PAUSED   = ["pending", "pending_supplier"];
+    const TERMINAL = ["resolved", "closed", "rejected"];
     const now = Date.now();
-    const due = new Date(ticket.sla_date_limite).getTime();
-    const debut = ticket.sla_date_debut ? new Date(ticket.sla_date_debut).getTime() : due - 24 * 3600000;
+    const due = new Date(t.sla_date_limite).getTime();
+    const debut = t.sla_date_debut ? new Date(t.sla_date_debut).getTime() : due - 24 * 3600000;
+    const window = due - debut;
+    if (TERMINAL.includes(t.status)) {
+      const closed = t.closed_at ? new Date(t.closed_at).getTime() : due;
+      const exceeded = closed > due;
+      const delta = Math.abs(closed - due);
+      const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
+      return { mode: "terminal", exceeded, text: exceeded ? `+${h}h ${m}m dépassé` : "Clôturé — respecté ✓", pct: exceeded ? 100 : Math.min(100, ((window - (due - closed)) / window) * 100) };
+    }
+    if (PAUSED.includes(t.status)) {
+      const elapsed = t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null;
+      const frozen = elapsed != null ? window - elapsed : Math.max(0, due - now);
+      const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+      return { mode: "paused", text: `⏸ ${h}h ${m}m figé`, pct: Math.min(100, ((window - frozen) / window) * 100) };
+    }
     const remaining = due - now;
-    const totalMs = due - debut;
-    const depasse = remaining <= 0;
-    const hours = Math.floor(Math.abs(remaining) / 3600000);
-    const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
-    return {
-      depasse,
-      text: depasse ? `+${hours}h ${minutes}m` : `${hours}h ${minutes}m`,
-      pct: Math.min(100, Math.max(0, (remaining / totalMs) * 100)),
-    };
+    const exceeded = remaining <= 0;
+    const abs = Math.abs(remaining);
+    const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
+    return { mode: "active", exceeded, text: exceeded ? `+${h}h ${m}m dépassé` : `${h}h ${m}m restantes`, pct: Math.min(100, Math.max(0, (remaining / window) * 100)) };
   };
 
-  if (loading) return <div className="p-20 text-center font-bold text-red-600">Chargement...</div>;
+  if (loading) return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", fontFamily: "Inter, sans-serif" }}>
+      <div style={{ width: 36, height: 36, border: "3px solid #e5e7eb", borderTop: "3px solid #3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
   const t = ticket;
-  const employee = t?.employee || t?.users_tickets_created_byTousers;
-  const assignedTech = t?.technician || null;
-  const isAssigned = !!assignedTech;
-  const sla = calculateSLA();
+  const employee = t.employee || t.users_tickets_created_byTousers;
+  const assignedTech = t.technician || null;
+  const isAssigned = !!(assignedTech?.id);
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const isTerminal = TERMINAL.includes(t.status);
+  const sla = calculateSLA(t);
+
+  const slaColor = !sla ? "#9ca3af"
+    : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
+    : sla.mode === "paused"   ? "#7c3aed"
+    : sla.exceeded            ? "#dc2626"
+    : sla.pct > 50            ? "#16a34a"
+    : sla.pct > 20            ? "#d97706"
+    : "#f97316";
 
   return (
-    <div className="relative min-h-screen bg-[#F8FAFC] p-6 md:p-10 font-sans">
+    <div style={{ fontFamily: "Inter, sans-serif", minHeight: "100%", padding: "40px 32px" }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }`}</style>
 
       {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10">
-          <div className="bg-white p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] max-w-sm w-full text-center border-t-8 border-red-600 animate-in zoom-in duration-300">
-            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(17,24,39,0.18)", backdropFilter: "blur(2px)" }}>
+          <div style={{ background: "#fff", borderRadius: 20, boxShadow: "0 24px 60px rgba(0,0,0,0.13)", maxWidth: 400, width: "100%", overflow: "hidden", animation: "fadeIn 0.2s ease" }}>
+            <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", padding: "28px 32px 24px", textAlign: "center" }}>
+              <div style={{ width: 52, height: 52, background: "rgba(255,255,255,0.2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                <MdCheckCircle style={{ fontSize: 26, color: "#fff" }} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#fff", margin: "0 0 4px", lineHeight: 1.3 }}>{modalMessage}</h3>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", margin: 0, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700 }}>Assignation confirmée</p>
             </div>
-            <h3 className="text-lg font-black mb-1 uppercase tracking-tight text-slate-900">{modalMessage}</h3>
-            <p className="text-red-600 font-black mb-6 italic uppercase text-[10px] tracking-[0.2em]">Status : Open</p>
-            <button onClick={handleCloseModal} className="w-full bg-black text-white py-4 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-red-600 transition shadow-lg">
-              Confirm
-            </button>
+            <div style={{ padding: "20px 24px 24px" }}>
+              <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px", textAlign: "center", lineHeight: 1.6 }}>
+                Que souhaitez-vous faire ensuite ?
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button
+                  onClick={handleCloseModal}
+                  style={{ padding: "12px 0", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", fontFamily: "Inter, sans-serif", background: "#3b82f6", color: "#fff", boxShadow: "0 2px 8px rgba(59,130,246,0.25)" }}
+                >
+                  Retour à la liste des tickets
+                </button>
+                <button
+                  onClick={() => { setShowModal(false); setShowList(false); setSelectedTech(null); fetchTicket(); }}
+                  style={{ padding: "12px 0", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "1.5px solid #e5e7eb", fontFamily: "Inter, sans-serif", background: "#fff", color: "#374151" }}
+                >
+                  Rester sur ce ticket
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* BACK */}
+      <button onClick={() => navigate(-1)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 24, padding: 0, fontFamily: "Inter, sans-serif" }}>
+        <MdArrowBack style={{ fontSize: 16 }} /> Retour aux tickets
+      </button>
 
-        {/* --- COLONNE EMPLOYE --- */}
-        <div className="lg:col-span-4">
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 sticky top-8">
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center text-white text-2xl font-black mb-4">
-                {employee?.name?.[0]}{employee?.surname?.[0]}
-              </div>
-              <h2 className="font-black text-slate-800 text-lg uppercase tracking-tighter">
-                {employee?.name} {employee?.surname}
-              </h2>
-              <p className="text-red-600 text-[10px] font-black uppercase mt-1">Requérant</p>
+      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, alignItems: "start" }}>
+
+        {/* ── COLONNE GAUCHE : PROFIL ── */}
+        <div style={{ alignSelf: "start", position: "sticky", top: 0 }}><div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div style={{ padding: "28px 24px", borderBottom: "1px solid #f3f4f6", textAlign: "center" }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#eff6ff", border: "2px solid #dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: "#3b82f6", margin: "0 auto 14px" }}>
+              {employee?.name?.[0]}{employee?.surname?.[0]}
             </div>
-            <div className="space-y-4 border-t border-slate-50 pt-6">
-              <ProfileItem label="Email" value={employee?.email} />
-              <ProfileItem label="Département" value={employee?.department} />
-              <ProfileItem label="Poste" value={employee?.job_title} />
-              <ProfileItem label="Bureau" value={employee?.office} />
-              <ProfileItem label="Contact" value={employee?.phone} />
-            </div>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: "0 0 8px" }}>{employee?.name} {employee?.surname}</h2>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", background: "#eff6ff", padding: "4px 12px", borderRadius: 99, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              {employee?.role || "Employé"}
+            </span>
           </div>
+          <div style={{ padding: "16px 24px" }}>
+            {[
+              { icon: <MdEmail style={{ fontSize: 15, color: "#9ca3af" }} />, label: "Email", value: employee?.email },
+              { icon: <MdBusiness style={{ fontSize: 15, color: "#9ca3af" }} />, label: "Département", value: employee?.department },
+              { icon: <MdWork style={{ fontSize: 15, color: "#9ca3af" }} />, label: "Poste", value: employee?.job_title },
+              { icon: <MdPhone style={{ fontSize: 15, color: "#9ca3af" }} />, label: "Contact", value: employee?.phone },
+              { icon: <MdLocationOn style={{ fontSize: 15, color: "#9ca3af" }} />, label: "Bureau", value: employee?.office },
+            ].map(({ icon, label, value }, i, arr) => (
+              <div key={label} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 0", borderBottom: i < arr.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                <div style={{ marginTop: 2, flexShrink: 0 }}>{icon}</div>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>{label}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#111827", margin: 0 }}>{value || "—"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div></div>
+
+        {/* ── COLONNE DROITE ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* CARD PRINCIPALE */}
+          <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+
+            {/* Header */}
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #f3f4f6", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 4px" }}>Référence Ticket</p>
+                <h1 style={{ fontSize: 18, fontWeight: 800, color: "#111827", margin: 0 }}>#{id} — {t.title}</h1>
+              </div>
+            <Pill config={STATUS_CONFIG} value={t.status} />
+            </div>
+
+            {/* Description */}
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px" }}>Description de l'incident</p>
+              <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, padding: "14px 18px", fontSize: 14, color: "#374151", lineHeight: 1.7, fontStyle: "italic" }}>
+                {t.description}
+              </div>
+            </div>
+
+            {/* Specs table */}
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 14px" }}>Informations du ticket</p>
+              <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#f9f6f2", borderBottom: "1px solid #e8e4de" }}>
+                      {["Priorité", "Catégorie", "Service", "Impact", "Urgence", "Date Création"].map((col, i) => (
+                        <th key={i} style={{ padding: "10px 16px", fontSize: 10, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "left", whiteSpace: "nowrap" }}>{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ padding: "14px 16px" }}><Pill config={PRIORITY_CONFIG} value={t.priority} /></td>
+<td style={{ padding: "14px 16px" }}><Pill config={CATEGORY_CONFIG} value={t.category} /></td>
+
+                     <td style={{ padding: "14px 16px", fontSize: 13, color: "#374151", fontWeight: 500 }}>{t.service || "IT Support"}</td>
+                      <td style={{ padding: "14px 16px" }}><Pill config={IMPACT_CONFIG} value={t.impact} /></td>
+<td style={{ padding: "14px 16px" }}><Pill config={URGENCY_CONFIG} value={t.urgency} /></td>               <td style={{ padding: "14px 16px", fontSize: 13, color: "#374151", fontWeight: 500 }}>{new Date(t.createdAt || t.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SLA */}
+            {sla && (
+              <div style={{ padding: "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                    <MdTimer style={{ fontSize: 15, color: slaColor }} />
+                    Temps de résolution (SLA)
+                    {sla.mode === "paused" && <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "#ede9fe", padding: "2px 8px", borderRadius: 99 }}>En pause</span>}
+                    {sla.mode === "terminal" && <span style={{ fontSize: 10, fontWeight: 700, color: "#6b7280", background: "#f3f4f6", padding: "2px 8px", borderRadius: 99 }}>Clôturé</span>}
+                  </p>
+                  {sla.mode === "active" && sla.exceeded && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "3px 10px", borderRadius: 99, border: "1px solid #fecaca" }}>Dépassement détecté</span>
+                  )}
+                </div>
+                <div style={{ background: "#f3f4f6", height: 6, borderRadius: 99, marginBottom: 12, overflow: "hidden" }}>
+                  <div style={{ width: `${Math.round(sla.pct)}%`, background: slaColor, height: "100%", borderRadius: 99, transition: "width 1s ease" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: slaColor, margin: 0 }}>{sla.text}</p>
+                  <p style={{ fontSize: 11, color: "#9ca3af", fontWeight: 500, margin: 0 }}>
+                    Limite : {t.sla_date_limite ? new Date(t.sla_date_limite).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}
+                  </p>
+                </div>
+              </div>
+            )}
+            {/* ── NOTE DE REDIRECTION ── */}
+{t.redirect_note && (
+  <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>
+      Ticket redirigé
+    </p>
+    <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {t.service && (
+        <div style={{ fontSize: 13, color: '#374151' }}>
+          <span style={{ fontWeight: 700, color: '#6b21a8' }}>Service : </span>
+          {t.service}
         </div>
+      )}
+      {t.technician && (
+        <div style={{ fontSize: 13, color: '#374151' }}>
+          <span style={{ fontWeight: 700, color: '#6b21a8' }}>Technicien : </span>
+          {t.technician.name} {t.technician.surname}
+        </div>
+      )}
+      <div style={{ fontSize: 13, color: '#374151', borderTop: '1px solid #e9d5ff', paddingTop: 8, marginTop: 4 }}>
+  <span style={{ fontWeight: 700, color: '#6b21a8' }}>Raison : </span>
+  {t.redirect_note}
+</div>
 
-        {/* --- COLONNE TICKET --- */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 md:p-10">
-            <div className="flex justify-between items-start mb-8">
+{/* ← date de redirection */}
+{t.redirect_note && t.redirected_at && (
+  <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 6 }}>
+    <span style={{ fontWeight: 700, color: '#a855f7' }}>Redirigé le : </span>
+    {new Date(t.redirected_at).toLocaleDateString("fr-FR", {
+      day: "numeric", month: "short", year: "numeric",
+    })}{" "}à{" "}
+    {new Date(t.redirected_at).toLocaleTimeString("fr-FR", {
+      hour: "2-digit", minute: "2-digit",
+    })}
+  </div>
+)}
+    </div>
+  </div>
+)}
+
+            {/* Footer : technicien assigné + dates + bouton */}
+            <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               <div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">#{id}</span>
-                <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">{t.title}</h1>
-              </div>
-              <span className="px-4 py-2 rounded-xl text-[10px] font-black uppercase border bg-blue-50 text-blue-600 border-blue-100">
-                {t.status}
-              </span>
-            </div>
-
-            <div className="mb-10">
-              <h4 className="text-[10px] font-black text-red-600 uppercase mb-3 italic tracking-widest">Description de l'incident</h4>
-              <p className="text-slate-600 bg-slate-50/50 p-6 rounded-2xl border border-slate-100 italic leading-relaxed">
-                "{t.description}"
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
-              <SpecBox label="Priorité" value={t.priority} highlight />
-              <SpecBox label="Impact" value={t.impact} />
-              <SpecBox label="Urgence" value={t.urgency} />
-              <SpecBox label="Catégorie" value={t.category} />
-              <SpecBox label="Service" value={t.service} />
-              <SpecBox label="Date" value={new Date(t.createdAt || t.created_at).toLocaleDateString()} />
-            </div>
-
-            <div className="p-6 rounded-3xl border bg-slate-50 border-slate-100 mb-10">
-              <div className="flex justify-between text-[10px] font-black uppercase mb-3 text-slate-500">
-                <span>Temps de résolution (SLA)</span>
-                <span className={sla.depasse ? "text-red-500 animate-pulse" : ""}>{sla.text}</span>
-              </div>
-              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div className={`h-full ${sla.depasse ? "bg-red-400" : "bg-emerald-400"}`} style={{ width: `${100 - sla.pct}%` }} />
-              </div>
-            </div>
-
-            {/* Expert assigné + bouton conditionnel */}
-            <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Expert Assigné</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 6px" }}>Technicien assigné</p>
                 {isAssigned ? (
-                  <p className="font-bold text-slate-800">{assignedTech.name} {assignedTech.surname}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <MdPerson style={{ fontSize: 16, color: "#3b82f6" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{assignedTech.name} {assignedTech.surname}</span>
+                  </div>
                 ) : (
-                  <p className="font-bold text-orange-400 italic text-sm">Non assigné</p>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#f59e0b", fontStyle: "italic" }}>Non assigné</span>
+                )}
+                {t.assigned_at && (
+                  <p style={{ fontSize: 11, color: "#9ca3af", margin: "6px 0 0" }}>
+                    Assigné le : {new Date(t.assigned_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
+                )}
+                {t.closed_at && (
+                  <p style={{ fontSize: 11, color: "#9ca3af", margin: "4px 0 0" }}>
+                    Clôturé le : {new Date(t.closed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+                  </p>
                 )}
               </div>
               <button
-                onClick={() => { setShowList(!showList); setSelectedTech(null); }}
-                className={`w-full md:w-auto px-7 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition ${
-                  showList
-                    ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                    : isAssigned
-                    ? "bg-red-500 text-white hover:bg-red-600"
-                    : "bg-emerald-500 text-white hover:bg-emerald-600"
-                }`}
+                onClick={() => { if (!isTerminal) { setShowList(!showList); setSelectedTech(null); } }}
+                disabled={isTerminal}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "11px 22px", borderRadius: 12, fontSize: 13, fontWeight: 700,
+                  cursor: isTerminal ? "not-allowed" : "pointer", border: "none", fontFamily: "Inter, sans-serif",
+                  background: isTerminal ? "#f3f4f6" : showList ? "#f3f4f6" : isAssigned ? "#fff7ed" : "#3b82f6",
+                  color: isTerminal ? "#9ca3af" : showList ? "#6b7280" : isAssigned ? "#ea580c" : "#fff",
+                  boxShadow: isTerminal || showList || isAssigned ? "none" : "0 2px 8px rgba(59,130,246,0.25)",
+                  outline: isAssigned && !showList && !isTerminal ? "1.5px solid #ea580c" : "none",
+                  transition: "all 0.2s",
+                  opacity: isTerminal ? 0.6 : 1,
+                }}
               >
-                {showList ? "Annuler" : isAssigned ? "Modifier l'expert" : "Assigner le ticket"}
+                <MdSwapHoriz style={{ fontSize: 17 }} />
+                {isTerminal ? "Ticket clôturé" : showList ? "Annuler" : isAssigned ? "Modifier l'expert" : "Assigner le ticket"}
               </button>
             </div>
           </div>
 
-          {/* ── LISTE DÉROULANTE TECHNICIENS ── */}
+          {/* ── PANNEAU ASSIGNATION ── */}
           {showList && (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", animation: "fadeIn 0.2s ease" }}>
 
-              {/* En-tête */}
-              <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              {/* Header panneau */}
+              <div style={{ padding: "16px 24px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 10 }}>
+                <MdPerson style={{ fontSize: 16, color: "#3b82f6" }} />
+                <p style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>
                   {isAssigned ? "Choisir un nouvel expert" : "Choisir un expert à assigner"}
                 </p>
               </div>
 
-              <ul className="divide-y divide-slate-50">
-                {technicians.map((tech) => {
+              {/* Liste techniciens */}
+              <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                {technicians.map((tech, idx) => {
                   const isSelected = selectedTech?.id === tech.id;
-                  const isCurrentlyAssigned = assignedTech?.id === tech.id;
+                  const isCurrent = assignedTech?.id === tech.id;
                   const activeCount = techActiveTickets[tech.id] ?? 0;
+                  const loadColor = activeCount === 0 ? { color: "#16a34a", bg: "#f0fdf4" } : activeCount <= 3 ? { color: "#d97706", bg: "#fffbeb" } : { color: "#dc2626", bg: "#fef2f2" };
 
                   return (
-                    <li key={tech.id}>
-
-                      {/* ── ROW ── */}
+                    <li key={tech.id} style={{ borderBottom: idx < technicians.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                      {/* Row */}
                       <div
                         onClick={() => setSelectedTech(isSelected ? null : tech)}
-                        className={`flex items-center justify-between px-5 py-3.5 cursor-pointer transition-colors
-                          ${isSelected ? "bg-indigo-50/70" : "hover:bg-slate-50"}`}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "14px 24px", cursor: "pointer",
+                          background: isSelected ? "#eff6ff" : "transparent",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#f9fafb"; }}
+                        onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
                       >
-                        <div className="flex items-center gap-3">
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                           {/* Avatar */}
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0
-                            ${isSelected ? "bg-indigo-100 text-indigo-500" : "bg-slate-100 text-slate-500"}`}>
+                          <div style={{ width: 38, height: 38, borderRadius: "50%", background: isSelected ? "#dbeafe" : "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: isSelected ? "#3b82f6" : "#6b7280", flexShrink: 0 }}>
                             {tech.name?.[0]}{tech.surname?.[0]}
                           </div>
                           <div>
-                            <p className={`font-semibold text-sm ${isSelected ? "text-indigo-600" : "text-slate-700"}`}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#1d4ed8" : "#111827", margin: "0 0 2px", display: "flex", alignItems: "center", gap: 6 }}>
                               {tech.name} {tech.surname}
-                              {isCurrentlyAssigned && (
-                                <span className="ml-2 text-[8px] bg-blue-100 text-blue-500 px-1.5 py-0.5 rounded-full uppercase font-bold align-middle">
-                                  Actuel
-                                </span>
-                              )}
+                              {isCurrent && <span style={{ fontSize: 9, fontWeight: 700, color: "#3b82f6", background: "#eff6ff", padding: "2px 7px", borderRadius: 99, textTransform: "uppercase" }}>Actuel</span>}
                             </p>
-                            <p className="text-[10px] text-slate-400">{tech.job_title || "Technicien"}</p>
+                            <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>{tech.job_title || "Technicien"}</p>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3">
-                          {/* Badge tickets actifs */}
-                          <span className={`text-[9px] font-semibold px-2.5 py-1 rounded-full
-                            ${activeCount === 0
-                              ? "bg-emerald-50 text-emerald-500"
-                              : activeCount <= 3
-                              ? "bg-amber-50 text-amber-500"
-                              : "bg-red-50 text-red-400"
-                            }`}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 99, background: loadColor.bg, color: loadColor.color }}>
                             {activeCount} actif{activeCount !== 1 ? "s" : ""}
                           </span>
-                          {/* Chevron */}
-                          <svg
-                            className={`w-4 h-4 transition-transform duration-200 ${isSelected ? "rotate-180 text-indigo-300" : "text-slate-200"}`}
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
+                          <MdExpandMore style={{ fontSize: 18, color: isSelected ? "#3b82f6" : "#d1d5db", transform: isSelected ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
                         </div>
                       </div>
 
-                      {/* ── DÉTAIL SOUS LA LIGNE ── */}
+                      {/* Détail étendu */}
                       {isSelected && (
-                        <div className="bg-indigo-50/40 border-t border-indigo-100/60 px-5 py-5">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-
-                            {/* Infos */}
-                            <div className="flex flex-wrap gap-x-8 gap-y-3">
-                              <DetailField label="Email" value={tech.email} />
-                              <DetailField label="Contact" value={tech.phone} />
-                              <DetailField label="Bureau" value={tech.office} />
-<DetailField
-  value={`${activeCount} Tickets actif${activeCount !== 1 ? "s" : ""}`}
-  valueClass={
-    activeCount === 0
-      ? "text-emerald-500"
-      : activeCount <= 3
-      ? "text-amber-500"
-      : "text-red-400"
-  }
-/>
+                        <div style={{ background: "#eff6ff", borderTop: "1px solid #dbeafe", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", animation: "fadeIn 0.15s ease" }}>
+                          <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
+                            {[
+                              { label: "Email", value: tech.email },
+                              { label: "Contact", value: tech.phone },
+                              { label: "Bureau", value: tech.office },
+                            ].map(({ label, value }) => (
+                              <div key={label}>
+                                <p style={{ fontSize: 9, fontWeight: 700, color: "#93c5fd", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>{label}</p>
+                                <p style={{ fontSize: 12, fontWeight: 600, color: "#1e40af", margin: 0 }}>{value || "—"}</p>
+                              </div>
+                            ))}
+                            <div>
+                              <p style={{ fontSize: 9, fontWeight: 700, color: "#93c5fd", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 2px" }}>Charge</p>
+                              <p style={{ fontSize: 12, fontWeight: 700, color: loadColor.color, margin: 0 }}>{activeCount} ticket{activeCount !== 1 ? "s" : ""} actif{activeCount !== 1 ? "s" : ""}</p>
                             </div>
-
-                            {/* Bouton confirmer */}
-                            <button
-                              onClick={handleAssign}
-                              className="whitespace-nowrap bg-indigo-500 text-white px-7 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-600 transition shadow-sm"
-                            >
-                              {isAssigned ? "Confirmer la modification" : "Confirmer l'assignation"}
-                            </button>
                           </div>
+                          <button
+                            onClick={handleAssign}
+                            style={{ padding: "11px 24px", borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none", fontFamily: "Inter, sans-serif", background: "#3b82f6", color: "#fff", boxShadow: "0 2px 8px rgba(59,130,246,0.3)", whiteSpace: "nowrap", transition: "background 0.2s" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#2563eb"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#3b82f6"}
+                          >
+                            {isAssigned ? "Confirmer la modification" : "Confirmer l'assignation"}
+                          </button>
                         </div>
                       )}
                     </li>
@@ -341,30 +449,5 @@ const TicketDetailPage = () => {
     </div>
   );
 };
-
-/* ── Small helper components ── */
-
-const ProfileItem = ({ label, value }) => (
-  <div className="border-b border-slate-50 pb-3 last:border-0">
-    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
-    <p className="text-xs font-bold text-slate-700">{value || "—"}</p>
-  </div>
-);
-
-const SpecBox = ({ label, value, highlight }) => (
-  <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
-    <p className="text-[8px] font-black text-slate-400 uppercase mb-2">{label}</p>
-    <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${highlight ? "bg-red-50 text-red-500" : "text-slate-700 bg-slate-50"}`}>
-      {value || "N/A"}
-    </span>
-  </div>
-);
-
-const DetailField = ({ label, value, valueClass = "text-slate-600" }) => (
-  <div>
-    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
-    <p className={`text-xs font-semibold ${valueClass}`}>{value || "N/A"}</p>
-  </div>
-);
 
 export default TicketDetailPage;

@@ -5,12 +5,30 @@ const getManagerStats = async (req, res) => {
   try {
     const managerId = parseInt(req.params.managerId);
 
+    // Parse filter params: year, month (1-12)
+    const filterYear = req.query.year ? parseInt(req.query.year) : null;
+    const filterMonth = req.query.month ? parseInt(req.query.month) : null; // 1=Jan, 12=Dec
+
+    // Build date range for filtering
+    let dateFilter = {};
+    if (filterYear && filterMonth) {
+      // Filter by specific month of a year
+      const startDate = new Date(filterYear, filterMonth - 1, 1);
+      const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59); // last day of month
+      dateFilter = { created_at: { gte: startDate, lte: endDate } };
+    } else if (filterYear) {
+      // Filter by full year
+      const startDate = new Date(filterYear, 0, 1);
+      const endDate = new Date(filterYear, 11, 31, 23, 59, 59);
+      dateFilter = { created_at: { gte: startDate, lte: endDate } };
+    }
+
     // 1. Get Manager's Service Info
     const manager = await prisma.users.findUnique({
       where: { id: managerId },
-      select: { 
+      select: {
         service_id: true,
-        services: { select: { name: true } } 
+        services: { select: { name: true } }
       }
     });
 
@@ -21,7 +39,7 @@ const getManagerStats = async (req, res) => {
     const sId = manager.service_id;
     const serviceName = manager.services.name;
 
-    // 2. Fetch all Enum Labels from DB to ensure charts show all possible states
+    // 2. Fetch all Enum Labels from DB
     const [dbStatuses, dbPriorities, dbCategories] = await Promise.all([
       prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'ticket_status_enum' ORDER BY enumsortorder`,
       prisma.$queryRaw`SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid WHERE pg_type.typname = 'priority_enum' ORDER BY enumsortorder`,
@@ -32,13 +50,14 @@ const getManagerStats = async (req, res) => {
     const allPriorities = dbPriorities.map(r => r.enumlabel);
     const allCategories = dbCategories.map(r => r.enumlabel);
 
-    // 3. Performance per Technician
+    // 3. Performance per Technician (filtered by date)
     const techPerformanceRaw = await prisma.users.findMany({
       where: { service_id: sId, role: 'technician' },
       select: {
         name: true,
         surname: true,
         tickets_tickets_assigned_toTousers: {
+          where: Object.keys(dateFilter).length ? dateFilter : undefined,
           select: { status: true },
         }
       }
@@ -47,22 +66,25 @@ const getManagerStats = async (req, res) => {
     const techPerformance = techPerformanceRaw.map(t => {
       const tickets = t.tickets_tickets_assigned_toTousers;
       const totalAssigned = tickets.length;
-      const resolved = tickets.filter(tk => tk.status === 'resolved' || tk.status === 'closed').length;
+      const resolved = tickets.filter(tk => tk.status === 'resolved').length;
       const rejected = tickets.filter(tk => tk.status === 'rejected').length;
+      const closed = tickets.filter(tk => tk.status === 'closed').length;
+      // Taux de résolution: resolved / total assigned (not including closed in numerator per requirement)
       const resolutionRate = totalAssigned > 0 ? (resolved / totalAssigned) * 100 : 0;
       return {
         name: `${t.name} ${t.surname}`,
         totalAssigned,
         resolu: resolved,
+        ferme: closed,
         rejete: rejected,
         resolutionRate: Math.round(resolutionRate)
       };
     });
 
-    // 4. Tickets by Status (Full DB Range)
+    // 4. Tickets by Status (filtered)
     const statusCounts = await prisma.tickets.groupBy({
       by: ['status'],
-      where: { service_id: sId },
+      where: { service_id: sId, ...dateFilter },
       _count: { id: true }
     });
 
@@ -71,10 +93,10 @@ const getManagerStats = async (req, res) => {
       return { name: label, value: found ? found._count.id : 0 };
     });
 
-    // 5. Tickets by Priority (Full DB Range)
+    // 5. Tickets by Priority (filtered)
     const priorityCounts = await prisma.tickets.groupBy({
       by: ['priority'],
-      where: { service_id: sId },
+      where: { service_id: sId, ...dateFilter },
       _count: { id: true }
     });
 
@@ -83,10 +105,10 @@ const getManagerStats = async (req, res) => {
       return { name: label, value: found ? found._count.id : 0 };
     });
 
-    // 6. Tickets by Category (Full DB Range)
+    // 6. Tickets by Category (filtered)
     const categoryCounts = await prisma.tickets.groupBy({
       by: ['category'],
-      where: { service_id: sId },
+      where: { service_id: sId, ...dateFilter },
       _count: { id: true }
     });
 
@@ -95,27 +117,40 @@ const getManagerStats = async (req, res) => {
       return { name: label, value: found ? found._count.id : 0 };
     });
 
-    // 7. SLA & Global Counts
-    const totalTickets = await prisma.tickets.count({ where: { service_id: sId } });
-    const resolvedCount = await prisma.tickets.count({ 
-        where: { service_id: sId, status: { in: ['resolved', 'closed'] } } 
+    // 7. SLA & Global Counts (filtered)
+    const totalTickets = await prisma.tickets.count({
+      where: { service_id: sId, ...dateFilter }
+    });
+
+    const resolvedCount = await prisma.tickets.count({
+      where: { service_id: sId, status: 'resolved', ...dateFilter }
     });
 
     const now = new Date();
     const overdueCount = await prisma.tickets.count({
-      where: { 
-        service_id: sId, 
-        sla_due_date: { lt: now }, 
-        status: { notIn: ['resolved', 'closed'] } 
+      where: {
+        service_id: sId,
+        sla_due_date: { lt: now },
+        status: { notIn: ['resolved', 'closed'] },
+        ...dateFilter
       }
     });
 
     const slaIn = totalTickets - overdueCount;
 
-    // 8. Tickets by Type (Incident vs Request)
+    // 8. Taux de résolution GLOBAL (tous les services, filtered)
+    const globalTotal = await prisma.tickets.count({
+      where: { ...dateFilter }
+    });
+    const globalResolved = await prisma.tickets.count({
+      where: { status: 'resolved', ...dateFilter }
+    });
+    const globalResolutionRate = globalTotal > 0 ? Math.round((globalResolved / globalTotal) * 100) : 0;
+
+    // 9. Tickets by Type (filtered)
     const typeStatsRaw = await prisma.tickets.groupBy({
       by: ['type'],
-      where: { service_id: sId },
+      where: { service_id: sId, ...dateFilter },
       _count: { id: true }
     });
     const typeStats = typeStatsRaw.map(t => ({
@@ -124,43 +159,82 @@ const getManagerStats = async (req, res) => {
       percentage: totalTickets > 0 ? Math.round((t._count.id / totalTickets) * 100) : 0
     }));
 
-    // 9. Monthly Stats (Full Year for the current year)
-    const currentYear = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
-    const startOfYear = new Date(currentYear, 0, 1);
-    const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
+    // 10. Monthly Stats — only show if filtering by year (or no filter = current year)
+    const currentYear = filterYear || new Date().getFullYear();
+    let monthlyStats = [];
 
-    const monthlyRaw = await prisma.tickets.findMany({
-      where: { 
-        service_id: sId, 
-        created_at: {
-          gte: startOfYear,
-          lte: endOfYear
-        }
-      },
-      select: { created_at: true }
-    });
+    if (!filterMonth) {
+      // Show full year breakdown only when not filtering by a specific month
+      const startOfYear = new Date(currentYear, 0, 1);
+      const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
 
-    const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+      const monthlyRaw = await prisma.tickets.findMany({
+        where: {
+          service_id: sId,
+          created_at: { gte: startOfYear, lte: endOfYear }
+        },
+        select: { created_at: true }
+      });
 
-    const monthlyGroups = {};
-    months.forEach(m => { monthlyGroups[m] = 0; });
+      const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+      const monthlyGroups = {};
+      months.forEach(m => { monthlyGroups[m] = 0; });
+      monthlyRaw.forEach(t => {
+        const monthIndex = new Date(t.created_at).getMonth();
+        monthlyGroups[months[monthIndex]]++;
+      });
+      monthlyStats = months.map(monthName => ({
+        month: monthName,
+        value: monthlyGroups[monthName]
+      }));
+    } else {
+      // When filtering by specific month: show daily breakdown
+      const daysInMonth = new Date(currentYear, filterMonth, 0).getDate();
+      const dailyRaw = await prisma.tickets.findMany({
+        where: {
+          service_id: sId,
+          created_at: {
+            gte: new Date(currentYear, filterMonth - 1, 1),
+            lte: new Date(currentYear, filterMonth - 1, daysInMonth, 23, 59, 59)
+          }
+        },
+        select: { created_at: true }
+      });
 
-    monthlyRaw.forEach(t => {
-      const monthIndex = new Date(t.created_at).getMonth();
-      const monthName = months[monthIndex];
-      monthlyGroups[monthName]++;
-    });
+      const dailyGroups = {};
+      for (let d = 1; d <= daysInMonth; d++) {
+        dailyGroups[d] = 0;
+      }
+      dailyRaw.forEach(t => {
+        const day = new Date(t.created_at).getDate();
+        dailyGroups[day]++;
+      });
+      monthlyStats = Object.entries(dailyGroups).map(([day, value]) => ({
+        month: `J${day}`,
+        value
+      }));
+    }
 
-    const monthlyStats = months.map(monthName => ({
-      month: monthName,
-      value: monthlyGroups[monthName]
-    }));
+    // 11. Fetch available years from DB for the filter dropdown
+    const yearsRaw = await prisma.$queryRaw`
+      SELECT DISTINCT EXTRACT(YEAR FROM created_at)::int AS year
+      FROM tickets
+      WHERE service_id = ${sId}
+      ORDER BY year DESC
+    `;
+    const availableYears = yearsRaw.map(r => r.year);
 
-    // Response
+    // Service-level resolution rate
+    const serviceResolutionRate = totalTickets > 0 ? Math.round((resolvedCount / totalTickets) * 100) : 0;
+
     res.json({
       serviceName,
       totalTickets,
-      resolutionRate: totalTickets > 0 ? Math.round((resolvedCount / totalTickets) * 100) : 0,
+      resolvedCount,
+      resolutionRate: serviceResolutionRate,
+      globalResolutionRate,
+      globalTotal,
+      globalResolved,
       slaStats: [
         { name: 'Respecté', value: slaIn },
         { name: 'Dépassé', value: overdueCount }
@@ -170,7 +244,9 @@ const getManagerStats = async (req, res) => {
       priorityStats,
       categoryStats,
       typeStats,
-      monthlyStats
+      monthlyStats,
+      availableYears,
+      filterApplied: { year: filterYear, month: filterMonth }
     });
 
   } catch (err) {
@@ -179,20 +255,16 @@ const getManagerStats = async (req, res) => {
   }
 };
 
-// ✅ Nombre de tickets actifs d'un technicien (statut != closed / resolved / rejected)
+// Active tickets count for a technician
 const getActiveTechnicianTicketsCount = async (req, res) => {
   try {
     const techId = parseInt(req.params.techId);
-    console.log("🔍 techId:", techId); // ← add this
-
     const count = await prisma.tickets.count({
       where: {
         assigned_to: techId,
         status: { notIn: ["closed", "resolved", "rejected"] }
       }
     });
-
-    console.log("✅ count for", techId, ":", count); // ← and this
     res.json({ count });
   } catch (err) {
     console.error("Active tickets count error:", err);

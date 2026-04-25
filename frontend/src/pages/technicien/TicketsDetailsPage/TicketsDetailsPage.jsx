@@ -36,27 +36,29 @@ const TicketDetailPage = () => {
   }, [id]);
 
   const handleTakeCharge = async () => {
-    setTaking(true);
-    try {
-      const response = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ technicienId: currentUser.id, action: "taken" }),
-      });
-      if (response.ok) {
-        const updated = await response.json();
-        setTicket(prev => ({
-          ...prev,
-          status: updated.status || 'in_progress',
-          technician: { id: currentUser.id, name: currentUser.name, surname: currentUser.surname }
-        }));
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setTaking(false);
+  setTaking(true);
+
+  try {
+    const response = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ technicienId: currentUser.id, action: "taken" }),
+    });
+
+    if (response.ok) {
+      // ✅ REFETCH DATA FROM BACKEND (BEST PRACTICE)
+      const refreshed = await fetch(`http://localhost:3001/api/tickets/${id}`);
+      const data = await refreshed.json();
+
+      setTicket(data);
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setTaking(false);
+  }
+};
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'Inter, sans-serif' }}>
@@ -66,32 +68,54 @@ const TicketDetailPage = () => {
   );
 
   const t = ticket;
+  const statusStyle = STATUS_STYLE[t.status] || STATUS_STYLE.open;
+const priorityStyle = PRIORITY_STYLE[t.priority] || PRIORITY_STYLE.low;
   const employee = t.employee || t.users_tickets_created_byTousers;
   const isAssigned = !!(t.technician?.id || t.technicienId);
   const isAssignedToMe = (t.technician?.id === currentUser?.id) || (t.technicienId === currentUser?.id);
 
   const calculateSLA = () => {
-    if (!t.sla_date_limite) return { pct: 0, depasse: false, text: "N/A" };
-    const now = Date.now();
-    const due = new Date(t.sla_date_limite).getTime();
-    const debut = t.sla_date_debut ? new Date(t.sla_date_debut).getTime() : due - 24 * 3600000;
-    const remaining = due - now;
-    const totalMs = due - debut;
-    const depasse = remaining <= 0;
-    const hours = Math.floor(Math.abs(remaining) / 3600000);
-    const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
-    return {
-      depasse,
-      text: depasse ? `+${hours}h ${minutes}m dépassé` : `${hours}h ${minutes}m restantes`,
-      pct: Math.min(100, Math.max(0, (remaining / totalMs) * 100)),
-    };
-  };
+  if (!t.sla_date_limite) return null;
 
-  const sla = calculateSLA();
-  const slaColor = sla.depasse ? '#dc2626' : sla.pct < 25 ? '#f97316' : sla.pct < 60 ? '#d97706' : '#16a34a';
-  const statusStyle = STATUS_STYLE[t.status] || { label: t.status, color: '#6b7280', bg: '#f3f4f6' };
-  const priorityStyle = PRIORITY_STYLE[t.priority] || { label: t.priority, color: '#6b7280', bg: '#f3f4f6' };
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const now      = Date.now();
+  const due      = new Date(t.sla_date_limite).getTime();
+  const debut    = t.sla_date_debut ? new Date(t.sla_date_debut).getTime() : due - 24 * 3600000;
+  const window   = due - debut;
 
+  if (TERMINAL.includes(t.status)) {
+    const closed   = t.closed_at ? new Date(t.closed_at).getTime() : due;
+    const exceeded = closed > due;
+    const delta    = Math.abs(closed - due);
+    const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
+    return { mode: "terminal", exceeded, text: exceeded ? `+${h}h ${m}m dépassé` : "Clôturé — respecté ✓", pct: exceeded ? 100 : Math.min(100, ((window - (due - closed)) / window) * 100) };
+  }
+
+  if (PAUSED.includes(t.status)) {
+    const elapsed  = t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null;
+    const frozen   = elapsed != null ? window - elapsed : Math.max(0, due - now);
+    const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+    return { mode: "paused", text: `⏸ ${h}h ${m}m figé`, pct: Math.min(100, ((window - frozen) / window) * 100) };
+  }
+
+  const remaining = due - now;
+  const exceeded  = remaining <= 0;
+  const abs       = Math.abs(remaining);
+  const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
+  return { mode: "active", exceeded, text: exceeded ? `+${h}h ${m}m dépassé` : `${h}h ${m}m restantes`, pct: Math.min(100, Math.max(0, (remaining / window) * 100)) };
+};
+
+const sla = calculateSLA();
+
+
+   const slaColor = !sla ? "#9ca3af"
+  : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
+  : sla.mode === "paused"   ? "#7c3aed"
+  : sla.exceeded            ? "#dc2626"
+  : sla.pct > 50            ? "#16a34a"
+  : sla.pct > 20            ? "#d97706"
+  : "#f97316";
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh', padding: '40px 32px' }}>
 
@@ -201,7 +225,7 @@ const TicketDetailPage = () => {
                 fontSize: 14, color: '#374151', lineHeight: 1.7,
                 fontStyle: 'italic'
               }}>
-                "{t.description}"
+                {t.description}
               </div>
             </div>
 
@@ -242,53 +266,83 @@ const TicketDetailPage = () => {
             </div>
 
             {/* SLA */}
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <MdTimer style={{ fontSize: 15, color: slaColor }} />
-                  Temps de résolution (SLA)
-                </p>
-                {sla.depasse && (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '3px 10px', borderRadius: 99, border: '1px solid #fecaca' }}>
-                    Dépassement détecté
-                  </span>
-                )}
-              </div>
+          
+{sla && (
+  <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <MdTimer style={{ fontSize: 15, color: slaColor }} />
+        Temps de résolution (SLA)
+        {sla.mode === "paused" && (
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#ede9fe', padding: '2px 8px', borderRadius: 99 }}>En pause</span>
+        )}
+        {sla.mode === "terminal" && (
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: 99 }}>Clôturé</span>
+        )}
+      </p>
+      {sla.mode === "active" && sla.exceeded && (
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '3px 10px', borderRadius: 99, border: '1px solid #fecaca' }}>
+          Dépassement détecté
+        </span>
+      )}
+    </div>
 
-              <div style={{ background: '#f3f4f6', height: 6, borderRadius: 99, marginBottom: 12, overflow: 'hidden' }}>
-                <div style={{
-                  width: sla.depasse ? '100%' : `${100 - sla.pct}%`,
-                  background: slaColor, height: '100%', borderRadius: 99,
-                  transition: 'width 1s ease'
-                }} />
-              </div>
+    <div style={{ background: '#f3f4f6', height: 6, borderRadius: 99, marginBottom: 12, overflow: 'hidden' }}>
+      <div style={{ width: `${Math.round(sla.pct)}%`, background: slaColor, height: '100%', borderRadius: 99, transition: 'width 1s ease' }} />
+    </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <p style={{ fontSize: 20, fontWeight: 800, color: slaColor, margin: 0 }}>{sla.text}</p>
-                <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, margin: 0 }}>
-                  Limite : {t.sla_date_limite ? new Date(t.sla_date_limite).toLocaleString('fr-DZ') : 'N/A'}
-                </p>
-              </div>
-            </div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <p style={{ fontSize: 20, fontWeight: 800, color: slaColor, margin: 0 }}>{sla.text}</p>
+      <p style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500, margin: 0 }}>
+        Limite : {t.sla_date_limite ? new Date(t.sla_date_limite).toLocaleString('fr-DZ') : 'N/A'}
+      </p>
+    </div>
+  </div>
+)}
 
             {/* Footer : technicien + bouton */}
             <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px 0' }}>
-                  Technicien assigné
-                </p>
-                {isAssignedToMe ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <MdCheckCircle style={{ fontSize: 16, color: '#16a34a' }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>Vous gérez ce ticket</span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
-                    {t.technician?.name ? `${t.technician.name} ${t.technician.surname}` : "En attente d'expert"}
-                  </span>
-                )}
-              </div>
+  <p style={{
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    margin: '0 0 6px 0'
+  }}>
+    Technicien assigné
+  </p>
 
+  {isAssignedToMe ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <MdCheckCircle style={{ fontSize: 16, color: '#16a34a' }} />
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>
+        Vous gérez ce ticket
+      </span>
+    </div>
+  ) : (
+    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+      {t.technician?.name
+        ? `${t.technician.name} ${t.technician.surname}`
+        : "En attente d'expert"}
+    </span>
+  )}
+
+  {/* ✅ ADD DATE HERE (clean place) */}
+  {t.assigned_at && (
+    <p style={{
+      fontSize: 11,
+      color: '#9ca3af',
+      marginTop: 6
+    }}>
+     Assigné le : {new Date(t.assigned_at).toLocaleDateString('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric'
+})}   </p>
+  )}
+</div>
               <button
                 onClick={handleTakeCharge}
                 disabled={taking || isAssigned}
@@ -306,6 +360,7 @@ const TicketDetailPage = () => {
                 onMouseLeave={e => { if (!isAssigned) e.currentTarget.style.background = '#3b82f6'; }}
               >
                 {taking ? "Traitement..." : isAssigned ? "Déjà Assigné" : "Prendre en charge"}
+               
               </button>
             </div>
           </div>

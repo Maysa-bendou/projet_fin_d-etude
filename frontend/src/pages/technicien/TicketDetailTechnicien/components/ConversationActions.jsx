@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import {
   MessageSquare, CheckCircle2, Forward, Lock, Send, ShieldCheck,
   Info, AlertTriangle, User, Layers, Tag, Paperclip, X
@@ -13,7 +13,106 @@ const CATEGORY_FR = {
   hardware: "Matériel", software: "Logiciels", network: "Réseau",
   access: "Accès", security: "Sécurité", account: "Compte",
 };
+function ConfirmedCloseForm({ ticket, onClose, closing, conversation }) {
+  const [solution, setSolution] = useState(ticket.solution ?? "");
+  const [note, setNote] = useState("");
 
+  // Trouver les fichiers attachés au message de type "solution"
+  const solutionFiles = conversation
+    .filter(c => c.type === "solution")
+    .flatMap(c => c.files ?? []);
+    const handleDeleteFile = async (fileId) => {
+  try {
+    await fetch(`http://localhost:3001/api/tech/attachments/${fileId}`, {
+      method: "DELETE",
+    });
+
+    // refresh UI
+    window.location.reload(); // simple (ou mieux : refetch)
+  } catch (err) {
+    console.error(err);
+    alert("Erreur suppression fichier");
+  }
+};
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-700 flex items-center gap-2">
+        <CheckCircle2 size={13}/> L'employé a confirmé la résolution — vous pouvez fermer le ticket.
+      </div>
+
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+          Solution enregistrée <span className="text-gray-400 font-normal">(modifiable)</span>
+        </label>
+        <textarea
+          rows={4}
+          value={solution}
+          onChange={e => setSolution(e.target.value)}
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 resize-none focus:outline-none focus:border-green-400 leading-relaxed"
+          placeholder="Décrivez la solution..."
+        />
+      </div>
+
+      {/* Pièces jointes de la solution */}
+      {solutionFiles.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold text-gray-500 mb-1.5">
+            Pièces jointes de la solution
+          </p>
+          <div className="flex flex-col gap-1">
+            {solutionFiles.map((f, i) => (
+  <div
+    key={f.id || i}
+    className="flex items-center justify-between gap-2 text-[11px] bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5"
+  >
+    <a
+      href={`http://localhost:3001/${f.filePath}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 text-blue-600"
+    >
+      <Paperclip size={11}/>
+      {f.fileName}
+    </a>
+
+    {/* bouton supprimer */}
+    <button
+      onClick={() => handleDeleteFile(f.id)}
+      className="text-red-500 hover:text-red-700"
+    >
+      <X size={12}/>
+    </button>
+  </div>
+))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+          Note de fermeture <span className="text-gray-400 font-normal">(optionnelle)</span>
+        </label>
+        <textarea
+          rows={2}
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Ex : Confirmé par l'employé le 25/04..."
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 resize-none focus:outline-none focus:border-gray-400 leading-relaxed"
+        />
+      </div>
+
+      <button
+        onClick={() => onClose(note, [], solution)}
+        disabled={closing || !solution.trim()}
+        className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 transition"
+      >
+        <Lock size={13}/>
+        {closing ? "Fermeture..." : "Fermer & enregistrer la solution"}
+      </button>
+    </div>
+  );
+}
 export default function ConversationActions({
   conversation, empInitials, empName, currentUser, convEndRef,
   activeTab, respondMode, solution, infoMsg, solutionFiles, infoFiles,
@@ -261,48 +360,49 @@ export default function ConversationActions({
           )}
 
           {/* ── CLOSE tab ── */}
-          {activeTab === "close" && (
-            isClosed ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold">
-                  <Lock size={15}/> Fermé
-                </div>
-                {ticket.closing_note && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Note</p>
-                    <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                {ticket?.is_resolved_confirmed && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-700 flex items-center gap-2">
-                    <CheckCircle2 size={13}/> Confirmé par l'employé — prêt à fermer.
-                  </div>
-                )}
-
-                {awaitingConfirm && !ticket?.is_resolved_confirmed && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 flex items-center gap-2">
-                    <Info size={13}/> En attente de confirmation de l'employé.
-                  </div>
-                )}
-
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
-                  <div>
-                    <p className="text-[12px] font-bold text-gray-800 mb-1">Fermeture manuelle</p>
-                    <p className="text-[11px] text-gray-500">
-                      Résolu hors système (téléphone, sur site...) ? Documentez la solution avant de fermer.
-                    </p>
-                  </div>
-                  <button onClick={() => setShowManualClose(true)}
-                    className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 bg-white w-full">
-                    <Lock size={13}/> Fermer manuellement
-                  </button>
-                </div>
-              </>
-            )
-          )}
+         {activeTab === "close" && (
+  isClosed ? (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold">
+        <Lock size={15}/> Fermé
+      </div>
+      {ticket.closing_note && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Note</p>
+          <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
+        </div>
+      )}
+    </div>
+  ) : ticket?.is_resolved_confirmed ? (
+    // ✅ Employé a confirmé → formulaire de fermeture rapide
+    <ConfirmedCloseForm
+      ticket={ticket}
+      onClose={handleManualClose}
+      closing={closingManually}
+      conversation={conversation}
+    />
+  ) : (
+    <>
+      {awaitingConfirm && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 flex items-center gap-2">
+          <Info size={13}/> En attente de confirmation de l'employé.
+        </div>
+      )}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
+        <div>
+          <p className="text-[12px] font-bold text-gray-800 mb-1">Fermeture manuelle</p>
+          <p className="text-[11px] text-gray-500">
+            Résolu hors système (téléphone, sur site...) ? Documentez la solution avant de fermer.
+          </p>
+        </div>
+        <button onClick={() => setShowManualClose(true)}
+          className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 bg-white w-full">
+          <Lock size={13}/> Fermer manuellement
+        </button>
+      </div>
+    </>
+  )
+)}
 
         </div>
       </div>

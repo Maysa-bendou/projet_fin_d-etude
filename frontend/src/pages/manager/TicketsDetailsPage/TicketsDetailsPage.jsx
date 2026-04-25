@@ -97,23 +97,37 @@ const TicketDetailPage = () => {
     navigate("/manager/tickets-service");
   };
 
-  const calculateSLA = () => {
-    if (!ticket?.sla_date_limite) return { pct: 0, depasse: false, text: "N/A" };
-    const now = Date.now();
-    const due = new Date(ticket.sla_date_limite).getTime();
-    const debut = ticket.sla_date_debut ? new Date(ticket.sla_date_debut).getTime() : due - 24 * 3600000;
-    const remaining = due - now;
-    const totalMs = due - debut;
-    const depasse = remaining <= 0;
-    const hours = Math.floor(Math.abs(remaining) / 3600000);
-    const minutes = Math.floor((Math.abs(remaining) % 3600000) / 60000);
-    return {
-      depasse,
-      text: depasse ? `+${hours}h ${minutes}m` : `${hours}h ${minutes}m`,
-      pct: Math.min(100, Math.max(0, (remaining / totalMs) * 100)),
-    };
-  };
+ const calculateSLA = () => {
+  if (!ticket?.sla_date_limite) return null;
 
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const now      = Date.now();
+  const due      = new Date(ticket.sla_date_limite).getTime();
+  const debut    = ticket.sla_date_debut ? new Date(ticket.sla_date_debut).getTime() : due - 24 * 3600000;
+  const window   = due - debut;
+
+  if (TERMINAL.includes(ticket.status)) {
+    const closed   = ticket.closed_at ? new Date(ticket.closed_at).getTime() : due;
+    const exceeded = closed > due;
+    const delta    = Math.abs(closed - due);
+    const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
+    return { mode: "terminal", exceeded, pct: Math.min(100, Math.max(0, ((window - (due - closed)) / window) * 100)), text: exceeded ? `+${h}h ${m}m dépassé` : "Clôturé ✓" };
+  }
+
+  if (PAUSED.includes(ticket.status)) {
+    const elapsed = ticket.sla_pause_elapsed_ms ? Number(ticket.sla_pause_elapsed_ms) : null;
+    const frozen  = elapsed != null ? window - elapsed : Math.max(0, due - now);
+    const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+    return { mode: "paused", pct: Math.min(100, ((window - frozen) / window) * 100), text: `⏸ ${h}h ${m}m figé` };
+  }
+
+  const remaining = due - now;
+  const exceeded  = remaining <= 0;
+  const abs       = Math.abs(remaining);
+  const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
+  return { mode: "active", exceeded, pct: Math.min(100, Math.max(0, (remaining / window) * 100)), text: exceeded ? `+${h}h ${m}m dépassé` : `${h}h ${m}m restantes` };
+};
   if (loading) return <div className="p-20 text-center font-bold text-red-600">Chargement...</div>;
 
   const t = ticket;
@@ -196,15 +210,38 @@ const TicketDetailPage = () => {
               <SpecBox label="Date" value={new Date(t.createdAt || t.created_at).toLocaleDateString()} />
             </div>
 
-            <div className="p-6 rounded-3xl border bg-slate-50 border-slate-100 mb-10">
-              <div className="flex justify-between text-[10px] font-black uppercase mb-3 text-slate-500">
-                <span>Temps de résolution (SLA)</span>
-                <span className={sla.depasse ? "text-red-500 animate-pulse" : ""}>{sla.text}</span>
-              </div>
-              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div className={`h-full ${sla.depasse ? "bg-red-400" : "bg-emerald-400"}`} style={{ width: `${100 - sla.pct}%` }} />
-              </div>
-            </div>
+           {sla && (
+  <div className="p-6 rounded-3xl border bg-slate-50 border-slate-100 mb-10">
+    <div className="flex justify-between text-[10px] font-black uppercase mb-3 text-slate-500">
+      <span className="flex items-center gap-2">
+        Temps de résolution (SLA)
+        {sla.mode === "paused" && (
+          <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">En pause</span>
+        )}
+        {sla.mode === "terminal" && (
+          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Clôturé</span>
+        )}
+      </span>
+      <span className={
+        sla.mode === "terminal" ? (sla.exceeded ? "text-red-500" : "text-emerald-500")
+        : sla.mode === "paused" ? "text-purple-500"
+        : sla.exceeded ? "text-red-500 animate-pulse" : ""
+      }>
+        {sla.text}
+      </span>
+    </div>
+    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+      <div
+        className={`h-full ${
+          sla.mode === "terminal" ? (sla.exceeded ? "bg-red-400" : "bg-emerald-400")
+          : sla.mode === "paused" ? "bg-purple-400"
+          : sla.exceeded ? "bg-red-400" : "bg-emerald-400"
+        }`}
+        style={{ width: `${Math.round(100 - sla.pct)}%` }}
+      />
+    </div>
+  </div>
+)}
 
             {/* Expert assigné + bouton conditionnel */}
             <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">

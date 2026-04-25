@@ -6,6 +6,7 @@ const {
   notifyTechAssigned,
   notifyAllManagersOfService,
   notifyAllTechsOfService,
+ 
 } = require("./notification.service");
 
 // ── GET détail ticket technicien ───────────────────────────────────────────
@@ -38,7 +39,8 @@ const getTicketDetailTech = async (req, res) => {
 ticket_comments: {
   orderBy: { created_at: "asc" },
   include: {
-    users: { select: { id: true, name: true, surname: true, role: true } }
+    users: { select: { id: true, name: true, surname: true, role: true } },
+    ticket_attachments: true,
   },
 },
 ticket_attachments: {
@@ -78,7 +80,11 @@ ticket_attachments: {
       sla_date_debut: ticket.sla_date_debut,
       createdAt: ticket.created_at,
       updatedAt: ticket.updated_at,
+      assignedAt: ticket.assigned_at,
+closedAt:   ticket.closed_at,
       solution: ticket.solution,
+      sla_statut:           ticket.sla_statut,
+sla_pause_elapsed_ms: ticket.sla_pause_elapsed_ms ? Number(ticket.sla_pause_elapsed_ms) : null,
       closing_note: ticket.closing_note,
       is_resolved_confirmed: ticket.is_resolved_confirmed,
       confirmation_requested: ticket.confirmation_requested,
@@ -102,13 +108,17 @@ comments: (ticket.ticket_comments || []).map((c) => ({
       : null;
 
     return {
+      id: a.id,
       fileName: a.file_name,
       filePath: relativePath,
     };
   }),
 })),
 
-attachments: (ticket.ticket_attachments || []).map((a) => ({
+attachments: [
+  ...(ticket.ticket_attachments || []),
+  ...(ticket.ticket_comments || []).flatMap(c => c.ticket_attachments || [])
+].map((a) => ({
   id: a.id,
   fileName: a.file_name,
   filePath: a.file_path,
@@ -131,18 +141,49 @@ const updateTicketStatus = async (req, res) => {
     const valid = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
     if (!valid.includes(status)) return res.status(400).json({ error: "Statut invalide" });
 
-    const STATUTS_FERMES = ["resolved", "closed", "rejected"];
-    let sla_statut = undefined;
+    const PAUSED   = ["pending", "pending_supplier"];
+    const TERMINAL = ["resolved", "closed", "rejected"];
 
     const ticket = await prisma.tickets.findUnique({
       where: { id },
-      select: { sla_date_limite: true, title: true, created_by: true },
+      select: {
+        status: true,
+        sla_date_limite: true,
+        sla_date_debut: true,
+        sla_pause_elapsed_ms: true,
+        title: true,
+        created_by: true,
+      },
     });
 
-    if (STATUTS_FERMES.includes(status)) {
-      const now = new Date();
-      sla_statut = ticket.sla_date_limite && now <= ticket.sla_date_limite
-        ? "respecte" : "depasse";
+    const now = new Date();
+    const wasPaused = PAUSED.includes(ticket.status);
+    let extra = {};
+
+    if (PAUSED.includes(status) && !wasPaused) {
+      // → mise en pause : on sauvegarde les ms déjà consommées
+      const elapsed = now.getTime() - new Date(ticket.sla_date_debut).getTime();
+      extra.sla_pause_elapsed_ms = BigInt(Math.max(0, elapsed));
+      extra.sla_statut = "pause";
+    }
+
+    else if (!PAUSED.includes(status) && wasPaused) {
+      // → reprise : on recalcule sla_date_limite avec le temps restant réel
+      const slaWindow = ticket.sla_date_limite
+        ? new Date(ticket.sla_date_limite).getTime() - new Date(ticket.sla_date_debut).getTime()
+        : 24 * 3600 * 1000;
+      const elapsed   = Number(ticket.sla_pause_elapsed_ms ?? 0);
+      const remaining = Math.max(0, slaWindow - elapsed);
+      extra.sla_date_limite        = new Date(now.getTime() + remaining);
+      extra.sla_date_debut         = now;
+      extra.sla_pause_elapsed_ms   = null;
+      extra.sla_statut             = "en_cours";
+    }
+
+    else if (TERMINAL.includes(status)) {
+      const exceeded = ticket.sla_date_limite && now > new Date(ticket.sla_date_limite);
+      extra.sla_statut = exceeded ? "depasse" : "respecte";
+      extra.closed_at  = now;
     }
 
     const STATUS_FR = {
@@ -151,11 +192,9 @@ const updateTicketStatus = async (req, res) => {
       closed: "Fermé", rejected: "Rejeté",
     };
 
-    const now = new Date();
-
     await prisma.tickets.update({
       where: { id },
-      data: { status, ...(sla_statut && { sla_statut }), updated_at: now },
+      data: { status, updated_at: now, ...extra },
     });
 
     if (technicianId) {
@@ -170,12 +209,11 @@ const updateTicketStatus = async (req, res) => {
       });
     }
 
-    // ── Notifier l'employé du changement de statut ──
     if (ticket.created_by) {
       await notifyEmployeeStatusChanged(ticket.created_by, id, ticket.title, status);
     }
 
-    res.json({ success: true, status, sla_statut });
+    res.json({ success: true, status, sla_statut: extra.sla_statut });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -286,7 +324,7 @@ const requestConfirmation = async (req, res) => {
 const closeTicketManually = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { technicianId, closingNote } = req.body;
+    const { technicianId, closingNote, solution } = req.body;
 
     const ticket = await prisma.tickets.findUnique({
       where: { id },
@@ -299,7 +337,14 @@ const closeTicketManually = async (req, res) => {
 
     await prisma.tickets.update({
       where: { id },
-      data: { status: "closed", closing_note: closingNote ?? null, sla_statut, updated_at: now },
+      data: {
+        status: "closed",
+        closing_note: closingNote ?? null,
+        ...(solution && { solution }),   // ← enregistre la solution
+        sla_statut,
+        updated_at: now,
+        closed_at: now,
+      },
     });
 
     const comment = await prisma.ticket_comments.create({
@@ -307,14 +352,16 @@ const closeTicketManually = async (req, res) => {
         ticket_id: id,
         user_id: parseInt(technicianId),
         comment: closingNote
-          ? `Ticket fermé manuellement. Note : ${closingNote}`
+          ? `Ticket fermé. Note : ${closingNote}`
           : "Ticket fermé manuellement par le technicien.",
         comment_type: "comment",
         created_at: now,
       },
     });
 
+    // ← attache les fichiers au comment de fermeture
     const files = req.files ?? [];
+    console.log("FILES REÇUS close-manual:", files.length);
     if (files.length > 0) {
       await prisma.ticket_attachments.createMany({
         data: files.map((f) => ({
@@ -328,7 +375,6 @@ const closeTicketManually = async (req, res) => {
       });
     }
 
-    // ── Notifier l'employé : ticket fermé ──
     if (ticket.created_by) {
       await notifyEmployeeStatusChanged(ticket.created_by, id, ticket.title, "closed");
     }
@@ -449,7 +495,11 @@ const getAssignedTickets = async (req, res) => {
         id: true, title: true, description: true,
         priority: true, category: true, status: true,
         created_at: true, sla_date_limite: true, sla_date_debut: true,
+         assigned_at: true,        // ← ajouter
+  closed_at: true,
         users_tickets_created_byTousers: { select: { name: true, surname: true } },
+        sla_pause_elapsed_ms: true,
+sla_statut: true,
       },
       orderBy: { created_at: "desc" },
     });
@@ -461,8 +511,12 @@ const getAssignedTickets = async (req, res) => {
       category:      t.category,
       status:        t.status,
       created_at:    t.created_at,
+        assigned_at:     t.assigned_at,   // ← ajouter
+  closed_at:       t.closed_at,
       sla_date_limite: t.sla_date_limite,
       sla_date_debut:  t.sla_date_debut,
+      sla_pause_elapsed_ms: t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null,
+sla_statut: t.sla_statut,
       employee_name: `${t.users_tickets_created_byTousers?.name ?? ""} ${t.users_tickets_created_byTousers?.surname ?? ""}`.trim(),
     })));
   } catch (err) {
@@ -489,6 +543,36 @@ const getEnums = async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
+// DELETE /api/tech/attachments/:id
+const deleteAttachment = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const file = await prisma.ticket_attachments.findUnique({
+      where: { id },
+    });
+
+    if (!file) {
+      return res.status(404).json({ error: "Fichier non trouvé" });
+    }
+
+    // supprimer fichier du disque
+    const fs = require("fs");
+    if (file.file_path && fs.existsSync(file.file_path)) {
+      fs.unlinkSync(file.file_path);
+    }
+
+    // supprimer en DB
+    await prisma.ticket_attachments.delete({
+      where: { id },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur suppression fichier" });
+  }
+};
 
 module.exports = {
   getTicketDetailTech,
@@ -501,4 +585,5 @@ module.exports = {
   getAllTechniciens,
   getAssignedTickets,
   getEnums,
+  deleteAttachment,
 };

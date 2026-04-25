@@ -103,6 +103,8 @@ model tickets {
   confirmation_requested           Boolean?                     @default(false)
   closing_note                     String?
   closed_at                        DateTime?                    @db.Timestamp(6)
+  assigned_at                      DateTime?                    @db.Timestamp(6)
+  sla_pause_elapsed_ms             BigInt?
   notifications                    notifications[]
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]

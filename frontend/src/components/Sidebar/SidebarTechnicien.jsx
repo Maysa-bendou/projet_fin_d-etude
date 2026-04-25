@@ -38,7 +38,7 @@ export default function SidebarTechnician() {
 
   // Menu spécifique pour le technicien
   const menuItems = [
-    { icon: LayoutDashboard, label: "Accueil", path: "/technician" },
+    { icon: LayoutDashboard, label: "Tableau De Bord", path: "/technician" },
     { icon: ClipboardCheck, label: "Tickets assignés", path: "/technician/tickets-assignes" },
     { icon: Wrench, label: "Tickets du service", path: "/technician/tickets-service" },
     { icon: User, label: "Profil", path: "/technician/profile" },

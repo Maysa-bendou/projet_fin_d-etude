@@ -222,8 +222,14 @@ const TicketsServicePage = () => {
           <tbody>
             {filteredTickets.map((t) => {
               const employee = t.employee || t.users_tickets_created_byTousers;
-              const technician = t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers?.name;
+              const technicianObj =
+  t.assignedTo ||
+  t.assigned_to ||
+  t.users_tickets_assigned_toTousers;
 
+const technicianName = technicianObj?.name
+  ? `${technicianObj.name} ${technicianObj.surname || ""}`
+  : null;
               return (
                 <tr
                   key={t.id}
@@ -254,9 +260,9 @@ const TicketsServicePage = () => {
                     {employee?.name ? `${employee.name} ${employee.surname || ""}` : "N/A"}
                   </td>
                   <td className="p-4 text-center">
-                    {technician ? (
-                      <span className="text-gray-700 font-medium">{technician}</span>
-                    ) : (
+                    {technicianName ? (
+  <span className="text-gray-700 font-medium">{technicianName}</span>
+) : (
                       <span className="text-orange-400 italic text-xs font-medium">Non assigné</span>
                     )}
                   </td>

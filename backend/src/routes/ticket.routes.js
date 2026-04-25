@@ -202,14 +202,17 @@ router.get("/", async (req, res) => {
       impact:          t.impact,
       urgency:         t.urgency,
       serviceId:       t.service_id,
+      serviceName:     t.services?.name || "N/A",
       sla:             t.sla_date_limite,
       date_expiration: t.sla_date_limite,
       sla_date_limite: t.sla_date_limite,
       sla_date_debut:  t.sla_date_debut,
       closed_at:       t.closed_at,
+      created_at:      t.created_at,       // ← ajouter
+      assigned_at:     t.assigned_at, 
       createdBy:       t.users_tickets_created_byTousers?.name,
-      employee:        t.users_tickets_created_byTousers,
-      assignedTo:      t.users_tickets_assigned_toTousers?.name,
+       employee:        t.users_tickets_created_byTousers,
+      assignedTo: t.users_tickets_assigned_toTousers,
       technicienId:    t.assigned_to,
     }));
     res.json(formatted);
@@ -314,7 +317,9 @@ router.get("/:id", async (req, res) => {
       is_resolved_confirmed:  ticket.is_resolved_confirmed,
       confirmation_requested: ticket.confirmation_requested,
       employee:               ticket.users_tickets_created_byTousers,
+      sla_pause_elapsed_ms: ticket.sla_pause_elapsed_ms ? Number(ticket.sla_pause_elapsed_ms) : null,
       technician:             ticket.users_tickets_assigned_toTousers,
+      assigned_at: ticket.assigned_at,
       service:                ticket.services?.name,
       comments: ticket.ticket_comments.map((c) => ({
         id:           c.id,
@@ -452,20 +457,25 @@ if (existingTicket.status === "closed" && status === "open") {
 router.put("/:id/assign", async (req, res) => {
   const ticketId = parseInt(req.params.id);
   const { assigned_to, technicienId, action, assigned_by } = req.body;
-  const techId = assigned_to || technicienId;
+  const techId = parseInt(assigned_to || technicienId);
   if (!techId) return res.status(400).json({ error: "Technician ID is required" });
   try {
     const ticket = await prisma.tickets.findUnique({
       where: { id: ticketId },
       select: { title: true, created_by: true },
     });
-
-   const updatedTicket = await prisma.tickets.update({
+   if (!ticket) { // ✅ FIX 2
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+  const updatedTicket = await prisma.tickets.update({
   where: { id: ticketId },
   data: {
-    assigned_to: techId,
-    status: action === "taken" ? "in_progress" : "open",
+  users_tickets_assigned_toTousers: {
+    connect: { id: techId },
   },
+  assigned_at: new Date(),
+  status: action === "taken" ? "in_progress" : "open",
+},
 });
 
 await prisma.ticket_comments.create({
@@ -487,8 +497,9 @@ await prisma.ticket_comments.create({
       },
     });
 
-    await notifyTechAssigned(techId, ticketId, ticket.title);
-
+    await Promise.allSettled([
+  notifyTechAssigned(techId, ticketId, ticket.title)
+]);
     if (ticket.created_by) {
       const tech = await prisma.users.findUnique({
         where: { id: techId },
@@ -504,12 +515,13 @@ await prisma.ticket_comments.create({
       description: updatedTicket.description,
       status:      updatedTicket.status,
       assigned_to: updatedTicket.assigned_to,
+      assigned_at: updatedTicket.assigned_at,
       createdAt:   updatedTicket.created_at.toISOString(),
       updatedAt:   updatedTicket.updated_at.toISOString(),
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Impossible d'assigner le ticket" });
+    res.status(500).json({ error: "Impossible d'assigner le ticket" }, err);
   }
 });
 

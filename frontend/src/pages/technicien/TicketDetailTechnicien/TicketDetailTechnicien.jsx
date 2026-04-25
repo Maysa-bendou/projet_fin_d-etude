@@ -82,29 +82,39 @@ setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0); 
         rawDate: new Date(data.createdAt),
       });
 
-      data.comments.forEach((c) => {
-        const type = c.comment_type ?? "comment";
-        const dateObj = new Date(c.date);
-        const dateStr = fmt(c.date);
-        const authorId = c.authorId;
+      const CONV_EXCLUDED = new Set(["status", "update", "reopen"]);
 
-        convItems.push({
-          id: c.id,
-          type,
-          authorId,
-          author: c.author,
-          isMe: authorId === currentUser?.id,
-          message: c.message.replace(/^\[REDIRECTION\]\s*/, ""),
-         files: c.files ?? [],
-          date: dateStr,
-        });
+data.comments.forEach((c) => {
+  const type = c.comment_type ?? "comment";
+  const dateObj = new Date(c.date);
+  const dateStr = fmt(c.date);
+  const authorId = c.authorId;
 
-        if (type === "status") {
-          actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
-        } else if (ACT_LABEL[type]) {
-          actItems.push({ id: `act-${c.id}`, type, message: ACT_LABEL[type], date: dateStr, rawDate: dateObj });
-        }
-      });
+  // Only show in conversation if NOT a status/update/reopen (those go to Actualité)
+  if (!CONV_EXCLUDED.has(type)) {
+    convItems.push({
+      id: c.id,
+      type,
+      authorId,
+      author: c.author,
+      isMe: authorId === currentUser?.id,
+      message: c.message.replace(/^\[REDIRECTION\]\s*/, ""),
+      files: c.files ?? [],
+      date: dateStr,
+    });
+  }
+
+  // Actualité
+  if (type === "status") {
+    actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
+  } else if (type === "update") {
+    actItems.push({ id: `act-${c.id}`, type: "update", message: `✏️ ${c.message}`, date: dateStr, rawDate: dateObj });
+  } else if (type === "reopen") {
+    actItems.push({ id: `act-${c.id}`, type: "reopen", message: "🔄 Ticket réouvert", date: dateStr, rawDate: dateObj });
+  } else if (ACT_LABEL[type]) {
+    actItems.push({ id: `act-${c.id}`, type, message: ACT_LABEL[type], date: dateStr, rawDate: dateObj });
+  }
+});
 
       actItems.sort((a, b) => a.rawDate - b.rawDate);
       setConversation(convItems);
@@ -119,10 +129,6 @@ setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0); 
   // Chargement initial
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
 
-  // Auto-scroll
-  useEffect(() => {
-    convEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversation]);
 
   // Fetch allIds
   useEffect(() => {
@@ -169,7 +175,11 @@ setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0); 
       const res = await fetch(`${API}/tickets/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, technicianId: currentUser?.id }),
+        body: JSON.stringify({
+  status: newStatus,
+  technicianId: currentUser?.id,
+  ...(newStatus === "closed" && { closedAt: new Date().toISOString() }),
+}),
       });
       if (!res.ok) throw new Error();
       await fetchTicket(true); // ← rafraîchit sans spinner
@@ -230,23 +240,28 @@ setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0); 
   };
 
   // ── Fermeture manuelle ────────────────────────────────────────────────────
-  const handleManualClose = async (closingNote) => {
-    setClosingManually(true);
-    try {
-      const res = await fetch(`${API}/tickets/${id}/close-manual`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ technicianId: currentUser?.id, closingNote }),
-      });
-      if (!res.ok) throw new Error();
-      setShowManualClose(false);
-      await fetchTicket(true); // ← rafraîchit tout après fermeture
-    } catch {
-      alert("Erreur lors de la fermeture.");
-    } finally {
-      setClosingManually(false);
-    }
-  };
+ const handleManualClose = async (closingNote, files = [], solution = null) => {
+  setClosingManually(true);
+  try {
+    const fd = new FormData();
+    fd.append("technicianId", currentUser?.id);
+    fd.append("closingNote", closingNote ?? "");
+    if (solution) fd.append("solution", solution);
+    files.forEach(f => fd.append("files", f));
+
+    const res = await fetch(`${API}/tickets/${id}/close-manual`, {
+      method: "PUT",
+      body: fd, // ⚠️ pas de Content-Type header ici
+    });
+    if (!res.ok) throw new Error();
+    setShowManualClose(false);
+    await fetchTicket(true);
+  } catch {
+    alert("Erreur lors de la fermeture.");
+  } finally {
+    setClosingManually(false);
+  }
+};
 
   // ── Redirection ───────────────────────────────────────────────────────────
   const handleRedirect = async () => {

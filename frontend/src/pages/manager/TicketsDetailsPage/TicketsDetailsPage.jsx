@@ -35,7 +35,7 @@ const TicketDetailPage = () => {
 
   const fetchTechnicians = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/api/tech/users/service/${sId}`);
+     const res = await fetch(`http://localhost:3001/api/tickets/techniciens/service/${sId}`);
       const data = await res.json();
       setTechnicians(data);
       const activeMap = {};

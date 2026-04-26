@@ -270,7 +270,24 @@ router.get("/techniciens", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
+router.get("/techniciens/service/:serviceId", async (req, res) => {
+  try {
+    const serviceId = parseInt(req.params.serviceId);
+    const techs = await prisma.users.findMany({
+      where: {
+        role: "technician",
+        service_id: serviceId,
+      },
+      select: {
+        id: true, name: true, surname: true,
+        email: true, phone: true, office: true, job_title: true,
+      },
+    });
+    res.json(techs);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);

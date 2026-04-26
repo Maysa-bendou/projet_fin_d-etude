@@ -1,0 +1,190 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "serverError": "Server error",
+    "noTickets": "No tickets found.",
+    "noTicketsFilter": "No tickets match the selected filters.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "edit": "Edit",
+    "back": "Back",
+    "unassigned": "Unassigned",
+    "send": "Send",
+    "sending": "Sending...",
+    "attach": "Attach",
+    "fileCount": "{{count}} file(s)",
+    "by": "by",
+    "clickForDetails": "Click to view details"
+  },
+
+  "table": {
+    "id": "#",
+    "title": "Title",
+    "service": "Service",
+    "priority": "Priority",
+    "status": "Status",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "assignedTo": "Assigned to",
+    "lastUpdate": "Last update",
+    "closedAt": "Closed on"
+  },
+
+  "accueil": {
+    "title": "My Support Space",
+    "recentTickets": "My Recent Tickets",
+    "viewAll": "View all my tickets",
+    "stats": {
+      "total": "Total Created",
+      "open": "Open",
+      "in_progress": "In Progress",
+      "resolved": "Resolved"
+    }
+  },
+
+  "createTicket": {
+    "pageTitle": "Create a support ticket",
+    "pageSubtitle": "Describe your issue precisely to be assigned to an expert.",
+    "section": {
+      "details": "Request Details",
+      "impact": "Impact Assessment"
+    },
+    "fields": {
+      "type": "Type",
+      "category": "Category",
+      "title": "Title",
+      "description": "Detailed Description",
+      "impact": "Impact",
+      "urgency": "Urgency"
+    },
+    "types": {
+      "incident": "Incident",
+      "service_request": "Service Request"
+    },
+    "categories": {
+      "hardware": "Hardware",
+      "software": "Software",
+      "network": "Network",
+      "access": "Access",
+      "security": "Security",
+      "messagerie": "Collaboration & Messaging"
+    },
+    "impacts": {
+      "low": "One person",
+      "medium": "A department",
+      "high": "Entire company"
+    },
+    "urgencies": {
+      "low": "Can still work",
+      "medium": "Partially blocked",
+      "high": "Completely blocked"
+    },
+    "attachments": "Attachments",
+    "addFile": "Add",
+    "select": "Select...",
+    "required": "required field",
+    "missingFields": "Missing fields",
+    "submit": "Create ticket",
+    "submitting": "Submitting...",
+    "titlePlaceholder": "e.g. Unable to connect to VPN",
+    "descriptionPlaceholder": "Clearly describe your issue (context, steps taken, error message)...",
+    "success": {
+      "title": "Ticket created successfully",
+      "subtitle": "Ticket",
+      "viewTickets": "View my tickets",
+      "createAnother": "Create another ticket"
+    }
+  },
+
+  "mesTickets": {
+    "title": "My Tickets",
+    "subtitle": "Track and manage the status of your support requests.",
+    "fetchError": "Error fetching tickets",
+    "tabs": {
+      "current": "Current Tickets",
+      "archives": "Archives (before {{year}})"
+    },
+    "filters": {
+      "label": "Filters",
+      "status": "Status",
+      "category": "Category",
+      "priority": "Priority",
+      "service": "Service",
+      "closeYear": "Close year",
+      "allStatuses": "All statuses",
+      "allCategories": "All categories",
+      "allPriorities": "All priorities",
+      "allServices": "All services",
+      "allYears": "All",
+      "reset": "Reset"
+    },
+    "ticketCount": "ticket{{count, plural, one {} other {s}}}"
+  },
+
+  "ticketDetails": {
+    "loading": "Loading ticket...",
+    "notFound": "Ticket not found",
+    "updateError": "Update error",
+    "confirmError": "Error while responding.",
+    "assignedTech": "Assigned Technician",
+    "itTechnician": "IT Technician",
+    "description": "Description",
+    "initialAttachments": "Initial attachments",
+    "types": {
+      "solution": "Proposed Solution",
+      "info": "Information",
+      "confirm": "Confirmation Requested",
+      "emp_reply": "Your Reply",
+      "confirmed": "Resolution Confirmed",
+      "rejected_confirm": "Solution Rejected",
+      "redirect": "Ticket Redirected",
+      "comment": "Internal Note",
+      "status": "Status Change",
+      "update": "Modification",
+      "reopen": "Ticket Reopened",
+      "attachment": "Attachments"
+    },
+    "solution": {
+      "title": "Solution provided",
+      "attachments": "Attachments",
+      "closingNote": "Closing note"
+    },
+    "details": {
+      "title": "Ticket Details",
+      "status": "Status",
+      "priority": "Priority",
+      "impact": "Impact",
+      "urgency": "Urgency",
+      "category": "Category",
+      "itService": "IT Service",
+      "type": "Type",
+      "createdAt": "Created on",
+      "updatedAt": "Updated"
+    },
+    "history": {
+      "title": "Activity History",
+      "empty": "No activity recorded."
+    },
+    "conversation": {
+      "title": "Exchanges with technician",
+      "empty": "No exchanges yet.",
+      "placeholder": "Send a message to the technician..."
+    },
+    "confirm": {
+      "question": "Did this solution resolve your issue?",
+      "yes": "Yes, resolved",
+      "no": "No, persists",
+      "alreadyReplied": "You have already responded to the confirmation request."
+    },
+    "reopen": {
+      "button": "Reopen",
+      "canReopen": "Ticket closed — you can reopen it within 30 days.",
+      "limitMsg": "Ticket closed — limit of 2 reopens reached.",
+      "expiredMsg": "Ticket closed — reopen deadline passed.",
+      "limitReached": "You have reached the limit of 2 reopens for this ticket.",
+      "deadlineExpired": "The 30-day deadline to reopen this ticket has passed."
+    }
+  }
+}

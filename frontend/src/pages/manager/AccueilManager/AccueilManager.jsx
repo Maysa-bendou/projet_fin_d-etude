@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // ── Fausses données ───────────────────────────────
 const fakeStats = {
@@ -19,9 +20,9 @@ const repartitionService = [
 ];
 
 const repartitionPriorite = [
-  { label: "Haute",   count: 16, color: "#DC2626", pct: 65 },
-  { label: "Normale", count: 14, color: "#F97316", pct: 55 },
-  { label: "Basse",   count: 8,  color: "#0F766E", pct: 32 },
+  { labelKey: "high",   count: 16, color: "#DC2626", pct: 65 },
+  { labelKey: "normal", count: 14, color: "#F97316", pct: 55 },
+  { labelKey: "low",    count: 8,  color: "#0F766E", pct: 32 },
 ];
 
 const performanceTechniciens = [
@@ -32,26 +33,26 @@ const performanceTechniciens = [
 ];
 
 const derniersTickets = [
-  { id: "IM000015", titre: "PC ne démarre plus",     employe: "Omar Bensaid", service: "IT Support",  priorite: "Haute",   statut: "En cours"   },
-  { id: "IM000014", titre: "VPN déconnecté",         employe: "Lina Amrani",  service: "IT Security", priorite: "Normale", statut: "Résolu"     },
-  { id: "IM000013", titre: "Mot de passe expiré",    employe: "Sara Haddad",  service: "Service Desk",priorite: "Basse",   statut: "En attente" },
-  { id: "IM000012", titre: "Imprimante hors ligne",  employe: "Ali Benali",   service: "IT Support",  priorite: "Normale", statut: "En cours"   },
-  { id: "IM000011", titre: "Outlook ne s'ouvre plus",employe: "Yacine Meziane",service: "IT Support", priorite: "Haute",   statut: "Résolu"     },
+  { id: "IM000015", titre: "PC ne démarre plus",      employe: "Omar Bensaid",   service: "IT Support",       priorite: "high",   statut: "in_progress" },
+  { id: "IM000014", titre: "VPN déconnecté",          employe: "Lina Amrani",    service: "IT Security",      priorite: "normal", statut: "resolved"    },
+  { id: "IM000013", titre: "Mot de passe expiré",     employe: "Sara Haddad",    service: "Service Desk",     priorite: "low",    statut: "pending"     },
+  { id: "IM000012", titre: "Imprimante hors ligne",   employe: "Ali Benali",     service: "IT Support",       priorite: "normal", statut: "in_progress" },
+  { id: "IM000011", titre: "Outlook ne s'ouvre plus", employe: "Yacine Meziane", service: "IT Support",       priorite: "high",   statut: "resolved"    },
 ];
 
 // ── Couleurs statut ───────────────────────────────
 const statutStyle = {
-  "En cours":   "bg-yellow-100 text-yellow-700",
-  "Résolu":     "bg-green-100 text-green-700",
-  "En attente": "bg-purple-100 text-purple-700",
-  "Rejeté":     "bg-red-100 text-red-700",
-  "Fermé":      "bg-gray-100 text-gray-700",
+  in_progress: "bg-yellow-100 text-yellow-700",
+  resolved:    "bg-green-100 text-green-700",
+  pending:     "bg-purple-100 text-purple-700",
+  rejected:    "bg-red-100 text-red-700",
+  closed:      "bg-gray-100 text-gray-700",
 };
 
 const prioriteStyle = {
-  "Haute":   "bg-red-100 text-red-700",
-  "Normale": "bg-yellow-100 text-yellow-700",
-  "Basse":   "bg-green-100 text-green-700",
+  high:   "bg-red-100 text-red-700",
+  normal: "bg-yellow-100 text-yellow-700",
+  low:    "bg-green-100 text-green-700",
 };
 
 const serviceStyle = {
@@ -64,6 +65,7 @@ const serviceStyle = {
 
 export default function AccueilManager() {
   const navigate = useNavigate();
+  const { t } = useTranslation("manager");
 
   return (
     <div className="p-6">
@@ -72,32 +74,30 @@ export default function AccueilManager() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">
-            Vue globale des tickets
+            {t("accueil.title")}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Suivi en temps réel de tous les tickets DJEZZY
+            {t("accueil.subtitle")}
           </p>
         </div>
       </div>
 
       {/* ── Cartes stats colorées ── */}
       <div className="grid grid-cols-5 gap-3 mb-5">
-
         {[
-          { label: "Total",      value: fakeStats.total,     color: "bg-blue-600" },
-          { label: "En cours",   value: fakeStats.enCours,   color: "bg-orange-500" },
-          { label: "En attente", value: fakeStats.enAttente, color: "bg-purple-500" },
-          { label: "Résolus",    value: fakeStats.resolus,   color: "bg-teal-600" },
-          { label: "Rejetés",    value: fakeStats.rejetes,   color: "bg-red-600" },
+          { labelKey: "accueil.stats.total",     value: fakeStats.total,     color: "bg-blue-600" },
+          { labelKey: "accueil.stats.inProgress", value: fakeStats.enCours,  color: "bg-orange-500" },
+          { labelKey: "accueil.stats.pending",   value: fakeStats.enAttente, color: "bg-purple-500" },
+          { labelKey: "accueil.stats.resolved",  value: fakeStats.resolus,   color: "bg-teal-600" },
+          { labelKey: "accueil.stats.rejected",  value: fakeStats.rejetes,   color: "bg-red-600" },
         ].map((stat) => (
-          <div key={stat.label} className={`relative ${stat.color} rounded-2xl p-4 overflow-hidden`}>
+          <div key={stat.labelKey} className={`relative ${stat.color} rounded-2xl p-4 overflow-hidden`}>
             <div className="absolute -right-3 -top-3 w-16 h-16 rounded-full bg-white/20" />
             <div className="absolute right-3 top-4 w-8 h-8 rounded-full bg-white/15" />
-            <p className="text-xs text-white/80 mb-1 relative z-10">{stat.label}</p>
+            <p className="text-xs text-white/80 mb-1 relative z-10">{t(stat.labelKey)}</p>
             <p className="text-3xl font-semibold text-white relative z-10">{stat.value}</p>
           </div>
         ))}
-
       </div>
 
       {/* ── Répartitions ── */}
@@ -106,7 +106,7 @@ export default function AccueilManager() {
         {/* Répartition par service */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <p className="text-sm font-semibold text-gray-800 mb-4">
-            Répartition par service
+            {t("accueil.byService")}
           </p>
           <div className="flex flex-col gap-3">
             {repartitionService.map((item) => (
@@ -131,13 +131,13 @@ export default function AccueilManager() {
 
           {/* Priorité */}
           <p className="text-sm font-semibold text-gray-800 mb-4">
-            Répartition par priorité
+            {t("accueil.byPriority")}
           </p>
           <div className="flex flex-col gap-3 mb-5">
             {repartitionPriorite.map((item) => (
-              <div key={item.label}>
+              <div key={item.labelKey}>
                 <div className="flex justify-between mb-1">
-                  <span className="text-xs text-gray-500">{item.label}</span>
+                  <span className="text-xs text-gray-500">{t(`priority.${item.labelKey}`)}</span>
                   <span className="text-xs font-medium" style={{ color: item.color }}>
                     {item.count}
                   </span>
@@ -154,7 +154,7 @@ export default function AccueilManager() {
 
           {/* Performance techniciens */}
           <p className="text-sm font-semibold text-gray-800 mb-3">
-            Performance techniciens
+            {t("accueil.techPerformance")}
           </p>
           <div className="flex flex-col gap-2">
             {performanceTechniciens.map((tech) => (
@@ -166,7 +166,7 @@ export default function AccueilManager() {
                   <span className="text-xs text-gray-700">{tech.nom}</span>
                 </div>
                 <span className="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                  {tech.resolus} résolus
+                  {t("accueil.resolvedCount", { count: tech.resolus })}
                 </span>
               </div>
             ))}
@@ -177,39 +177,42 @@ export default function AccueilManager() {
       {/* ── Derniers tickets ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <p className="text-sm font-semibold text-gray-800 mb-4">
-          Derniers tickets
+          {t("accueil.recentTickets")}
         </p>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50">
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">ID</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Titre</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Employé</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Service</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Priorité</th>
-              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">Statut</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.id")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.title")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.employee")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.service")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.priority")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.status")}</th>
             </tr>
           </thead>
           <tbody>
-            {derniersTickets.map((t) => (
-              <tr key={t.id} className="border-t border-gray-100 hover:bg-gray-50 transition cursor-pointer"
-                onClick={() => navigate(`/manager/ticket/${t.id}`)}>
-                <td className="px-3 py-2.5 font-mono text-xs text-gray-400">{t.id}</td>
-                <td className="px-3 py-2.5 font-medium text-gray-800">{t.titre}</td>
-                <td className="px-3 py-2.5 text-gray-500 text-xs">{t.employe}</td>
+            {derniersTickets.map((ticket) => (
+              <tr
+                key={ticket.id}
+                className="border-t border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+                onClick={() => navigate(`/manager/ticket/${ticket.id}`)}
+              >
+                <td className="px-3 py-2.5 font-mono text-xs text-gray-400">{ticket.id}</td>
+                <td className="px-3 py-2.5 font-medium text-gray-800">{ticket.titre}</td>
+                <td className="px-3 py-2.5 text-gray-500 text-xs">{ticket.employe}</td>
                 <td className="px-3 py-2.5">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${serviceStyle[t.service] || "bg-gray-100 text-gray-600"}`}>
-                    {t.service}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${serviceStyle[ticket.service] || "bg-gray-100 text-gray-600"}`}>
+                    {ticket.service}
                   </span>
                 </td>
                 <td className="px-3 py-2.5">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${prioriteStyle[t.priorite]}`}>
-                    {t.priorite}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${prioriteStyle[ticket.priorite]}`}>
+                    {t(`priority.${ticket.priorite}`)}
                   </span>
                 </td>
                 <td className="px-3 py-2.5">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statutStyle[t.statut]}`}>
-                    {t.statut}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statutStyle[ticket.statut]}`}>
+                    {t(`status.${ticket.statut}`)}
                   </span>
                 </td>
               </tr>

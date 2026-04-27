@@ -12,11 +12,11 @@ const {
   notifyAllTechsOfService,
   notifyTechAssigned,
   notifyEmployeeAssigned,
+  notifyTechTicketUpdated, 
 } = require("../controllers/notification.service");
 
 
-
-// ── Multer ────────────────────────────────────────────────────────────────
+// ── Multer for existing ticket replies (id known via :id param) ───────────
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(__dirname, `../../uploads/tickets/${req.params.id}`);
@@ -27,38 +27,62 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// ── Multer for ticket creation (ticket id not known yet → temp dir) ───────
+const storageCreate = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // Use a request-scoped temp dir so all files share the same folder
+    if (!req._tempUploadDir) {
+      req._tempUploadDir = path.join(
+        __dirname,
+        `../../uploads/tmp/${Date.now()}_${Math.random().toString(36).slice(2)}`
+      );
+      fs.mkdirSync(req._tempUploadDir, { recursive: true });
+    }
+    cb(null, req._tempUploadDir);
+  },
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+});
+const uploadCreate = multer({ storage: storageCreate });
+
 // ── Employee endpoints ────────────────────────────────────────────────────
 router.put("/:id/confirm-reply", employeeConfirmReply);
 router.post("/:id/employee-reply", upload.array("files", 10), employeeReply);
 
-// ── Création ticket ───────────────────────────────────────────────────────
-// ── Mapping catégorie → service_id ─────────────────────────────────────
+// ── Mapping catégorie → service_id ────────────────────────────────────────
 const CATEGORY_SERVICE_MAP = {
-  hardware:  1, // IT Support
-  software:  1, // IT Support
-  account:   1, // IT Support
-  network:   2, // IT Network
-  security:  3, // IT Security
-  access:    4, // IT Collaboration Systems
+  hardware:   1,  // IT Support
+  software:   1,  // IT Support
+  network:    2,  // IT Network
+  security:   3,  // IT Security
+  access:     5,  // Service Desk
+  messagerie: 4,  // IT Collaboration Systems
 };
 
-router.post("/create", async (req, res) => {
+// ── POST /create ──────────────────────────────────────────────────────────
+router.post("/create", uploadCreate.array("files", 10), async (req, res) => {
   try {
     const { title, description, category, impact, urgency, type, created_by } = req.body;
+
+    // ── Debug logs ────────────────────────────────────────────────────────
+    console.log("📥 req.body:", req.body);
+    console.log("📎 req.files:", req.files?.map(f => f.originalname) ?? "aucun");
+
     if (!title || !description || !category || !impact || !urgency || !type || !created_by)
       return res.status(400).json({ error: "Champs manquants" });
 
     const PRIORITY_MATRIX = {
-      high:   { high: "critical", medium: "high",   low: "medium" },
-      medium: { high: "high",     medium: "medium", low: "low"    },
-      low:    { high: "medium",   medium: "low",    low: "low"    },
-    };
- const priority = PRIORITY_MATRIX[impact]?.[urgency];
-console.log("👉 priority calculé:", priority);
+  high:   { high: "high",   medium: "high",   low: "medium" },
+  medium: { high: "high",   medium: "medium", low: "low"    },
+  low:    { high: "medium", medium: "low",    low: "low"    },
+};
 
-const slaConfig = await prisma.sla_config.findFirst({ where: { priority } });
-console.log("👉 slaConfig trouvé:", slaConfig);
-    const service_id = CATEGORY_SERVICE_MAP[category] ?? null;
+    const priority = PRIORITY_MATRIX[impact]?.[urgency];
+    console.log("👉 priority calculé:", priority);
+
+    const slaConfig = await prisma.sla_config.findFirst({ where: { priority } });
+    console.log("👉 slaConfig trouvé:", slaConfig);
+
+    const service_id      = CATEGORY_SERVICE_MAP[category] ?? null;
     const sla_date_debut  = new Date();
     const sla_date_limite = new Date(sla_date_debut.getTime() + slaConfig.duration_hours * 3600000);
 
@@ -66,23 +90,67 @@ console.log("👉 slaConfig trouvé:", slaConfig);
     const created = await prisma.tickets.create({
       data: {
         title, description, category, impact, urgency, type, priority,
-        created_by: parseInt(created_by),
+        created_by:     parseInt(created_by),
         service_id,
         sla_date_debut,
         sla_date_limite,
         sla_statut: "en_cours",
       },
-    });console.log("👉 created complet:", JSON.stringify(created));
+    });
+    console.log("👉 ticket id créé:", created.id);
 
     // ✅ 2. Relire depuis la base (fix bug Prisma 5 + Timestamptz)
-    const ticket = await prisma.tickets.findUnique({
-      where: { id: created.id },
-    });
-    console.log("👉 ticket après relecture:", ticket.sla_date_limite);
+    const ticket = await prisma.tickets.findUnique({ where: { id: created.id } });
+    console.log("👉 sla_date_limite relue:", ticket.sla_date_limite);
 
-    // ✅ 3. Notifications
+    // ✅ 3. Sauvegarder les pièces jointes si présentes
+    const uploadedFiles = req.files ?? [];
+    console.log(`📎 ${uploadedFiles.length} fichier(s) à traiter`);
+
+    if (uploadedFiles.length > 0) {
+      const finalDir = path.join(__dirname, `../../uploads/tickets/${ticket.id}`);
+      fs.mkdirSync(finalDir, { recursive: true });
+
+      // One shared comment for all creation attachments
+      const attachmentComment = await prisma.ticket_comments.create({
+        data: {
+          ticket_id:    ticket.id,
+          user_id:      parseInt(created_by),
+          comment:      "Pièces jointes ajoutées à la création du ticket",
+          comment_type: "attachment",
+        },
+      });
+      console.log("📝 commentaire attachment créé, id:", attachmentComment.id);
+
+      for (const file of uploadedFiles) {
+        const finalPath = path.join(finalDir, path.basename(file.path));
+        fs.renameSync(file.path, finalPath);
+        console.log("📁 fichier déplacé vers:", finalPath);
+
+        await prisma.ticket_attachments.create({
+          data: {
+            ticket_id:   ticket.id,
+            comment_id:  attachmentComment.id,
+            file_name:   file.originalname,
+            file_path:   finalPath,
+            uploaded_by: parseInt(created_by),
+          },
+        });
+        console.log("💾 attachment sauvegardé en DB:", file.originalname);
+      }
+
+      // Clean up the temp directory (now empty after renames)
+      try {
+        const tmpDir = req._tempUploadDir;
+        if (tmpDir && fs.existsSync(tmpDir) && fs.readdirSync(tmpDir).length === 0) {
+          fs.rmdirSync(tmpDir);
+        }
+      } catch (_) { /* non-blocking */ }
+    }
+
+    // ✅ 4. Notifications
     if (service_id) {
-      await Promise.all([
+      await Promise.allSettled([
         notifyAllTechsOfService(service_id, ticket.id, ticket.title),
         notifyAllManagersOfService(service_id, ticket.id, ticket.title),
       ]);
@@ -90,7 +158,7 @@ console.log("👉 slaConfig trouvé:", slaConfig);
 
     res.json({ ticket });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Erreur création ticket:", err);
     res.status(500).json({ error: "Erreur lors de la création du ticket" });
   }
 });
@@ -126,23 +194,27 @@ router.get("/", async (req, res) => {
       orderBy: { created_at: "desc" },
     });
     const formatted = tickets.map((t) => ({
-      id: t.id,
-      title: t.title,
-      description: t.description,
-      category: t.category,
-      priority: t.priority,
-      status: t.status,
-      impact: t.impact,
-      urgency: t.urgency,
-      serviceId: t.service_id,
+      id:              t.id,
+      title:           t.title,
+      description:     t.description,
+      category:        t.category,
+      priority:        t.priority,
+      status:          t.status,
+      impact:          t.impact,
+      urgency:         t.urgency,
+      serviceId:       t.service_id,
+      serviceName:     t.services?.name || "N/A",
       sla:             t.sla_date_limite,
       date_expiration: t.sla_date_limite,
       sla_date_limite: t.sla_date_limite,
       sla_date_debut:  t.sla_date_debut,
-      createdBy: t.users_tickets_created_byTousers?.name,
-      employee: t.users_tickets_created_byTousers,
-      assignedTo: t.users_tickets_assigned_toTousers?.name,
-      technicienId: t.assigned_to,
+      closed_at:       t.closed_at,
+      created_at:      t.created_at,       // ← ajouter
+      assigned_at:     t.assigned_at, 
+      createdBy:       t.users_tickets_created_byTousers?.name,
+       employee:        t.users_tickets_created_byTousers,
+      assignedTo: t.users_tickets_assigned_toTousers,
+      technicienId:    t.assigned_to,
     }));
     res.json(formatted);
   } catch (err) {
@@ -154,17 +226,39 @@ router.put("/:id/status", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { status } = req.body;
+
+    const data = {
+      status,
+      updated_at: new Date(),
+    };
+
+    // ✅ IMPORTANT: set closed_at when closing
+    if (status === "closed") {
+      data.closed_at = new Date();
+    }
+
     const ticket = await prisma.tickets.update({
-      where: { id },
-      data: { status, updated_at: new Date() },
-    });
-    res.json(ticket);
+  where: { id },
+  data,
+});
+
+await prisma.ticket_comments.create({
+  data: {
+    ticket_id: id,
+    user_id: req.body.user_id || null,
+    comment: `Statut changé → ${status}`,
+    comment_type: "status",
+  },
+});
+
+res.json(ticket);
+
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to update status" });
   }
 });
-
 router.get("/techniciens", async (req, res) => {
   try {
     const techs = await prisma.users.findMany({
@@ -176,7 +270,24 @@ router.get("/techniciens", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
+router.get("/techniciens/service/:serviceId", async (req, res) => {
+  try {
+    const serviceId = parseInt(req.params.serviceId);
+    const techs = await prisma.users.findMany({
+      where: {
+        role: "technician",
+        service_id: serviceId,
+      },
+      select: {
+        id: true, name: true, surname: true,
+        email: true, phone: true, office: true, job_title: true,
+      },
+    });
+    res.json(techs);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -204,35 +315,43 @@ router.get("/:id", async (req, res) => {
       },
     });
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    const redirectComment = ticket.ticket_comments
+  .filter(c => c.comment_type === "redirect")
+  .at(-1) ?? null;
     res.json({
-      id: ticket.id,
-      title: ticket.title,
-      description: ticket.description,
-      category: ticket.category,
-      status: ticket.status,
-      priority: ticket.priority,
-      impact: ticket.impact,
-      urgency: ticket.urgency,
-      type: ticket.type,
-      sla_date_limite: ticket.sla_date_limite,
-      sla_date_debut:  ticket.sla_date_debut,
-      createdAt: ticket.created_at,
-      updatedAt: ticket.updated_at,
-      solution: ticket.solution,
-      closing_note: ticket.closing_note,
-      is_resolved_confirmed: ticket.is_resolved_confirmed,
+      id:                     ticket.id,
+      title:                  ticket.title,
+      description:            ticket.description,
+      category:               ticket.category,
+      status:                 ticket.status,
+      priority:               ticket.priority,
+      impact:                 ticket.impact,
+      urgency:                ticket.urgency,
+      type:                   ticket.type,
+      sla_date_limite:        ticket.sla_date_limite,
+      sla_date_debut:         ticket.sla_date_debut,
+      createdAt:              ticket.created_at,
+      updatedAt:              ticket.updated_at,
+      closed_at:               ticket.closed_at,
+      solution:               ticket.solution,
+      closing_note:           ticket.closing_note,
+      redirected_at:          redirectComment?.created_at ?? null,
+      redirect_note: ticket.redirect_note,
+      is_resolved_confirmed:  ticket.is_resolved_confirmed,
       confirmation_requested: ticket.confirmation_requested,
-      employee: ticket.users_tickets_created_byTousers,
-      technician: ticket.users_tickets_assigned_toTousers,
-      service: ticket.services?.name,
+      employee:               ticket.users_tickets_created_byTousers,
+      sla_pause_elapsed_ms: ticket.sla_pause_elapsed_ms ? Number(ticket.sla_pause_elapsed_ms) : null,
+      technician:             ticket.users_tickets_assigned_toTousers,
+      assigned_at: ticket.assigned_at,
+      service:                ticket.services?.name,
       comments: ticket.ticket_comments.map((c) => ({
-        id: c.id,
-        message: c.comment,
+        id:           c.id,
+        message:      c.comment,
         comment_type: c.comment_type ?? "comment",
-        author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole: c.users?.role ?? "",
-        authorId: c.users?.id,
-        date: c.created_at,
+        author:       `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
+        authorRole:   c.users?.role ?? "",
+        authorId:     c.users?.id,
+        date:         c.created_at,
         files: (c.ticket_attachments ?? []).map(a => ({
           fileName: a.file_name,
           filePath: a.file_path
@@ -249,74 +368,196 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { title, description, impact, urgency, status } = req.body;
-    if (!title || !description || !impact || !urgency) {
-      return res.status(400).json({ error: "All fields are required" });
+    const { title, description, impact, urgency, status, user_id } = req.body;
+
+    const changes = [];
+
+    const existingTicket = await prisma.tickets.findUnique({
+      where: { id }
+    });
+
+    if (!existingTicket) {
+      return res.status(404).json({ error: "Ticket not found" });
     }
+
+    // ✅ REOPEN RULE
+   let commentType = req.body._reopen ? "reopen" : "update";
+
+if (existingTicket.status === "closed" && status === "open") {
+  if (!existingTicket.closed_at) {
+    return res.status(400).json({ error: "Missing closed date" });
+  }
+
+  const diffDays = (Date.now() - new Date(existingTicket.closed_at)) / (1000 * 60 * 60 * 24);
+
+  if (diffDays > 30) {
+    return res.status(400).json({ error: "Reopen deadline expired" });
+  }
+
+  // ── Limite 2 réouvertures ──
+  const reopenCount = await prisma.ticket_comments.count({
+    where: { ticket_id: id, comment_type: "reopen" },
+  });
+  if (reopenCount >= 2) {
+    return res.status(400).json({ error: "Reopen limit reached" });
+  }
+
+  changes.push("Ticket réouvert");
+  commentType = "reopen";
+}
+
+    // ✅ TRACK CHANGES
+    if (title && title !== existingTicket.title) {
+      changes.push("Titre modifié");
+    }
+
+    if (description && description !== existingTicket.description) {
+      changes.push("Description modifiée");
+    }
+
+    if (impact && impact !== existingTicket.impact) {
+      changes.push(`Impact: ${existingTicket.impact} → ${impact}`);
+    }
+
+    if (urgency && urgency !== existingTicket.urgency) {
+      changes.push(`Urgence: ${existingTicket.urgency} → ${urgency}`);
+    }
+
+    if (status && status !== existingTicket.status) {
+      changes.push(`Statut: ${existingTicket.status} → ${status}`);
+    }
+
     const PRIORITY_MATRIX = {
-      high:   { high: "critical", medium: "high",   low: "medium" },
-      medium: { high: "high",     medium: "medium", low: "low"   },
-      low:    { high: "medium",   medium: "low",    low: "low"   },
-    };
-    const priority = PRIORITY_MATRIX[impact][urgency];
+  high:   { high: "high",   medium: "high",   low: "medium" },
+  medium: { high: "high",   medium: "medium", low: "low"    },
+  low:    { high: "medium", medium: "low",    low: "low"    },
+};
+   let priority = existingTicket.priority;
+
+if (impact && urgency) {
+  const computed = PRIORITY_MATRIX[impact]?.[urgency];
+  if (computed) priority = computed; // ← garde l'ancienne si calcul échoue
+}
+
+    // ✅ UPDATE
+ const updateData = {
+  ...(title && { title }),
+  ...(description && { description }),
+  ...(impact && { impact }),
+  ...(urgency && { urgency }),
+  ...(status && { status }),
+  ...(priority && { priority }),
+  updated_at: new Date(),
+  // ✅ Réinitialise la confirmation si réouverture
+  ...(existingTicket.status === "closed" && status === "open" && {
+    confirmation_requested: false,
+    is_resolved_confirmed: false,
+    
+    sla_statut: "en_cours",
+    closed_at: null,
+     
+  }),
+};
+
+    if (status === "closed") {
+      updateData.closed_at = new Date();
+    }
+
+    if (existingTicket.status === "closed" && status === "open") {
+      updateData.closed_at = null;
+    }
+
     const updatedTicket = await prisma.tickets.update({
       where: { id },
-      data: {
-        title, description, impact, urgency, priority,
-        status: status || undefined,
-        updated_at: new Date(),
-      },
+      data: updateData,
     });
-    res.json({
-      id: updatedTicket.id,
-      title: updatedTicket.title,
-      description: updatedTicket.description,
-      impact: updatedTicket.impact,
-      urgency: updatedTicket.urgency,
-      priority: updatedTicket.priority,
-      status: updatedTicket.status,
-      updatedAt: updatedTicket.updated_at,
-    });
+
+    // ✅ CREATE COMMENT IF CHANGES
+    if (changes.length > 0) {
+  const isReopen = commentType === "reopen";
+  await prisma.ticket_comments.create({
+    data: {
+      ticket_id: id,
+      user_id: user_id || null,
+      comment: isReopen
+        ? " Ticket réouvert par l'employé"
+        : ` Modifié par l'employé : ${changes.join(" | ")}`,
+      comment_type: commentType,
+    },
+  });
+}
+
+   // ── Notifier le technicien si réouverture ou modification ──
+    if (updatedTicket.assigned_to && changes.length > 0) {
+
+      const employee = user_id ? await prisma.users.findUnique({
+        where: { id: parseInt(user_id) },
+        select: { name: true, surname: true },
+      }) : null;
+      const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
+     const isReopen = commentType === "reopen";
+await notifyTechTicketUpdated(
+  updatedTicket.assigned_to, id, updatedTicket.title, empName,
+  isReopen ? "reopen" : "update"
+); }
+
+    res.json(updatedTicket);
+
   } catch (err) {
-    console.error("Détail de l'erreur :", err);
+    console.error(err);
     res.status(500).json({ error: "Erreur lors de la mise à jour" });
   }
 });
+
+// ── Assignation ───────────────────────────
 
 // ── Assignation ───────────────────────────────────────────────────────────
 router.put("/:id/assign", async (req, res) => {
   const ticketId = parseInt(req.params.id);
   const { assigned_to, technicienId, action, assigned_by } = req.body;
-  const techId = assigned_to || technicienId;
+  const techId = parseInt(assigned_to || technicienId);
   if (!techId) return res.status(400).json({ error: "Technician ID is required" });
   try {
     const ticket = await prisma.tickets.findUnique({
       where: { id: ticketId },
       select: { title: true, created_by: true },
     });
+   if (!ticket) { // ✅ FIX 2
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+  const updatedTicket = await prisma.tickets.update({
+  where: { id: ticketId },
+  data: {
+  users_tickets_assigned_toTousers: {
+    connect: { id: techId },
+  },
+  assigned_at: new Date(),
+  status: action === "taken" ? "in_progress" : "open",
+},
+});
 
-    const updatedTicket = await prisma.tickets.update({
-      where: { id: ticketId },
-      data: {
-        assigned_to: techId,
-        status: action === "taken" ? "in_progress" : "open",
-      },
-    });
+await prisma.ticket_comments.create({
+  data: {
+    ticket_id: ticketId,
+    user_id: assigned_by || null,
+    comment: action === "taken" ? "Technicien a pris en charge le ticket" : "Ticket assigné à un technicien",
+    comment_type: "status",
+  },
+});
 
     await prisma.ticket_assignments_history.create({
       data: {
-        ticket_id: ticketId,
+        ticket_id:    ticketId,
         from_user_id: action === "assigned" ? assigned_by : null,
-        to_user_id: techId,
-        action: action || "taken",
-        reason: action === "taken" ? "Technician took charge" : "Manager assigned",
+        to_user_id:   techId,
+        action:       action || "taken",
+        reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
       },
     });
 
-    // ── Notifier le technicien assigné ──
-    await notifyTechAssigned(techId, ticketId, ticket.title);
-
-    // ── Notifier l'employé que son ticket a été assigné ──
+    await Promise.allSettled([
+  notifyTechAssigned(techId, ticketId, ticket.title)
+]);
     if (ticket.created_by) {
       const tech = await prisma.users.findUnique({
         where: { id: techId },
@@ -327,17 +568,18 @@ router.put("/:id/assign", async (req, res) => {
     }
 
     res.json({
-      id: updatedTicket.id,
-      title: updatedTicket.title,
+      id:          updatedTicket.id,
+      title:       updatedTicket.title,
       description: updatedTicket.description,
-      status: updatedTicket.status,
+      status:      updatedTicket.status,
       assigned_to: updatedTicket.assigned_to,
-      createdAt: updatedTicket.created_at.toISOString(),
-      updatedAt: updatedTicket.updated_at.toISOString(),
+      assigned_at: updatedTicket.assigned_at,
+      createdAt:   updatedTicket.created_at.toISOString(),
+      updatedAt:   updatedTicket.updated_at.toISOString(),
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Impossible d'assigner le ticket" });
+    res.status(500).json({ error: "Impossible d'assigner le ticket" }, err);
   }
 });
 

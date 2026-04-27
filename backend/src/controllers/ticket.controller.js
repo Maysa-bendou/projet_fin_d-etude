@@ -8,30 +8,39 @@ const getMyTickets = async (req, res) => {
       where: { created_by: userId },
       include: {
         users_tickets_assigned_toTousers: {
-          select: { name: true, surname: true }
+          select: { name: true, surname: true },
         },
         services: {
-          select: { name: true }
-        }
+          select: { name: true },
+        },
       },
       orderBy: { created_at: "desc" },
     });
 
     const mapped = tickets.map((t) => ({
-      id: t.id,
-      title: t.title,
-      service: t.services?.name || "N/A",
+      id:       t.id,
+      title:    t.title,
+      service:  t.services?.name || "N/A",
       technicien: t.users_tickets_assigned_toTousers
         ? `${t.users_tickets_assigned_toTousers.name || ""} ${t.users_tickets_assigned_toTousers.surname || ""}`.trim()
         : "Non assigné",
-      status:          t.status,
-      priority:        t.priority,
+      status:   t.status,
+      priority: t.priority,
+
+      // ── Dates needed for archive logic ───────────────────────────────
+      // closed_at: set by the backend when status becomes "closed" or "rejected"
+      closed_at:  t.closed_at  ? t.closed_at.toISOString()  : null,
+      created_at: t.created_at ? t.created_at.toISOString() : null,
+      // ─────────────────────────────────────────────────────────────────
+
       sla_date_limite: t.sla_date_limite,
       sla_date_debut:  t.sla_date_debut,
-      dateCreation: t.created_at ? t.created_at.toISOString().split("T")[0] : "N/A",
-      maj: t.updated_at
-        ? t.updated_at.toISOString().split("T")[0] + " " + t.updated_at.toISOString().split("T")[1].slice(0, 5)
+      dateCreation: t.created_at
+        ? t.created_at.toISOString().split("T")[0]
         : "N/A",
+      updated_at: t.updated_at
+  ? t.updated_at.toISOString()
+  : null,
       urgency:  t.urgency,
       impact:   t.impact,
       category: t.category,

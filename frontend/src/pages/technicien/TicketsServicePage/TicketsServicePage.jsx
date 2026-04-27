@@ -1,251 +1,578 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, {
+  useState, useEffect, useMemo, useCallback, memo
+} from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  HiOutlineTicket, HiOutlineArchiveBox, HiOutlineChevronDown,
+  HiOutlineArrowPath, HiOutlineFunnel, HiOutlineMagnifyingGlass, HiOutlineXMark,
+} from "react-icons/hi2";
 import RefreshButton from "../../../components/common/RefreshButton";
+// AJOUTER après les imports existants
+import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
+// ── Constants (module-level, never re-created) ─────────────────────────────
 
-const SlaBar = ({ slaDueDate, slaDebut }) => {
-  if (!slaDueDate) return <span className="text-gray-400 text-[10px] italic">N/A</span>;
+const THIS_YEAR = new Date().getFullYear();
 
-  const now = Date.now();
-  const due = new Date(slaDueDate).getTime();
-  const debut = slaDebut ? new Date(slaDebut).getTime() : due - 24 * 3600000;
-  const diffMs = due - now;
-  const totalMs = due - debut;
-  const isExpired = diffMs <= 0;
-  const percentage = isExpired ? 100 : Math.max(0, Math.min(100, ((totalMs - diffMs) / totalMs) * 100));
 
-  const absDiff = Math.abs(diffMs);
-  const hours = Math.floor(absDiff / (1000 * 60 * 60));
-  const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
 
-  let barColor = "bg-green-500";
-  if (isExpired) barColor = "bg-red-500";
-  else if (hours < 2) barColor = "bg-red-400";
-  else if (hours < 6) barColor = "bg-orange-400";
+const LABEL_STYLE = {
+  fontSize: 11, fontWeight: 700, color: "#94a3b8",
+  textTransform: "uppercase", letterSpacing: "0.5px",
+  display: "block", marginBottom: 5,
+};
 
-  return (
-    <div className="flex flex-col gap-1 w-full max-w-[120px]">
-      <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-        <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${percentage}%` }} />
+const SELECT_STYLE = {
+  border: "1.5px solid #d9d4cc", borderRadius: 8,
+  padding: "8px 32px 8px 12px", fontSize: 13, fontWeight: 500,
+  color: "#1e293b", background: "#fff", outline: "none",
+  appearance: "none", cursor: "pointer", minWidth: 150, height: 38,
+};
+
+// ── Pure helpers ───────────────────────────────────────────────────────────
+
+const fmtDate = (str) => {
+  if (!str) return "—";
+  const d = new Date(str);
+  if (isNaN(d)) return "—";
+  return `${String(d.getDate()).padStart(2,"0")} ${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;
+};
+
+const getArchiveYear = (t) => t.closed_at ? new Date(t.closed_at).getFullYear() : null;
+
+const isArchived = (t) => {
+  if (t.status !== "closed" && t.status !== "rejected") return false;
+  const y = getArchiveYear(t);
+  return y !== null && y < THIS_YEAR;
+};
+
+// ── Debounce hook ──────────────────────────────────────────────────────────
+
+function useDebounce(value, delay = 220) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+// ── SLA Bar ────────────────────────────────────────────────────────────────
+
+const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }) => {
+  if (!slaDueDate)
+    return <span style={{ color: "#94a3b8", fontSize: 11, fontStyle: "italic" }}>N/A</span>;
+
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const now      = Date.now();
+  const due      = new Date(slaDueDate).getTime();
+  const debut    = slaDebut ? new Date(slaDebut).getTime() : due - 86400000;
+  const window   = due - debut;
+
+  // ── Terminal ──
+  if (TERMINAL.includes(status)) {
+    const closed   = closedAt ? new Date(closedAt).getTime() : due;
+    const exceeded = closed > due;
+    const delta    = Math.abs(closed - due);
+    const used     = exceeded ? window + delta : window - (due - closed);
+    const pct      = Math.min(100, Math.max(0, (used / window) * 100));
+    const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 100 }}>
+        <div style={{ height: 4, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: exceeded ? "#f87171" : "#34d399" }} />
+        </div>
+        <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#6b7280" }}>
+          {exceeded ? `dépassé +${h}h ${m}m` : `clôturé ✓`}
+        </span>
       </div>
-      <span className={`text-[9px] font-black uppercase whitespace-nowrap ${isExpired ? "text-red-600" : "text-gray-500"}`}>
-        {isExpired ? `Dépassé de ${hours}h` : `${hours}h ${minutes}m`}
+    );
+  }
+
+  // ── Pause ──
+  if (PAUSED.includes(status)) {
+    const frozen = slaPauseElapsed != null ? window - slaPauseElapsed : Math.max(0, due - now);
+    const pct    = Math.min(100, Math.max(0, ((window - frozen) / window) * 100));
+    const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 100 }}>
+        <div style={{ height: 4, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: "#a78bfa" }} />
+        </div>
+        <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: "#7c3aed" }}>
+          ⏸ {h}h {m}m figé
+        </span>
+      </div>
+    );
+  }
+
+  // ── Actif ──
+  const diffMs    = due - now;
+  const exceeded  = diffMs <= 0;
+  const pct       = Math.max(0, Math.min(100, ((window - Math.max(0, diffMs)) / window) * 100));
+  const abs       = Math.abs(diffMs);
+  const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
+  const barColor  = exceeded ? "#ef4444" : h < 2 ? "#f87171" : h < 6 ? "#fbbf24" : "#34d399";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 100 }}>
+      <div style={{ height: 4, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: barColor }} />
+      </div>
+      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#94a3b8" }}>
+        {exceeded ? `⚠ +${h}h dépassé` : `${h}h ${m}m`}
       </span>
     </div>
   );
-};
+});
+
+// ── FilterSelect ───────────────────────────────────────────────────────────
+
+const FilterSelect = memo(({ label, value, onChange, children }) => (
+  <div style={{ display: "flex", flexDirection: "column" }}>
+    <span style={LABEL_STYLE}>{label}</span>
+    <div style={{ position: "relative" }}>
+      <select value={value} onChange={e => onChange(e.target.value)} style={SELECT_STYLE}>
+        {children}
+      </select>
+      <HiOutlineChevronDown size={13} color="#94a3b8"
+        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+    </div>
+  </div>
+));
+
+// ── TabSwitch ──────────────────────────────────────────────────────────────
+
+const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
+  const tabs = [
+    { key: "actuels",  label: "Tickets actuels",               Icon: HiOutlineTicket,    count: actuelCount,  ac: "#1d4ed8", ab: "#eff6ff", abr: "#bfdbfe" },
+    { key: "archives", label: `Archives (avant ${THIS_YEAR})`, Icon: HiOutlineArchiveBox, count: archiveCount, ac: "#6b7280", ab: "#f3f4f6", abr: "#d1d5db" },
+  ];
+  return (
+    <div style={{ display: "inline-flex", background: "#ede9e3", borderRadius: 14, padding: 4, gap: 2, marginBottom: 24, border: "1px solid #d9d4cc", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.07)" }}>
+      {tabs.map(({ key, label, Icon, count, ac, ab, abr }) => {
+        const on = activeTab === key;
+        return (
+          <button key={key} onClick={() => setActiveTab(key)} style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "8px 22px", borderRadius: 10,
+            border: on ? `1.5px solid ${abr}` : "1.5px solid transparent",
+            background: on ? "#fff" : "transparent", cursor: "pointer",
+            fontSize: 13, fontWeight: on ? 700 : 500, color: on ? ac : "#94a3b8",
+            transition: "all 0.18s", boxShadow: on ? "0 2px 8px rgba(0,0,0,0.09)" : "none", whiteSpace: "nowrap",
+          }}>
+            <Icon size={15} style={{ color: on ? ac : "#c4bfb8", flexShrink: 0 }} />
+            <span>{label}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: on ? ab : "#e2ddd7", color: on ? ac : "#a8a29e", border: on ? `1px solid ${abr}` : "1px solid transparent", borderRadius: 20, padding: "0 8px", fontSize: 11, fontWeight: 700, minWidth: 22, height: 18 }}>
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+});
+
+// ── TicketRow (memoized — no re-render unless ticket data changes) ──────────
+
+const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
+  const technician = t.assignedTo || t.users_tickets_assigned_toTousers || null;
+
+  const empName = t.employee
+    ? `${t.employee.name || ""} ${t.employee.surname || ""}`.trim() || null
+    : t.employee_name || null;
+
+  const techName = technician && typeof technician === "object"
+    ? `${technician.name || ""} ${technician.surname || ""}`.trim() || null
+    : null;
+
+  const lastDate = activeTab === "archives" ? fmtDate(t.closed_at) : fmtDate(t.assigned_at);
+
+  const TD = ({ style, children }) => (
+    <td style={{ padding: "11px 14px", fontSize: 13, whiteSpace: "nowrap", ...style }}>{children}</td>
+  );
+  return (
+    <tr
+      onClick={() => navigate(`/${role}/tickets-service/${t.id}`)}
+      style={{ background: "#fff", borderBottom: isLast ? "none" : "1px solid #f1ede8", cursor: "pointer" }}
+      onMouseOver={e => e.currentTarget.style.background = "#faf7f4"}
+      onMouseOut={e  => e.currentTarget.style.background = "#fff"}
+    >
+      {/* ID */}
+      <TD style={{ fontWeight: 700, color: "#c4bfb8", fontSize: 12 }}>#{t.id}</TD>
+
+      {/* Titre */}
+      <td style={{ padding: "11px 14px", maxWidth: 240 }}>
+        <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
+          {t.title || "N/A"}
+        </span>
+      </td>
+
+      {/* Catégorie */}
+      <TD>
+       
+<Pill config={CATEGORY_CONFIG} value={t.category || t.categorie} />
+      </TD>
+
+      {/* Priorité */}
+      <TD>
+       <Pill config={PRIORITY_CONFIG} value={t.priority} />
+      </TD>
+
+      {/* Statut */}
+      <TD>
+       <Pill config={STATUS_CONFIG} value={t.status} /></TD>
+
+      {/* SLA */}
+      <td style={{ padding: "11px 14px", width: 120 }}>
+        {activeTab === "archives"
+          ? <span style={{ color: "#d1d5db", fontSize: 11 }}>—</span>
+          : <SlaBar
+  slaDueDate={t.sla_date_limite}
+  slaDebut={t.sla_date_debut}
+  status={t.status}
+  closedAt={t.closed_at}
+  slaPauseElapsed={t.sla_pause_elapsed_ms ?? null}
+/>}
+      </td>
+
+      {/* Employé */}
+      <TD style={{ color: "#64748b" }}>
+        {empName || <span style={{ color: "#d1d5db" }}>—</span>}
+      </TD>
+
+      {/* Technicien */}
+      <TD>
+        {techName ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ fontSize: 8, fontWeight: 900, color: "#1d4ed8" }}>
+                {(technician.name?.[0] || "").toUpperCase()}{(technician.surname?.[0] || "").toUpperCase()}
+              </span>
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{techName}</span>
+          </div>
+        ) : (
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#fb923c", fontStyle: "italic" }}>Non assigné</span>
+        )}
+      </TD>
+
+      {/* Créé le */}
+      <TD style={{ fontSize: 12, color: "#94a3b8" }}>{fmtDate(t.created_at)}</TD>
+
+      {/* Assigné le / Clôture */}
+      <TD style={{ fontSize: 12, color: "#94a3b8" }}>{lastDate}</TD>
+    </tr>
+  );
+});
+
+// ── Column config ──────────────────────────────────────────────────────────
+
+const COLS = [
+  { label: "ID",         width: "64px"  },
+  { label: "Titre",      width: "240px" },
+  { label: "Catégorie",  width: "120px" },
+  { label: "Priorité",   width: "105px" },
+  { label: "Statut",     width: "150px" },
+  { label: "SLA",        width: "120px" },
+  { label: "Employé",    width: "160px" },
+  { label: "Technicien", width: "180px" },
+  { label: "Créé le",    width: "115px" },
+  { label: null,         width: "115px" }, // dynamic label
+];
+
+// ── TicketTable ────────────────────────────────────────────────────────────
+
+const TicketTable = memo(({ tickets, navigate, role, activeTab }) => (
+  <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", overflow: "hidden" }}>
+    {tickets.length === 0 ? (
+      <div style={{ padding: "56px 24px", textAlign: "center" }}>
+        <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
+        <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>Aucun ticket pour les filtres sélectionnés.</p>
+      </div>
+    ) : (
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <colgroup>
+            {COLS.map((c, i) => <col key={i} style={{ width: c.width }} />)}
+          </colgroup>
+          <thead>
+            <tr style={{ background: "#f9f6f2", borderBottom: "2px solid #e8e2d9" }}>
+              {COLS.map((c, i) => (
+                <th key={i} style={{
+                  padding: "10px 14px", fontSize: 11, fontWeight: 700,
+                  color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px",
+                  whiteSpace: "nowrap", textAlign: "left",
+                  borderRight: i < COLS.length - 1 ? "1px solid #f1ede8" : "none",
+                }}>
+                  {c.label ?? (activeTab === "archives" ? "Date clôture" : "Assigné le")}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tickets.map((t, idx) => (
+              <TicketRow
+                key={t.id}
+                t={t}
+                navigate={navigate}
+                role={role}
+                activeTab={activeTab}
+                isLast={idx === tickets.length - 1}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+));
+
+// ── Main ───────────────────────────────────────────────────────────────────
 
 const TicketsServicePage = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  const role = user?.role || "";
-  const serviceId = user?.serviceId || user?.service_id || null;
 
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [dbEnums, setDbEnums] = useState({ statuts: [], categories: [] });
-  
-  const [filterStatus, setFilterStatus] = useState("Tous");
-  const [filterCategory, setFilterCategory] = useState("Tous");
-  const [filterAssignment, setFilterAssignment] = useState("Tous");
+  // Parse user once (not on every render)
+  const { role, serviceId } = useMemo(() => {
+    const u = JSON.parse(localStorage.getItem("user") || "null");
+    return { role: u?.role || "", serviceId: u?.serviceId || u?.service_id || null };
+  }, []);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const enumRes = await fetch("http://localhost:3001/api/tech/enums");
-      const enumData = await enumRes.json();
-      setDbEnums(enumData);
+  const [tickets,     setTickets]     = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [dbEnums,     setDbEnums]     = useState({ statuts: [], categories: [] });
+  const [serviceName, setServiceName] = useState("");
 
-      const res = await fetch("http://localhost:3001/api/tickets");
-      const data = await res.json();
-      const filtered = data.filter((t) => (t.serviceId || t.service_id) === serviceId);
-      setTickets(filtered);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
+  const [activeTab,        setActiveTab]        = useState("actuels");
+  const [filterSearch,     setFilterSearch]     = useState("");
+  const [filterStatus,     setFilterStatus]     = useState("");
+  const [filterCategory,   setFilterCategory]   = useState("");
+  const [filterAssignment, setFilterAssignment] = useState("");
+  const [filterYear,       setFilterYear]       = useState("");
+
+  // Debounce search — filters only trigger 220ms after the user stops typing
+  const debouncedSearch = useDebounce(filterSearch, 220);
+
+  // ── Fetch ────────────────────────────────────────────────────────────────
+
+const fetchData = useCallback(async () => {
+  setLoading(true);
+  try {
+    const u = JSON.parse(localStorage.getItem("user") || "null");
+    const userServiceId = u?.serviceId || u?.service_id;
+
+    const [enumRes, ticketsRes] = await Promise.all([
+      fetch("http://localhost:3001/api/tech/enums"),
+      fetch("http://localhost:3001/api/tickets"), // ← tous les tickets pour tout le monde
+    ]);
+
+    const enumData = await enumRes.json();
+    setDbEnums(enumData);
+
+    if (!ticketsRes.ok) throw new Error("Erreur tickets");
+    const allTickets = await ticketsRes.json();
+
+    // Filtrer par service du user (technicien, manager, chef)
+    const filtered = userServiceId
+      ? allTickets.filter(t => (t.serviceId || t.service_id) === userServiceId)
+      : allTickets;
+
+    setTickets(filtered);
+    setServiceName(filtered[0]?.serviceName || "");
+  } catch (err) {
+    console.error("Erreur fetchData:", err);
+  } finally {
+    setLoading(false);
+  }
+}, [serviceId, role]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Partition ────────────────────────────────────────────────────────────
+
+  const { actuelsList, archivesList, archiveYears } = useMemo(() => {
+    const actuals = [], archives = [];
+    const yearsSet = new Set();
+    for (const t of tickets) {
+      if (isArchived(t)) {
+        archives.push(t);
+        const y = getArchiveYear(t);
+        if (y) yearsSet.add(y);
+      } else {
+        actuals.push(t);
+      }
     }
-  }, [serviceId]);
+    return { actuelsList: actuals, archivesList: archives, archiveYears: [...yearsSet].sort((a,b) => b-a) };
+  }, [tickets]);
 
-  useEffect(() => {
-    if (serviceId) fetchData();
-  }, [serviceId, fetchData]);
+  // ── Filter (with debounced search) ───────────────────────────────────────
 
-  const filteredTickets = useMemo(() => {
-    return tickets.filter((t) => {
-      const matchesStatus = filterStatus === "Tous" || t.status === filterStatus;
-      const catValue = t.category || t.categorie || "N/A";
-      const matchesCategory = filterCategory === "Tous" || catValue === filterCategory;
-      const isAssigned = !!(t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers);
-      const matchesAssignment = filterAssignment === "Tous" || (filterAssignment === "Assigné" && isAssigned) || (filterAssignment === "Non assigné" && !isAssigned);
-      return matchesStatus && matchesCategory && matchesAssignment;
+  const filterList = useCallback((list, withYear = false) => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return list.filter(t => {
+      const cat      = t.category || t.categorie || "";
+      const assigned = !!(t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers);
+      return (
+        (!q || String(t.id).includes(q) || (t.title || "").toLowerCase().includes(q)) &&
+        (!filterStatus     || t.status === filterStatus) &&
+        (!filterCategory   || cat      === filterCategory) &&
+        (!filterAssignment || (filterAssignment === "assigned" ? assigned : !assigned)) &&
+        (!withYear || !filterYear || getArchiveYear(t) === parseInt(filterYear))
+      );
     });
-  }, [tickets, filterStatus, filterCategory, filterAssignment]);
+  }, [debouncedSearch, filterStatus, filterCategory, filterAssignment, filterYear]);
 
-  const priorityStyle = {
-    Critique: "bg-[#fff1f1] text-[#df2020] border border-[#fee2e2]",
-    Haute: "bg-[#fff1f1] text-[#df2020] border border-[#fee2e2]",
-    Moyenne: "bg-[#fff9eb] text-[#d99706] border border-[#fef0c7]",
-    Basse: "bg-[#eefdf3] text-[#11a75c] border border-[#d1f7e0]",
-    critical: "bg-[#fff1f1] text-[#df2020] border border-[#fee2e2]",
-    high: "bg-[#fff1f1] text-[#df2020] border border-[#fee2e2]",
-    medium: "bg-[#fff9eb] text-[#d99706] border border-[#fef0c7]",
-    low: "bg-[#eefdf3] text-[#11a75c] border border-[#d1f7e0]",
-  };
+  const filteredActuels  = useMemo(() => filterList(actuelsList,  false), [filterList, actuelsList]);
+  const filteredArchives = useMemo(() => filterList(archivesList, true),  [filterList, archivesList]);
 
-  const statusStyle = {
-    Ouvert: "bg-blue-100 text-blue-700",
-    "En cours": "bg-yellow-100 text-yellow-700",
-    "En attente": "bg-purple-100 text-purple-700",
-    Résolu: "bg-green-100 text-green-700",
-    Fermé: "bg-gray-200 text-gray-600",
-    open: "bg-blue-100 text-blue-700",
-    in_progress: "bg-yellow-100 text-yellow-700",
-  };
+  const displayedTickets = activeTab === "actuels" ? filteredActuels : filteredArchives;
+  const sourceList       = activeTab === "actuels" ? actuelsList     : archivesList;
 
-  if (loading) return <div className="p-8 text-gray-400 font-bold uppercase text-xs tracking-widest">Chargement...</div>;
+  const hasFilters = filterSearch || filterStatus || filterCategory || filterAssignment || filterYear;
+  const resetFilters = useCallback(() => {
+    setFilterSearch(""); setFilterStatus(""); setFilterCategory("");
+    setFilterAssignment(""); setFilterYear("");
+  }, []);
+
+  // ── Loading ──────────────────────────────────────────────────────────────
+
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#f9f6f2" }}>
+      <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 32, height: 32, border: "2px solid #d9d4cc", borderTopColor: "#374151", borderRadius: "50%", animation: "_spin 0.8s linear infinite" }} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>Chargement…</span>
+      </div>
+    </div>
+  );
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-8 min-h-screen bg-[#f9f6f2] font-sans">
-      
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight">
-            {role === "manager" ? "Gestion des tickets" : "Tickets du service"}
-          </h1>
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-            {filteredTickets.length} ticket(s) trouvé(s)
-          </p>
+    <div style={{ minHeight: "100vh", background: "#f9f6f2", fontFamily: "sans-serif" }}>
+
+      {/* Header */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #e8e2d9", padding: "18px 32px", position: "sticky", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 3px" }}>
+              {role === "manager" ? "Gestion des tickets" : "Tickets du service"}
+            </p>
+            <h1 style={{ fontSize: 21, fontWeight: 900, color: "#0f172a", margin: 0, lineHeight: 1 }}>
+              {serviceName
+                ? <>Service <span style={{ color: "#1d4ed8" }}>{serviceName}</span></>
+                : "Tous les tickets"}
+            </h1>
+          </div>
+          <span style={{ background: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 800, padding: "4px 12px", borderRadius: 99, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            {displayedTickets.length} ticket{displayedTickets.length !== 1 ? "s" : ""}
+          </span>
         </div>
         <RefreshButton onRefresh={fetchData} />
       </div>
 
-      {/* CARRÉ BLANC PRINCIPAL */}
-      <div className="bg-white rounded-[32px] border-2 border-[#d9d4cc] shadow-sm p-8">
-        
-        <h2 className="text-xl font-bold text-slate-800 mb-6">Filtres et recherche</h2>
+      {/* Body */}
+      <div style={{ padding: "24px 32px" }}>
 
-        {/* BARRE DE FILTRES STYLE IMAGE 3 & 11 */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          <div className="flex flex-col gap-1 min-w-[200px]">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-[#fcfafb] border border-gray-200 rounded-xl py-2.5 px-4 text-sm outline-none text-gray-600 focus:ring-2 focus:ring-blue-50"
-            >
-              <option value="Tous">Tous les statuts</option>
-              {dbEnums.statuts?.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
+        {/* Tabs */}
+        <TabSwitch
+          activeTab={activeTab}
+          setActiveTab={tab => { setActiveTab(tab); if (tab !== "archives") setFilterYear(""); }}
+          actuelCount={actuelsList.length}
+          archiveCount={archivesList.length}
+        />
 
-          <div className="flex flex-col gap-1 min-w-[200px]">
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="bg-[#fcfafb] border border-gray-200 rounded-xl py-2.5 px-4 text-sm outline-none text-gray-600 focus:ring-2 focus:ring-blue-50"
-            >
-              <option value="Tous">Toutes les catégories</option>
-              {dbEnums.categories?.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
+        {/* Filters */}
+        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", padding: "14px 18px", marginBottom: 20 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
 
-          <div className="flex flex-col gap-1 min-w-[200px]">
-            <select
-              value={filterAssignment}
-              onChange={(e) => setFilterAssignment(e.target.value)}
-              className="bg-[#fcfafb] border border-gray-200 rounded-xl py-2.5 px-4 text-sm outline-none text-gray-600 focus:ring-2 focus:ring-blue-50"
-            >
-              <option value="Tous">Toutes les assignations</option>
-              <option value="Assigné">Assignés</option>
-              <option value="Non assigné">Non assignés</option>
-            </select>
-          </div>
-
-          <button 
-            onClick={() => { setFilterStatus("Tous"); setFilterCategory("Tous"); setFilterAssignment("Tous"); }}
-            className="text-red-600 font-bold px-4 py-2.5 hover:bg-red-50 rounded-xl transition-colors text-sm"
-          >
-            Réinitialiser
-          </button>
-        </div>
-
-        {/* TABLEAU STYLISÉ BEIGE */}
-        <div className="overflow-hidden border-2 border-[#eeebe7] rounded-[24px] bg-[#f9f6f2]">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[11px] font-black text-[#94a3b8] uppercase tracking-[0.15em] bg-[#f9f6f2] border-b border-[#eeebe7]">
-                <th className="px-6 py-4">Titre / ID</th>
-                <th className="px-6 py-4">Catégorie</th>
-                <th className="px-6 py-4">Priorité</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4">Échéance SLA</th>
-                <th className="px-6 py-4">Employé</th>
-                <th className="px-6 py-4 text-right">Technicien</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#eeebe7] bg-white">
-              {filteredTickets.map((t) => {
-                const employee = t.employee || t.users_tickets_created_byTousers;
-                const technician = t.assignedTo || t.users_tickets_assigned_toTousers?.name;
-
-                return (
-                  <tr
-                    key={t.id}
-                    onClick={() => navigate(`/${role}/tickets-service/${t.id}`)}
-                    className="hover:bg-[#f3f0ec] cursor-pointer transition-colors group"
-                  >
-                    <td className="px-6 py-5">
-                      <p className="text-xs font-black text-slate-300 mb-0.5">#{t.id}</p>
-                      <p className="font-bold text-slate-700 group-hover:text-blue-600 transition-colors truncate max-w-[180px]">
-                        {t.title || "N/A"}
-                      </p>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <span className="text-[10px] font-black uppercase text-slate-400">
-                        {t.category || t.categorie || "N/A"}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${priorityStyle[t.priority] || "bg-gray-100 text-gray-500"}`}>
-                        {t.priority || "N/A"}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${statusStyle[t.status] || "bg-gray-100 text-gray-500"}`}>
-                        {t.status || "N/A"}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-5">
-                      <SlaBar slaDueDate={t.sla_date_limite} slaDebut={t.sla_date_debut} />
-                    </td>
-
-                    <td className="px-6 py-5 text-sm font-medium text-slate-500">
-                      {employee?.name ? `${employee.name}` : "N/A"}
-                    </td>
-
-                    <td className="px-6 py-5 text-right">
-                      {technician ? (
-                        <span className="text-sm font-bold text-slate-700">{technician}</span>
-                      ) : (
-                        <span className="text-[10px] font-black uppercase text-orange-400 italic">Non assigné</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          
-          {filteredTickets.length === 0 && (
-            <div className="bg-white py-12 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">
-              Aucun ticket trouvé
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={LABEL_STYLE}>Filtres</span>
+              <div style={{ height: 38, display: "flex", alignItems: "center" }}>
+                <HiOutlineFunnel size={16} color="#c4bfb8" />
+              </div>
             </div>
-          )}
+
+            {/* Search */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={LABEL_STYLE}>Recherche</span>
+              <div style={{ position: "relative" }}>
+                <HiOutlineMagnifyingGlass size={14} color="#94a3b8"
+                  style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                <input
+                  type="text"
+                  placeholder="ID ou titre…"
+                  value={filterSearch}
+                  onChange={e => setFilterSearch(e.target.value)}
+                  style={{ border: "1.5px solid #d9d4cc", borderRadius: 8, padding: "0 30px 0 32px", fontSize: 13, fontWeight: 500, color: "#1e293b", background: "#fff", outline: "none", height: 38, width: 200 }}
+                  onFocus={e => e.target.style.borderColor = "#93c5fd"}
+                  onBlur={e  => e.target.style.borderColor = "#d9d4cc"}
+                />
+                {filterSearch && (
+                  <button onClick={() => setFilterSearch("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
+                    <HiOutlineXMark size={14} color="#94a3b8" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <FilterSelect label="Statut" value={filterStatus} onChange={setFilterStatus}>
+              <option value="">Tous les statuts</option>
+              {dbEnums.statuts?.map(s => <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>)}
+            </FilterSelect>
+
+            <FilterSelect label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
+              <option value="">Toutes les catégories</option>
+              {dbEnums.categories?.map(c => <option key={c} value={c}>{CATEGORY_CONFIG[c]?.label || c}</option>)}
+            </FilterSelect>
+
+            <FilterSelect label="Assignation" value={filterAssignment} onChange={setFilterAssignment}>
+              <option value="">Toutes</option>
+              <option value="assigned">Assignés</option>
+              <option value="unassigned">Non assignés</option>
+            </FilterSelect>
+
+            {/* Year — archives only */}
+            {activeTab === "archives" && archiveYears.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={LABEL_STYLE}>Année de clôture</span>
+                <div style={{ position: "relative" }}>
+                  <select value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{ ...SELECT_STYLE, minWidth: 130 }}>
+                    <option value="">Toutes</option>
+                    {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <HiOutlineChevronDown size={13} color="#94a3b8" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                </div>
+              </div>
+            )}
+
+            {/* Reset */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ ...LABEL_STYLE, visibility: "hidden" }}>_</span>
+              <button onClick={resetFilters} style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", border: `1.5px solid ${hasFilters ? "#fca5a5" : "#d9d4cc"}`, borderRadius: 8, fontSize: 13, fontWeight: 500, color: hasFilters ? "#dc2626" : "#94a3b8", background: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
+                <HiOutlineArrowPath size={14} />
+                Réinitialiser
+              </button>
+            </div>
+
+            {/* Count */}
+            <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+              <span style={{ ...LABEL_STYLE, visibility: "hidden" }}>_</span>
+              <div style={{ height: 38, display: "flex", alignItems: "center" }}>
+                <span style={{ fontSize: 13, color: "#94a3b8" }}>
+                  <span style={{ fontWeight: 700, color: "#0f172a" }}>{displayedTickets.length}</span>{" "}
+                  ticket{displayedTickets.length !== 1 ? "s" : ""}
+                  {displayedTickets.length !== sourceList.length && <> sur {sourceList.length} total</>}
+                </span>
+              </div>
+            </div>
+
+          </div>
         </div>
+
+        {/* Table */}
+        <TicketTable tickets={displayedTickets} navigate={navigate} role={role} activeTab={activeTab} />
+
       </div>
     </div>
   );

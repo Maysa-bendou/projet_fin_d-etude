@@ -1,7 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { 
-  MdEmail, MdPhone, MdLocationOn, MdBuild, MdFlag
-} from "react-icons/md";
+import { MdEmail, MdPhone, MdLocationOn, MdBadge, MdDomain, MdWork, MdMeetingRoom, MdApartment } from "react-icons/md";
+import { HiOutlineIdentification } from "react-icons/hi2";
+
+const ROLE_LABELS = {
+  employee: "Employé", technician: "Technicien", chef_service: "Chef de service",
+  manager: "Manager", admin: "Administrateur",
+};
+
+const InfoRow = ({ icon: Icon, label, value, iconColor = "#94a3b8" }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f1ede8" }}>
+    <div style={{ width: 34, height: 34, borderRadius: 9, background: "#f9f6f2", border: "1px solid #e8e2d9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <Icon size={16} color={iconColor} />
+    </div>
+    <div>
+      <p style={{ fontSize: 10, fontWeight: 700, color: "#b0a99e", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 2 }}>{label}</p>
+      <p style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>{value || "—"}</p>
+    </div>
+  </div>
+);
+
+const Card = ({ title, icon: Icon, children, span }) => (
+  <div style={{ background: "#fff", border: "1px solid #d9d4cc", borderRadius: 14, padding: "22px 24px", gridColumn: span }}>
+    {title && (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <Icon size={15} color="#b20000" />
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>{title}</span>
+      </div>
+    )}
+    {children}
+  </div>
+);
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
@@ -9,153 +37,86 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    (async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Non authentifié");
-
-        const response = await fetch("http://localhost:3001/api/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) throw new Error("Erreur chargement");
-
-        const data = await response.json();
-        setUser(data);
-      } catch (err) {
-        setError("Impossible de charger le profil.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
+        const res = await fetch("http://localhost:3001/api/profile", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error("Erreur chargement");
+        setUser(await res.json());
+      } catch { setError("Impossible de charger le profil."); }
+      finally { setLoading(false); }
+    })();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#f9f6f2] text-slate-500">
-        Chargement du profil...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#f9f6f2] text-red-500">
-        {error}
-      </div>
-    );
-  }
+  if (loading) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#f9f6f2", color: "#94a3b8", fontSize: 14 }}>Chargement…</div>;
+  if (error)   return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#f9f6f2", color: "#dc2626", fontSize: 14 }}>{error}</div>;
 
   const initials = `${user.name?.[0] ?? ""}${user.surname?.[0] ?? ""}`.toUpperCase();
-  const card = "bg-white border border-slate-200 rounded-xl shadow-sm p-6";
 
   return (
-    <div className="min-h-screen bg-[#f9f6f2] p-8">
+    <div style={{ minHeight: "100vh", background: "#f9f6f2", padding: "32px" }}>
 
-      {/* HEADER */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Mon Profil</h1>
-        <p className="text-sm text-slate-500">Informations personnelles et professionnelles</p>
+      {/* Page title */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 3px" }}>Mon Profil</h1>
+        <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>Informations personnelles et professionnelles</p>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 960 }}>
 
-        {/* IDENTITÉ */}
-        <div className={`${card} flex items-center gap-5`}>
-          <div className="w-16 h-16 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 font-bold text-xl">
-            {initials}
-          </div>
-
-          <div>
-            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
-              Collaborateur
-            </p>
-
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              {user.name} {user.surname}
-              <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
-                <MdFlag size={14} />
-                Algérienne
-              </span>
-            </h2>
-          </div>
-        </div>
-
-        {/* LOCALISATION */}
-        <div className={card}>
-          <h3 className="text-sm font-bold text-slate-700 mb-4">Localisation</h3>
-
-          <div className="flex gap-3 text-slate-600">
-            <MdLocationOn size={20} className="text-indigo-500" />
-            <div className="text-sm">
-              <p className="font-semibold text-slate-800">Djezzy Headquarters</p>
-              Bloc {user.block_number ?? "—"} / Bureau {user.office ?? "—"}
+        {/* ── Identity hero card (full width) ── */}
+        <div style={{ gridColumn: "1 / -1", background: "#fff", border: "1px solid #d9d4cc", borderRadius: 14, padding: "24px 28px", display: "flex", alignItems: "center", gap: 22 }}>
+          {/* Avatar */}
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div style={{ width: 72, height: 72, borderRadius: 18, background: "linear-gradient(135deg,#b20000,#7f1111)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: "-1px" }}>
+              {initials}
             </div>
+            <div style={{ position: "absolute", bottom: -3, right: -3, width: 16, height: 16, borderRadius: "50%", background: "#22c55e", border: "2.5px solid #fff" }} />
+          </div>
+
+          {/* Name + role */}
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#b20000", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Collaborateur Djezzy</p>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", margin: "0 0 6px" }}>{user.name} {user.surname}</h2>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#f9f6f2", border: "1px solid #e2ddd8", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+              <HiOutlineIdentification size={13} />
+              {ROLE_LABELS[user.role] ?? user.role}
+            </span>
+          </div>
+
+          {/* Active badge */}
+          <div style={{ textAlign: "right" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 20, padding: "4px 12px" }}>● Actif</span>
           </div>
         </div>
 
-        {/* CONTACT */}
-        <div className={card}>
-          <h3 className="text-sm font-bold text-slate-700 mb-4">Contact</h3>
-
-          <div className="space-y-4 text-sm">
-
-            <div className="flex items-center gap-3">
-              <MdEmail size={18} className="text-blue-500" />
-              <span className="font-medium text-slate-700">{user.email}</span>
-            </div>
-
-            <div className="flex items-center gap-3 pt-3 border-t">
-              <MdPhone size={18} className="text-emerald-500" />
-              <span className="font-medium text-slate-700">
-                {user.phone ?? "Non renseigné"}
-              </span>
-            </div>
-
+        {/* ── Contact ── */}
+        <Card title="Contact" icon={MdEmail}>
+          <div style={{ marginTop: 12 }}>
+            <InfoRow icon={MdEmail}  label="Email"    value={user.email}           iconColor="#3b82f6" />
+            <InfoRow icon={MdPhone}  label="Téléphone" value={user.phone}          iconColor="#22c55e" />
           </div>
-        </div>
+        </Card>
 
-        {/* DÉTAILS PRO */}
-        <div className={`${card} md:col-span-2 xl:col-span-3`}>
-          <div className="flex items-center gap-2 mb-6">
-            <MdBuild className="text-purple-500" />
-            <h3 className="text-sm font-bold text-slate-700">
-              Détails Professionnels
-            </h3>
+        {/* ── Localisation ── */}
+        <Card title="Localisation" icon={MdLocationOn}>
+          <div style={{ marginTop: 12 }}>
+            <InfoRow icon={MdApartment}  label="Bloc"   value={user.block_number ? `Bloc ${user.block_number}` : null} iconColor="#8b5cf6" />
+            <InfoRow icon={MdMeetingRoom} label="Bureau" value={user.office ? ` ${user.office}` : null}          iconColor="#f59e0b" />
           </div>
+        </Card>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-            <div>
-              <p className="text-slate-400 text-xs uppercase font-bold">Rôle</p>
-              <p className="font-semibold text-slate-800">{user.role}</p>
-            </div>
-
-            <div>
-              <p className="text-slate-400 text-xs uppercase font-bold">Département</p>
-              <p className="font-semibold text-slate-800">
-                {user.department ?? "—"}
-              </p>
-            </div>
-
-            {(user.role === "technician" || user.role === "manager") && (
-              <div>
-                <p className="text-slate-400 text-xs uppercase font-bold">Service</p>
-                <p className="font-semibold text-slate-800">
-                  {user.services?.name ?? "Non assigné"}
-                </p>
-              </div>
+        {/* ── Poste ── */}
+        <Card title="Poste" icon={MdWork}>
+          <div style={{ marginTop: 12 }}>
+            <InfoRow icon={MdWork}   label="Intitulé"    value={user.job_title}                                           iconColor="#b20000" />
+            <InfoRow icon={MdDomain} label="Département" value={user.department}                                          iconColor="#0ea5e9" />
+            {(user.role === "technician" || user.role === "manager" || user.role === "chef_service") && (
+              <InfoRow icon={MdBadge} label="Service" value={user.services?.name} iconColor="#7c3aed" />
             )}
-
-            <div>
-              <p className="text-slate-400 text-xs uppercase font-bold">Poste</p>
-              <p className="font-semibold text-slate-800">
-                {user.job_title ?? "—"}
-              </p>
-            </div>
           </div>
-        </div>
+        </Card>
 
       </div>
     </div>

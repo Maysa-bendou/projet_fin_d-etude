@@ -1,27 +1,67 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import {
+  HiOutlineTicket,
+  HiOutlineArchiveBox,
+  HiOutlineChevronDown,
+  HiOutlineArrowPath,
+  HiOutlineFunnel,
+} from "react-icons/hi2";
+import RefreshButton from "../../../components/common/RefreshButton";
+import { PRIORITY_CONFIG, STATUS_CONFIG } from "../../../config/styles";
+import Pill from "../../../components/common/Pill";
 
-const STATUS_CONFIG = {
-  open:             { label: "Ouvert",           bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  in_progress:      { label: "En cours",         bg: "#f5f3ff", color: "#7c3aed", border: "#ddd6fe" },
-  resolved:         { label: "Résolu",           bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
-  closed:           { label: "Fermé",            bg: "#f9fafb", color: "#6b7280", border: "#e5e7eb" },
-  rejected:         { label: "Rejeté",           bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
-  pending:          { label: "En attente",       bg: "#fefce8", color: "#a16207", border: "#fde68a" },
-  pending_supplier: { label: "Attente fournisseur", bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
+// ── Config ─────────────────────────────────────────────────────────────────
+
+const THIS_YEAR = new Date().getFullYear();
+
+// ── Date helpers ───────────────────────────────────────────────────────────
+
+const fmtDate = (str, withTime = false) => {
+  if (!str) return "—";
+  const d = new Date(str);
+  if (isNaN(d)) return "—";
+  const day   = String(d.getDate()).padStart(2, "0");
+  const month = d.toLocaleString("fr-FR", { month: "short" });
+  const year  = d.getFullYear();
+  if (!withTime) return `${day} ${month} ${year}`;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${day} ${month} ${year} · ${hh}:${mm}`;
 };
 
-const PRIORITY_CONFIG = {
-  critical: { label: "Critique", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
-  high:     { label: "Haute",    color: "#ea580c", bg: "#fff7ed", border: "#fed7aa" },
-  medium:   { label: "Normale",  color: "#ca8a04", bg: "#fefce8", border: "#fde68a" },
-  low:      { label: "Basse",    color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
+// ── Archive logic ──────────────────────────────────────────────────────────
+
+const getArchiveYear = (t) => {
+  if (!t.closed_at) return null;
+  return new Date(t.closed_at).getFullYear();
+};
+
+function isArchived(ticket) {
+  if (ticket.status === "closed" || ticket.status === "rejected") {
+    const year = getArchiveYear(ticket);
+    return year !== null && year < THIS_YEAR;
+  }
+  return false;
+}
+
+// ── Shared UI helpers ──────────────────────────────────────────────────────
+
+const LABEL_STYLE = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: "#94a3b8",
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+  display: "block",
+  marginBottom: 5,
 };
 
 const selectStyle = {
   border: "1.5px solid #d9d4cc",
   borderRadius: 8,
-  padding: "8px 32px 8px 12px",
+  padding: "8px 36px 8px 12px",
   fontSize: 13,
   fontWeight: 500,
   color: "#1e293b",
@@ -30,69 +70,264 @@ const selectStyle = {
   appearance: "none",
   cursor: "pointer",
   minWidth: 160,
+  height: 38,
 };
 
-const ChevronDown = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
-    strokeLinecap="round" strokeLinejoin="round"
-    style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
 const FilterSelect = ({ label, value, onChange, children }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-    <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</span>
+  <div style={{ display: "flex", flexDirection: "column" }}>
+    <span style={LABEL_STYLE}>{label}</span>
     <div style={{ position: "relative" }}>
       <select value={value} onChange={e => onChange(e.target.value)} style={selectStyle}>
         {children}
       </select>
-      <ChevronDown />
+      <HiOutlineChevronDown
+        size={13} color="#94a3b8"
+        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+      />
     </div>
   </div>
 );
 
-export default function MesTicketsPage() {
-  const navigate = useNavigate();
-  const [ticketsData, setTicketsData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [hoveredTicketId, setHoveredTicketId] = useState(null);
-  
-  // ── États pour les options dynamiques depuis la DB (restauré de l'ancien code) ──
-  const [dbEnums, setDbEnums] = useState({ statuts: [], priorites: [], categories: [] });
-  const [dbServices, setDbServices] = useState([]);
-  
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterPriority, setFilterPriority] = useState("");
-  const [filterService, setFilterService] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
+// ── Tab Switch ─────────────────────────────────────────────────────────────
 
-  // ── Fetch data avec les enums et services depuis la DB ──
+const TabSwitch = ({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
+  const { t } = useTranslation('employee');
+
+  const tabs = [
+    {
+      key: "actuels",
+      label: t("mesTickets.tabs.current"),
+      Icon: HiOutlineTicket,
+      count: actuelCount,
+      activeColor: "#1d4ed8",
+      activeBg: "#eff6ff",
+      activeBorder: "#bfdbfe",
+    },
+    {
+      key: "archives",
+      label: t("mesTickets.tabs.archives", { year: THIS_YEAR }),
+      Icon: HiOutlineArchiveBox,
+      count: archiveCount,
+      activeColor: "#6b7280",
+      activeBg: "#f3f4f6",
+      activeBorder: "#d1d5db",
+    },
+  ];
+
+  return (
+    <div style={{
+      display: "inline-flex",
+      background: "#ede9e3",
+      borderRadius: 14,
+      padding: "4px",
+      gap: 2,
+      marginBottom: 24,
+      border: "1px solid #d9d4cc",
+      boxShadow: "inset 0 1px 4px rgba(0,0,0,0.07)",
+    }}>
+      {tabs.map(({ key, label, Icon, count, activeColor, activeBg, activeBorder }) => {
+        const isActive = activeTab === key;
+        return (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 22px",
+              borderRadius: 10,
+              border: isActive ? `1.5px solid ${activeBorder}` : "1.5px solid transparent",
+              background: isActive ? "#ffffff" : "transparent",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? activeColor : "#94a3b8",
+              transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+              boxShadow: isActive
+                ? "0 2px 8px rgba(0,0,0,0.09), 0 1px 2px rgba(0,0,0,0.06)"
+                : "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Icon
+              size={15}
+              style={{
+                color: isActive ? activeColor : "#c4bfb8",
+                transition: "color 0.2s",
+                flexShrink: 0,
+              }}
+            />
+            <span>{label}</span>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: isActive ? activeBg : "#e2ddd7",
+              color: isActive ? activeColor : "#a8a29e",
+              border: isActive ? `1px solid ${activeBorder}` : "1px solid transparent",
+              borderRadius: 20,
+              padding: "0 8px",
+              fontSize: 11,
+              fontWeight: 700,
+              minWidth: 22,
+              height: 18,
+              lineHeight: "18px",
+              transition: "all 0.2s",
+            }}>
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+// ── Ticket Table ───────────────────────────────────────────────────────────
+
+const CELL = { padding: "13px 14px", fontSize: 13, whiteSpace: "nowrap" };
+
+const TicketTable = ({ tickets, navigate, hoveredTicketId, setHoveredTicketId, activeTab }) => {
+  const { t } = useTranslation();
+
+  const columns = [
+    t("table.id"),
+    t("table.title"),
+    t("table.service"),
+    t("table.assignedTo"),
+    t("table.priority"),
+    t("table.status"),
+    t("table.createdAt"),
+    activeTab === "archives" ? t("table.closedAt") : t("table.lastUpdate"),
+  ];
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc" }}>
+      {tickets.length === 0 ? (
+        <div style={{ padding: "56px 24px", textAlign: "center" }}>
+          <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
+          <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>
+            {t("common.noTicketsFilter")}
+          </p>
+        </div>
+      ) : (
+        <div style={{ margin: 16, border: "1px solid #e8e2d9", borderRadius: 10, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <thead>
+              <tr style={{ background: "#f9f6f2" }}>
+                {columns.map(col => (
+                  <th key={col} style={{
+                    padding: "11px 14px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#94a3b8",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.4px",
+                    borderBottom: "1px solid #e8e2d9",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.map((ticket, idx) => {
+                const lastDate = activeTab === "archives"
+                  ? fmtDate(ticket.closed_at)
+                  : fmtDate(ticket.updated_at || ticket.created_at);
+
+                return (
+                  <tr
+                    key={ticket.id}
+                    onClick={() => navigate(`/employee/ticket/${ticket.id}`)}
+                    onMouseEnter={() => setHoveredTicketId(ticket.id)}
+                    onMouseLeave={() => setHoveredTicketId(null)}
+                    style={{
+                      background: "#fff",
+                      borderBottom: idx < tickets.length - 1 ? "1px solid #f1ede8" : "none",
+                      cursor: "pointer",
+                      transition: "background 0.12s",
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = "#faf7f4"}
+                    onMouseOut={e => e.currentTarget.style.background = "#fff"}
+                  >
+                    <td style={{ ...CELL, fontWeight: 600, color: "#c4bfb8" }}>
+                      #{ticket.id}
+                    </td>
+                    <td style={{ ...CELL, fontWeight: 600, color: "#0f172a", maxWidth: 220 }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                        {ticket.title}
+                      </span>
+                    </td>
+                    <td style={{ ...CELL, color: "#64748b" }}>
+                      {ticket.service || <span style={{ color: "#d1d5db" }}>—</span>}
+                    </td>
+                    <td style={{ ...CELL, color: "#64748b" }}>
+                      {ticket.technicien || <span style={{ color: "#d1d5db" }}>{t("common.unassigned")}</span>}
+                    </td>
+                    <td style={CELL}>
+                      <Pill config={PRIORITY_CONFIG} value={ticket.priority} />
+                    </td>
+                    <td style={CELL}>
+                      <Pill config={STATUS_CONFIG} value={ticket.status} />
+                    </td>
+                    <td style={{ ...CELL, color: "#94a3b8" }}>
+                      {fmtDate(ticket.created_at)}
+                    </td>
+                    <td style={{ ...CELL, color: "#94a3b8" }}>
+                      {lastDate}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Main page ──────────────────────────────────────────────────────────────
+
+export default function MesTicketsPage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [ticketsData, setTicketsData]         = useState([]);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState(null);
+  const [mousePos, setMousePos]               = useState({ x: 0, y: 0 });
+  const [hoveredTicketId, setHoveredTicketId] = useState(null);
+
+  const [dbEnums, setDbEnums]       = useState({ statuts: [], priorites: [], categories: [] });
+  const [dbServices, setDbServices] = useState([]);
+
+  const [activeTab,      setActiveTab]      = useState("actuels");
+  const [filterStatus,   setFilterStatus]   = useState("");
+  const [filterPriority, setFilterPriority] = useState("");
+  const [filterService,  setFilterService]  = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterYear,     setFilterYear]     = useState("");
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      if (!user?.id) {
-        navigate("/login");
-        return;
-      }
+      if (!user?.id) { navigate("/login"); return; }
 
-      // ✅ Restauré: fetch des enums et services depuis la DB
-      const enumRes = await fetch("http://localhost:3001/api/tech/enums");
-      const enumData = await enumRes.json();
-      setDbEnums(enumData);
+      const [enumRes, serviceRes, ticketRes] = await Promise.all([
+        fetch("http://localhost:3001/api/tech/enums"),
+        fetch("http://localhost:3001/api/tech/services"),
+        fetch(`http://localhost:3001/api/tickets/my/${user.id}`),
+      ]);
 
-      const serviceRes = await fetch("http://localhost:3001/api/tech/services");
-      const servicesData = await serviceRes.json();
-      setDbServices(servicesData);
-
-      const ticketRes = await fetch(`http://localhost:3001/api/tickets/my/${user.id}`);
-      if (!ticketRes.ok) throw new Error("Erreur lors de la récupération des tickets");
-      const ticketData = await ticketRes.json();
-      setTicketsData(ticketData);
-
+      setDbEnums(await enumRes.json());
+      setDbServices(await serviceRes.json());
+      if (!ticketRes.ok) throw new Error(t("mesTickets.fetchError"));
+      setTicketsData(await ticketRes.json());
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -101,41 +336,70 @@ export default function MesTicketsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [navigate]);
+  useEffect(() => { fetchData(); }, [navigate]);
 
-  // ── Filtrage et tri ──
-  const filteredTickets = useMemo(() => {
-    return ticketsData
-      .filter(t => {
-        const matchesStatus = !filterStatus || t.status === filterStatus;
-        const matchesPriority = !filterPriority || t.priority === filterPriority;
-        const matchesService = !filterService || t.service === filterService;
-        const matchesCategory = !filterCategory || t.category === filterCategory;
-        return matchesStatus && matchesPriority && matchesService && matchesCategory;
-      })
-      .sort((a, b) => new Date(b.dateCreation) - new Date(a.dateCreation));
-  }, [ticketsData, filterStatus, filterPriority, filterService, filterCategory]);
+  const applyCommonFilters = (list, tab) =>
+    list
+      .filter(ticket =>
+        (!filterStatus   || ticket.status   === filterStatus)   &&
+        (!filterPriority || ticket.priority === filterPriority) &&
+        (!filterService  || ticket.service  === filterService)  &&
+        (!filterCategory || ticket.category === filterCategory)
+      )
+      .sort((a, b) => {
+        const da = tab === "archives" ? (a.closed_at || a.created_at) : (a.updated_at || a.created_at);
+        const db = tab === "archives" ? (b.closed_at || b.created_at) : (b.updated_at || b.created_at);
+        return new Date(db) - new Date(da);
+      });
 
-  const hasFilters = filterStatus || filterPriority || filterService || filterCategory;
+  const { actuels, archives, archiveYears } = useMemo(() => {
+    const actuelsList  = [];
+    const archivesList = [];
+    const yearsSet     = new Set();
+
+    for (const ticket of ticketsData) {
+      if (isArchived(ticket)) {
+        archivesList.push(ticket);
+        const y = getArchiveYear(ticket);
+        if (y) yearsSet.add(y);
+      } else {
+        actuelsList.push(ticket);
+      }
+    }
+
+    return {
+      actuels:      applyCommonFilters(actuelsList, "actuels"),
+      archives:     applyCommonFilters(archivesList, "archives")
+                      .filter(ticket => !filterYear || getArchiveYear(ticket) === parseInt(filterYear)),
+      archiveYears: [...yearsSet].sort((a, b) => b - a),
+    };
+  }, [ticketsData, filterStatus, filterPriority, filterService, filterCategory, filterYear]);
+
+  const hasFilters = filterStatus || filterPriority || filterService || filterCategory || filterYear;
+  const resetFilters = () => {
+    setFilterStatus(""); setFilterPriority(""); setFilterService("");
+    setFilterCategory(""); setFilterYear("");
+  };
 
   if (loading) return (
     <div style={{ padding: 40, textAlign: "center", color: "#1d4ed8", fontWeight: 600, background: "#f9f6f2", minHeight: "100vh" }}>
-      Chargement des tickets...
+      {t("common.loading")}
     </div>
   );
   if (error) return (
     <div style={{ padding: 40, textAlign: "center", color: "#dc2626", background: "#f9f6f2", minHeight: "100vh" }}>
-      Erreur : {error}
+      {t("common.error")} : {error}
     </div>
   );
 
-  return (
-    <div style={{ padding: "32px", background: "#f9f6f2", minHeight: "100vh" }}
-      onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}>
+  const displayedTickets = activeTab === "actuels" ? actuels : archives;
 
-      {/* Tooltip flottant */}
+  return (
+    <div
+      style={{ padding: "32px", background: "#f9f6f2", minHeight: "100vh" }}
+      onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}
+    >
+      {/* Tooltip */}
       {hoveredTicketId && (
         <div style={{
           position: "fixed", pointerEvents: "none", zIndex: 50,
@@ -144,163 +408,147 @@ export default function MesTicketsPage() {
           background: "#1e293b", color: "#fff", fontSize: 11,
           padding: "4px 10px", borderRadius: 6, whiteSpace: "nowrap",
         }}>
-          Cliquer pour voir les détails
+          {t("common.clickForDetails")}
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ marginBottom: 26 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>Mes Tickets</h1>
-        <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>Suivez et gérez l'état de vos demandes de support.</p>
+      {/* ── Page header ─────────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        marginBottom: 28,
+      }}>
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>
+            {t("mesTickets.title")}
+          </h1>
+          <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
+            {t("mesTickets.subtitle")}
+          </p>
+        </div>
+        <RefreshButton onRefresh={fetchData} />
       </div>
 
-      {/* Filters card */}
-      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", padding: "18px 22px", marginBottom: 20, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end" }}>
-        <FilterSelect label="Statut" value={filterStatus} onChange={setFilterStatus}>
-          <option value="">Tous les statuts</option>
-          {dbEnums.statuts?.map(s => (
-            <option key={s} value={s}>
-              {STATUS_CONFIG[s]?.label || s}
-            </option>
-          ))}
-        </FilterSelect>
+      {/* ── Tabs ────────────────────────────────────────────────────────── */}
+      <TabSwitch
+        activeTab={activeTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          if (tab !== "archives") setFilterYear("");
+        }}
+        actuelCount={actuels.length}
+        archiveCount={archives.length}
+      />
 
-        <FilterSelect label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
-          <option value="">Toutes les catégories</option>
-          {dbEnums.categories?.map(c => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </FilterSelect>
+      {/* ── Filters bar ─────────────────────────────────────────────────── */}
+      <div style={{
+        background: "#fff",
+        borderRadius: 12,
+        border: "1px solid #d9d4cc",
+        padding: "16px 20px",
+        marginBottom: 24,
+      }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, alignItems: "flex-end" }}>
 
-        <FilterSelect label="Priorité" value={filterPriority} onChange={setFilterPriority}>
-          <option value="">Toutes les priorités</option>
-          {dbEnums.priorites?.map(p => (
-            <option key={p} value={p}>
-              {PRIORITY_CONFIG[p]?.label || p}
-            </option>
-          ))}
-        </FilterSelect>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={LABEL_STYLE}>{t("mesTickets.filters.label")}</span>
+            <div style={{ height: 38, display: "flex", alignItems: "center", paddingLeft: 2 }}>
+              <HiOutlineFunnel size={16} color="#c4bfb8" />
+            </div>
+          </div>
 
-        <FilterSelect label="Service" value={filterService} onChange={setFilterService}>
-          <option value="">Tous les services</option>
-          {dbServices.map(s => (
-            <option key={s.id} value={s.name}>{s.name}</option>
-          ))}
-        </FilterSelect>
+          <FilterSelect label={t("mesTickets.filters.status")} value={filterStatus} onChange={setFilterStatus}>
+            <option value="">{t("mesTickets.filters.allStatuses")}</option>
+            {dbEnums.statuts?.map(s => (
+              <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>
+            ))}
+          </FilterSelect>
 
-        <button
-          onClick={() => { setFilterStatus(""); setFilterPriority(""); setFilterService(""); setFilterCategory(""); }}
-          style={{ 
-            padding: "8px 16px", 
-            border: "1.5px solid #d9d4cc", 
-            borderRadius: 8, 
-            fontSize: 13, 
-            fontWeight: 500, 
-            color: hasFilters ? "#dc2626" : "#94a3b8", 
-            background: "#fff", 
-            cursor: "pointer", 
-            marginTop: "auto", 
-            borderColor: hasFilters ? "#fca5a5" : "#d9d4cc", 
-            transition: "all 0.15s" 
-          }}>
-          Réinitialiser
-        </button>
+          <FilterSelect label={t("mesTickets.filters.category")} value={filterCategory} onChange={setFilterCategory}>
+            <option value="">{t("mesTickets.filters.allCategories")}</option>
+            {dbEnums.categories?.map(c => <option key={c} value={c}>{c}</option>)}
+          </FilterSelect>
 
-        <div style={{ marginLeft: "auto", marginTop: "auto" }}>
-          <span style={{ fontSize: 13, color: "#94a3b8" }}>
-            <span style={{ fontWeight: 700, color: "#0f172a" }}>{filteredTickets.length}</span> ticket{filteredTickets.length !== 1 ? "s" : ""}
-          </span>
+          <FilterSelect label={t("mesTickets.filters.priority")} value={filterPriority} onChange={setFilterPriority}>
+            <option value="">{t("mesTickets.filters.allPriorities")}</option>
+            {dbEnums.priorites?.map(p => (
+              <option key={p} value={p}>{PRIORITY_CONFIG[p]?.label || p}</option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect label={t("mesTickets.filters.service")} value={filterService} onChange={setFilterService}>
+            <option value="">{t("mesTickets.filters.allServices")}</option>
+            {dbServices.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+          </FilterSelect>
+
+          {/* Year — archives tab only */}
+          {activeTab === "archives" && archiveYears.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={LABEL_STYLE}>{t("mesTickets.filters.closeYear")}</span>
+              <div style={{ position: "relative" }}>
+                <select
+                  value={filterYear}
+                  onChange={e => setFilterYear(e.target.value)}
+                  style={{ ...selectStyle, minWidth: 130 }}
+                >
+                  <option value="">{t("mesTickets.filters.allYears")}</option>
+                  {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+                <HiOutlineChevronDown size={13} color="#94a3b8" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+              </div>
+            </div>
+          )}
+
+          {/* Reset button */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ ...LABEL_STYLE, visibility: "hidden" }}>_</span>
+            <button
+              onClick={resetFilters}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                height: 38,
+                padding: "0 14px",
+                border: `1.5px solid ${hasFilters ? "#fca5a5" : "#d9d4cc"}`,
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 500,
+                color: hasFilters ? "#dc2626" : "#94a3b8",
+                background: "#fff",
+                cursor: "pointer",
+                transition: "all 0.15s",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <HiOutlineArrowPath size={14} />
+              {t("mesTickets.filters.reset")}
+            </button>
+          </div>
+
+          {/* Count — pushed right */}
+          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+            <span style={{ ...LABEL_STYLE, visibility: "hidden" }}>_</span>
+            <div style={{ height: 38, display: "flex", alignItems: "center" }}>
+              <span style={{ fontSize: 13, color: "#94a3b8" }}>
+                <span style={{ fontWeight: 700, color: "#0f172a" }}>{displayedTickets.length}</span>{" "}
+                {t("mesTickets.ticketCount", { count: displayedTickets.length })}
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* Table card outer */}
-      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc" }}>
-
-        {filteredTickets.length === 0 ? (
-          <div style={{ padding: "48px 24px", textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
-            Aucun ticket trouvé pour les filtres sélectionnés.
-          </div>
-        ) : (
-
-          /* Table card inner */
-          <div style={{ margin: 16, border: "1px solid #e8e2d9", borderRadius: 10, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-              <thead>
-                <tr style={{ background: "#f9f6f2" }}>
-                  {["ID", "Titre", "Service", "Assigné à", "Priorité", "Statut", "Date création", "Dernière MAJ"].map(col => (
-                    <th key={col} style={{ padding: "11px 14px", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.4px", borderBottom: "1px solid #e8e2d9", whiteSpace: "nowrap" }}>
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTickets.map((t, idx) => {
-                  const sc = STATUS_CONFIG[t.status];
-                  const pc = PRIORITY_CONFIG[t.priority];
-                  return (
-                    <tr
-                      key={t.id}
-                      onClick={() => navigate(`/employee/ticket/${t.id}`)}
-                      onMouseEnter={() => setHoveredTicketId(t.id)}
-                      onMouseLeave={() => setHoveredTicketId(null)}
-                      style={{
-                        background: "#fff",
-                        borderBottom: idx < filteredTickets.length - 1 ? "1px solid #f1ede8" : "none",
-                        cursor: "pointer",
-                        transition: "background 0.1s",
-                      }}
-                      onMouseOver={e => e.currentTarget.style.background = "#faf7f4"}
-                      onMouseOut={e => e.currentTarget.style.background = "#fff"}
-                    >
-                      <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 600, color: "#94a3b8" }}>
-                        #{t.id}
-                      </td>
-                      <td style={{ padding: "12px 14px", fontSize: 13, fontWeight: 600, color: "#0f172a", maxWidth: 220 }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                          {t.title}
-                        </span>
-                      </td>
-                      <td style={{ padding: "12px 14px", fontSize: 13, color: "#64748b" }}>
-                        {t.service || <span style={{ color: "#d1d5db" }}>—</span>}
-                      </td>
-                      <td style={{ padding: "12px 14px", fontSize: 13, color: "#64748b" }}>
-                        {t.technicien || <span style={{ color: "#d1d5db" }}>Non assigné</span>}
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        {pc ? (
-                          <span style={{ background: pc.bg, color: pc.color, border: `1px solid ${pc.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>
-                            {pc.label}
-                          </span>
-                        ) : (
-                          <span style={{ color: "#d1d5db" }}>—</span>
-                        )}
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        {sc ? (
-                          <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>
-                            {sc.label}
-                          </span>
-                        ) : (
-                          <span style={{ background: "#f3f4f6", color: "#6b7280", borderRadius: 20, padding: "2px 10px", fontSize: 12, fontWeight: 600 }}>
-                            {t.status}
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ padding: "12px 14px", fontSize: 13, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                        {t.dateCreation || "—"}
-                      </td>
-                      <td style={{ padding: "12px 14px", fontSize: 13, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                        {t.maj || "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* ── Table ───────────────────────────────────────────────────────── */}
+      <TicketTable
+        tickets={displayedTickets}
+        navigate={navigate}
+        hoveredTicketId={hoveredTicketId}
+        setHoveredTicketId={setHoveredTicketId}
+        activeTab={activeTab}
+      />
     </div>
   );
 }

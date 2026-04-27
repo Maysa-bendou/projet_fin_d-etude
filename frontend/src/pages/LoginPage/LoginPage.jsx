@@ -116,7 +116,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-3 flex items-center justify-center gap-2 bg-[#b20000c] hover:bg-[#b20000] text-white text-sm font-bold uppercase tracking-widest py-3 rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-60"
+            className="w-full mt-3 flex items-center justify-center gap-2 bg-[#b20000] hover:bg-[#bf3d3d] text-white text-sm font-bold uppercase tracking-widest py-3 rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-60"
           >
             <LogIn size={16} />
             {loading ? "Connexion..." : "Se connecter"}

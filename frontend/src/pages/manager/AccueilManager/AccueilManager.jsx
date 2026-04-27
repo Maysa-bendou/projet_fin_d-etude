@@ -1,199 +1,226 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  MdAssignment, MdTrendingUp, MdTimer, MdCheckCircle, MdCancel, MdPerson 
-} from 'react-icons/md';
+import { useTranslation } from "react-i18next";
 
-// ── Fausses données (Inchangées) ───────────────────────────────
-const fakeStats = { total: 38, enCours: 12, enAttente: 8, resolus: 15, rejetes: 3 };
+// ── Fausses données ───────────────────────────────
+const fakeStats = {
+  total:     38,
+  enCours:   12,
+  enAttente: 8,
+  resolus:   15,
+  rejetes:   3,
+};
 
 const repartitionService = [
-  { service: "IT Support", count: 14, color: "#3b82f6", pct: 70 },
-  { service: "IT Network", count: 8, color: "#0d9488", pct: 40 },
-  { service: "IT Security", count: 6, color: "#ef4444", pct: 30 },
-  { service: "Service Desk", count: 6, color: "#f59e0b", pct: 30 },
-  { service: "IT Collaboration", count: 4, color: "#8b5cf6", pct: 20 },
+  { service: "IT Support",       count: 14, color: "#2563EB", pct: 70 },
+  { service: "IT Network",       count: 8,  color: "#0F766E", pct: 40 },
+  { service: "IT Security",      count: 6,  color: "#DC2626", pct: 30 },
+  { service: "Service Desk",     count: 6,  color: "#F97316", pct: 30 },
+  { service: "IT Collaboration", count: 4,  color: "#8B5CF6", pct: 20 },
 ];
 
 const repartitionPriorite = [
-  { label: "Haute", count: 16, color: "#ef4444", pct: 65 },
-  { label: "Normale", count: 14, color: "#f59e0b", pct: 55 },
-  { label: "Basse", count: 8, color: "#10b981", pct: 32 },
+  { labelKey: "high",   count: 16, color: "#DC2626", pct: 65 },
+  { labelKey: "normal", count: 14, color: "#F97316", pct: 55 },
+  { labelKey: "low",    count: 8,  color: "#0F766E", pct: 32 },
 ];
 
 const performanceTechniciens = [
-  { nom: "Karim Haddad", initiales: "KH", resolus: 8, color: "bg-blue-600" },
-  { nom: "Nadia Ferhat", initiales: "NF", resolus: 6, color: "bg-purple-600" },
-  { nom: "Bilal Ouali", initiales: "BO", resolus: 5, color: "bg-indigo-600" },
-  { nom: "Ryma Bouzidi", initiales: "RB", resolus: 4, color: "bg-pink-600" },
+  { nom: "Karim Haddad",  initiales: "KH", resolus: 8 },
+  { nom: "Nadia Ferhat",  initiales: "NF", resolus: 6 },
+  { nom: "Bilal Ouali",   initiales: "BO", resolus: 5 },
+  { nom: "Ryma Bouzidi",  initiales: "RB", resolus: 4 },
 ];
 
 const derniersTickets = [
-  { id: "IM000015", titre: "PC ne démarre plus", employe: "Omar Bensaid", service: "IT Support", priorite: "Haute", statut: "En cours" },
-  { id: "IM000014", titre: "VPN déconnecté", employe: "Lina Amrani", service: "IT Security", priorite: "Normale", statut: "Résolu" },
-  { id: "IM000013", titre: "Mot de passe expiré", employe: "Sara Haddad", service: "Service Desk", priorite: "Basse", statut: "En attente" },
-  { id: "IM000012", titre: "Imprimante hors ligne", employe: "Ali Benali", service: "IT Support", priorite: "Normale", statut: "En cours" },
-  { id: "IM000011", titre: "Outlook ne s'ouvre plus", employe: "Yacine Meziane", service: "IT Support", priorite: "Haute", statut: "Résolu" },
+  { id: "IM000015", titre: "PC ne démarre plus",      employe: "Omar Bensaid",   service: "IT Support",       priorite: "high",   statut: "in_progress" },
+  { id: "IM000014", titre: "VPN déconnecté",          employe: "Lina Amrani",    service: "IT Security",      priorite: "normal", statut: "resolved"    },
+  { id: "IM000013", titre: "Mot de passe expiré",     employe: "Sara Haddad",    service: "Service Desk",     priorite: "low",    statut: "pending"     },
+  { id: "IM000012", titre: "Imprimante hors ligne",   employe: "Ali Benali",     service: "IT Support",       priorite: "normal", statut: "in_progress" },
+  { id: "IM000011", titre: "Outlook ne s'ouvre plus", employe: "Yacine Meziane", service: "IT Support",       priorite: "high",   statut: "resolved"    },
 ];
 
-// ── Styles (Harmonisés avec le reste du projet) ───────────────────────────────
+// ── Couleurs statut ───────────────────────────────
 const statutStyle = {
-  "En cours":   "bg-amber-50 text-amber-600 border-amber-100",
-  "Résolu":     "bg-emerald-50 text-emerald-600 border-emerald-100",
-  "En attente": "bg-purple-50 text-purple-600 border-purple-100",
-  "Rejeté":     "bg-rose-50 text-rose-600 border-rose-100",
+  in_progress: "bg-yellow-100 text-yellow-700",
+  resolved:    "bg-green-100 text-green-700",
+  pending:     "bg-purple-100 text-purple-700",
+  rejected:    "bg-red-100 text-red-700",
+  closed:      "bg-gray-100 text-gray-700",
 };
 
 const prioriteStyle = {
-  "Haute":   "bg-rose-50 text-rose-600 border-rose-100",
-  "Normale": "bg-amber-50 text-amber-600 border-amber-100",
-  "Basse":   "bg-emerald-50 text-emerald-600 border-emerald-100",
+  high:   "bg-red-100 text-red-700",
+  normal: "bg-yellow-100 text-yellow-700",
+  low:    "bg-green-100 text-green-700",
+};
+
+const serviceStyle = {
+  "IT Support":       "bg-blue-50 text-blue-700",
+  "IT Network":       "bg-teal-50 text-teal-700",
+  "IT Security":      "bg-red-50 text-red-700",
+  "Service Desk":     "bg-orange-50 text-orange-700",
+  "IT Collaboration": "bg-purple-50 text-purple-700",
 };
 
 export default function AccueilManager() {
   const navigate = useNavigate();
+  const { t } = useTranslation("manager");
 
   return (
-    <div className="p-6 bg-[f5f5dc]] min-h-screen font-sans">
+    <div className="p-6">
 
-      {/* ── HEADER ── */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Vue globale des tickets</h1>
-        <p className="text-sm text-slate-500 font-medium">Suivi opérationnel en temps réel</p>
+      {/* ── Titre ── */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800">
+            {t("accueil.title")}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {t("accueil.subtitle")}
+          </p>
+        </div>
       </div>
 
-      {/* ── KPI CARDS (Style Capture 1) ── */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <KpiCard label="Total" value={fakeStats.total} icon={<MdAssignment />} type="blue" />
-        <KpiCard label="En cours" value={fakeStats.enCours} icon={<MdTrendingUp />} type="orange" />
-        <KpiCard label="En attente" value={fakeStats.enAttente} icon={<MdTimer />} type="purple" />
-        <KpiCard label="Résolus" value={fakeStats.resolus} icon={<MdCheckCircle />} type="green" />
-        <KpiCard label="Rejetés" value={fakeStats.rejetes} icon={<MdCancel />} type="red" />
+      {/* ── Cartes stats colorées ── */}
+      <div className="grid grid-cols-5 gap-3 mb-5">
+        {[
+          { labelKey: "accueil.stats.total",     value: fakeStats.total,     color: "bg-blue-600" },
+          { labelKey: "accueil.stats.inProgress", value: fakeStats.enCours,  color: "bg-orange-500" },
+          { labelKey: "accueil.stats.pending",   value: fakeStats.enAttente, color: "bg-purple-500" },
+          { labelKey: "accueil.stats.resolved",  value: fakeStats.resolus,   color: "bg-teal-600" },
+          { labelKey: "accueil.stats.rejected",  value: fakeStats.rejetes,   color: "bg-red-600" },
+        ].map((stat) => (
+          <div key={stat.labelKey} className={`relative ${stat.color} rounded-2xl p-4 overflow-hidden`}>
+            <div className="absolute -right-3 -top-3 w-16 h-16 rounded-full bg-white/20" />
+            <div className="absolute right-3 top-4 w-8 h-8 rounded-full bg-white/15" />
+            <p className="text-xs text-white/80 mb-1 relative z-10">{t(stat.labelKey)}</p>
+            <p className="text-3xl font-semibold text-white relative z-10">{stat.value}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-        
-        {/* ── Répartition par service ── */}
-        <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-6 border-l-4 border-blue-500 pl-3">Par Service</h3>
-          <div className="space-y-5">
+      {/* ── Répartitions ── */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+
+        {/* Répartition par service */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <p className="text-sm font-semibold text-gray-800 mb-4">
+            {t("accueil.byService")}
+          </p>
+          <div className="flex flex-col gap-3">
             {repartitionService.map((item) => (
               <div key={item.service}>
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">{item.service}</span>
-                  <span className="text-xs font-black text-slate-800">{item.count}</span>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs text-gray-500">{item.service}</span>
+                  <span className="text-xs font-medium text-gray-800">{item.count}</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2">
-                  <div className="h-2 rounded-full transition-all duration-500" style={{ width: `${item.pct}%`, backgroundColor: item.color }} />
+                <div className="bg-gray-100 rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{ width: `${item.pct}%`, background: item.color }}
+                  />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Répartition par priorité ── */}
-        <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-6 border-l-4 border-orange-500 pl-3">Par Priorité</h3>
-          <div className="space-y-5">
+        {/* Répartition par priorité + performance techniciens */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+
+          {/* Priorité */}
+          <p className="text-sm font-semibold text-gray-800 mb-4">
+            {t("accueil.byPriority")}
+          </p>
+          <div className="flex flex-col gap-3 mb-5">
             {repartitionPriorite.map((item) => (
-              <div key={item.label}>
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">{item.label}</span>
-                  <span className="text-xs font-black" style={{ color: item.color }}>{item.count}</span>
+              <div key={item.labelKey}>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs text-gray-500">{t(`priority.${item.labelKey}`)}</span>
+                  <span className="text-xs font-medium" style={{ color: item.color }}>
+                    {item.count}
+                  </span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-2">
-                  <div className="h-2 rounded-full transition-all duration-500" style={{ width: `${item.pct}%`, backgroundColor: item.color }} />
+                <div className="bg-gray-100 rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{ width: `${item.pct}%`, background: item.color }}
+                  />
                 </div>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* ── Performance Techniciens ── */}
-        <div className="lg:col-span-4 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-6 border-l-4 border-purple-500 pl-3">Top Techniciens</h3>
-          <div className="space-y-4">
+          {/* Performance techniciens */}
+          <p className="text-sm font-semibold text-gray-800 mb-3">
+            {t("accueil.techPerformance")}
+          </p>
+          <div className="flex flex-col gap-2">
             {performanceTechniciens.map((tech) => (
-              <div key={tech.nom} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-2xl transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl ${tech.color} flex items-center justify-center text-white text-[11px] font-bold shadow-sm`}>
-                    {tech.initiales}
+              <div key={tech.nom} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-indigo-900 flex items-center justify-center shrink-0">
+                    <span className="text-white text-xs font-medium">{tech.initiales}</span>
                   </div>
-                  <span className="text-sm font-bold text-slate-700">{tech.nom}</span>
+                  <span className="text-xs text-gray-700">{tech.nom}</span>
                 </div>
-                <span className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-[10px] font-black border border-emerald-100 uppercase">
-                  {tech.resolus} Résolus
+                <span className="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                  {t("accueil.resolvedCount", { count: tech.resolus })}
                 </span>
               </div>
             ))}
           </div>
         </div>
-
       </div>
 
-      {/* ── TABLEAU DERNIERS TICKETS (Style Capture 2) ── */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Dernières Activités</h3>
-          <button className="text-[11px] font-bold text-blue-500 uppercase hover:underline">Voir tout</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50/50">
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Titre du ticket</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Priorité</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Statut</th>
+      {/* ── Derniers tickets ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <p className="text-sm font-semibold text-gray-800 mb-4">
+          {t("accueil.recentTickets")}
+        </p>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.id")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.title")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.employee")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.service")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.priority")}</th>
+              <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500">{t("table.status")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {derniersTickets.map((ticket) => (
+              <tr
+                key={ticket.id}
+                className="border-t border-gray-100 hover:bg-gray-50 transition cursor-pointer"
+                onClick={() => navigate(`/manager/ticket/${ticket.id}`)}
+              >
+                <td className="px-3 py-2.5 font-mono text-xs text-gray-400">{ticket.id}</td>
+                <td className="px-3 py-2.5 font-medium text-gray-800">{ticket.titre}</td>
+                <td className="px-3 py-2.5 text-gray-500 text-xs">{ticket.employe}</td>
+                <td className="px-3 py-2.5">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${serviceStyle[ticket.service] || "bg-gray-100 text-gray-600"}`}>
+                    {ticket.service}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${prioriteStyle[ticket.priorite]}`}>
+                    {t(`priority.${ticket.priorite}`)}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statutStyle[ticket.statut]}`}>
+                    {t(`status.${ticket.statut}`)}
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {derniersTickets.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => navigate(`/manager/ticket/${t.id}`)}>
-                  <td className="px-6 py-4 font-mono text-[11px] font-bold text-slate-400">{t.id}</td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-bold text-slate-700 leading-none mb-1">{t.titre}</p>
-                    <p className="text-[11px] text-slate-400 font-medium">{t.employe} • {t.service}</p>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black border uppercase ${prioriteStyle[t.priorite]}`}>
-                      {t.priorite}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black border uppercase ${statutStyle[t.statut]}`}>
-                      {t.statut}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-    </div>
-  );
-}
-
-// --- SOUS-COMPOSANT KPI (Réutilisable) ---
-function KpiCard({ label, value, icon, type }) {
-  const styles = {
-    blue:   { bg: 'bg-blue-50', text: 'text-blue-500' },
-    orange: { bg: 'bg-amber-50', text: 'text-amber-500' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-500' },
-    green:  { bg: 'bg-emerald-50', text: 'text-emerald-500' },
-    red:    { bg: 'bg-rose-50', text: 'text-rose-500' },
-  };
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center gap-4 transition-transform hover:scale-[1.02]">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${styles[type].bg} ${styles[type].text}`}>
-        {icon}
-      </div>
-      <div>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mb-0.5">{label}</p>
-        <p className="text-2xl font-bold text-slate-900 leading-none">{value}</p>
-      </div>
     </div>
   );
 }

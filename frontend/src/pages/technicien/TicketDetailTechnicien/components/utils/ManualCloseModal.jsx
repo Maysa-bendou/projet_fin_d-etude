@@ -2,90 +2,88 @@ import { useState, useRef } from "react";
 import { Lock, Paperclip, X } from "lucide-react";
 
 export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
+  const [solution, setSolution] = useState(""); // ← AJOUTÉ
   const [note, setNote] = useState("");
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
 
   const handleFiles = (e) => {
-    setFiles(prev => [...prev, ...Array.from(e.target.files)]);
+    const selected = Array.from(e.target.files);
+    setFiles(prev => [...prev, ...selected]);
     e.target.value = "";
   };
 
-  const removeFile = (index) => setFiles(prev => prev.filter((_, i) => i !== index));
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 50,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)'
-    }}>
-      <div style={{
-        background: '#fff', borderRadius: 16,
-        border: '1px solid #e5e7eb',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-        padding: '24px', maxWidth: 420, width: '100%',
-        margin: '0 16px', display: 'flex', flexDirection: 'column', gap: 16,
-        fontFamily: 'Inter, sans-serif'
-      }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 flex flex-col gap-4">
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Lock size={18} color="#374151" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+            <Lock size={20} className="text-gray-600" />
           </div>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 3px 0' }}>Fermer le ticket manuellement</p>
-            <p style={{ fontSize: 12, color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
+            <p className="font-bold text-gray-900 text-sm">Fermer le ticket manuellement</p>
+            <p className="text-[12px] text-gray-500 mt-0.5">
               Utilisez cette option si vous avez résolu le problème par téléphone ou en personne.
             </p>
           </div>
         </div>
 
-        {/* Séparateur */}
-        <div style={{ height: 1, background: '#f3f4f6' }} />
-
-        {/* Note */}
+        {/* ← AJOUTÉ : Solution obligatoire */}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 6 }}>
-            Note de fermeture <span style={{ color: '#dc2626' }}>*</span>
+          <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+            Solution <span className="text-red-400">*</span>
+          </label>
+          <textarea
+            rows={4}
+            value={solution}
+            onChange={e => setSolution(e.target.value)}
+            placeholder="Décrivez la solution apportée..."
+            className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 resize-none focus:outline-none focus:border-blue-400 leading-relaxed"
+          />
+        </div>
+
+        {/* Note — rendue optionnelle ← MODIFIÉ */}
+        <div>
+          <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+            Note de fermeture <span className="text-gray-400 font-normal">(optionnelle)</span>
           </label>
           <textarea
             rows={3}
             value={note}
             onChange={e => setNote(e.target.value)}
             placeholder="Ex : Résolu par téléphone à 11h30 — problème confirmé résolu par l'employé."
-            style={{
-              width: '100%', fontSize: 12, padding: '10px 12px',
-              border: '1px solid #e5e7eb', borderRadius: 10,
-              background: '#f9fafb', color: '#111827',
-              resize: 'none', outline: 'none', lineHeight: 1.6,
-              fontFamily: 'Inter, sans-serif', boxSizing: 'border-box'
-            }}
-            onFocus={e => e.target.style.borderColor = '#3b82f6'}
-            onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+            className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 resize-none focus:outline-none focus:border-gray-400 leading-relaxed"
           />
         </div>
 
-        {/* Pièces jointes */}
+        {/* Pièces jointes — inchangé */}
         <div>
-          <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 6 }}>
-            Pièces jointes <span style={{ fontWeight: 400 }}>(optionnel)</span>
+          <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+            Pièces jointes (optionnel)
           </label>
 
           {files.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+            <div className="flex flex-col gap-1 mb-2">
               {files.map((f, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                  background: '#f9fafb', border: '1px solid #e5e7eb',
-                  borderRadius: 8, padding: '6px 10px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                    <Paperclip size={11} color="#9ca3af" style={{ flexShrink: 0 }} />
-                    <span style={{ fontSize: 11, color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                    <span style={{ fontSize: 10, color: '#9ca3af', flexShrink: 0 }}>({(f.size / 1024).toFixed(0)} Ko)</span>
+                <div key={i} className="flex items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Paperclip size={11} className="text-gray-400 shrink-0" />
+                    <span className="text-[11px] text-gray-700 truncate">{f.name}</span>
+                    <span className="text-[10px] text-gray-400 shrink-0">
+                      ({(f.size / 1024).toFixed(0)} Ko)
+                    </span>
                   </div>
-                  <button type="button" onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 0, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    className="text-gray-400 hover:text-red-500 transition shrink-0"
+                  >
                     <X size={13} />
                   </button>
                 </div>
@@ -96,52 +94,39 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6, width: '100%',
-              padding: '8px 12px', borderRadius: 8,
-              border: '1px dashed #d1d5db', background: 'transparent',
-              fontSize: 11, fontWeight: 600, color: '#6b7280', cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif', justifyContent: 'center',
-              transition: 'border-color 0.15s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#9ca3af'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#d1d5db'}
+            className="flex items-center gap-2 text-[11px] font-medium text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 w-full hover:border-gray-400 hover:bg-gray-50 transition"
           >
-            <Paperclip size={12} /> Joindre un fichier
+            <Paperclip size={12} />
+            Joindre un fichier
           </button>
-          <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFiles} />
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFiles}
+          />
         </div>
 
-        {/* Boutons */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        {/* Actions */}
+        <div className="flex gap-2 justify-end">
           <button
             onClick={onCancel}
             disabled={loading}
-            style={{
-              padding: '9px 16px', fontSize: 12, fontWeight: 600,
-              border: '1px solid #e5e7eb', borderRadius: 10,
-              background: '#fff', color: '#374151', cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif'
-            }}
+            className="px-4 py-2 text-[12px] font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 bg-transparent cursor-pointer transition"
           >
             Annuler
           </button>
           <button
-            onClick={() => onConfirm(note, files)}
-            disabled={loading || !note.trim()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '9px 18px', fontSize: 12, fontWeight: 700,
-              border: 'none', borderRadius: 10,
-              background: !note.trim() || loading ? '#e5e7eb' : '#111827',
-              color: !note.trim() || loading ? '#9ca3af' : '#fff',
-              cursor: !note.trim() || loading ? 'not-allowed' : 'pointer',
-              fontFamily: 'Inter, sans-serif', transition: 'background 0.15s'
-            }}
+            onClick={() => onConfirm(note, files, solution)} // ← MODIFIÉ
+            disabled={loading || !solution.trim()} // ← MODIFIÉ
+            className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-50 cursor-pointer transition flex items-center gap-2"
           >
-            <Lock size={13} /> {loading ? 'Fermeture...' : 'Fermer le ticket'}
+            <Lock size={13} />
+            {loading ? "Fermeture..." : "Fermer le ticket"}
           </button>
         </div>
+
       </div>
     </div>
   );

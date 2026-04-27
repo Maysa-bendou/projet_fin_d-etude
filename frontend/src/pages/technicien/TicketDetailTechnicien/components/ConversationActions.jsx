@@ -1,7 +1,7 @@
-import { useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   MessageSquare, CheckCircle2, Forward, Lock, Send, ShieldCheck,
-  Info, AlertTriangle, User, Layers, Tag
+  Info, AlertTriangle, User, Layers, Tag, Paperclip, X
 } from "lucide-react";
 import { CATEGORIES_EN } from "./constants";
 import ConvBubble from "./utils/ConvBubble";
@@ -14,18 +14,105 @@ const CATEGORY_FR = {
   access: "Accès", security: "Sécurité", account: "Compte",
 };
 
-const TAB_STYLE = (active, color = '#3b82f6') => ({
-  flex: 1, padding: '11px 0',
-  fontSize: 12, fontWeight: 700,
-  border: 'none', borderBottom: active ? `2px solid ${color}` : '2px solid transparent',
-  background: 'transparent', cursor: 'pointer',
-  color: active ? color : '#9ca3af',
-  fontFamily: 'Inter, sans-serif',
-  transition: 'color 0.15s, border-color 0.15s'
-});
+function ConfirmedCloseForm({ ticket, onClose, closing, conversation }) {
+  const [solution, setSolution] = useState(ticket.solution ?? "");
+  const [note, setNote] = useState("");
 
-const tabColor = { respond: '#3b82f6', redirect: '#7c3aed', close: '#374151' };
+  // Trouver les fichiers attachés au message de type "solution"
+  const lastSolution = [...conversation].reverse().find(c => c.type === "solution");
+const solutionFiles = lastSolution?.files ?? [];
+    const handleDeleteFile = async (fileId) => {
+  try {
+    await fetch(`http://localhost:3001/api/tech/attachments/${fileId}`, {
+      method: "DELETE",
+    });
 
+    // refresh UI
+    window.location.reload(); // simple (ou mieux : refetch)
+  } catch (err) {
+    console.error(err);
+    alert("Erreur suppression fichier");
+  }
+};
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-700 flex items-center gap-2">
+        <CheckCircle2 size={13}/> L'employé a confirmé la résolution — vous pouvez fermer le ticket.
+      </div>
+
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+          Solution enregistrée <span className="text-gray-400 font-normal">(modifiable)</span>
+        </label>
+        <textarea
+          rows={4}
+          value={solution}
+          onChange={e => setSolution(e.target.value)}
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 resize-none focus:outline-none focus:border-green-400 leading-relaxed"
+          placeholder="Décrivez la solution..."
+        />
+      </div>
+
+      {/* Pièces jointes de la solution */}
+      {solutionFiles.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold text-gray-500 mb-1.5">
+            Pièces jointes de la solution
+          </p>
+          <div className="flex flex-col gap-1">
+            {solutionFiles.map((f, i) => (
+  <div
+    key={f.id || i}
+    className="flex items-center justify-between gap-2 text-[11px] bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5"
+  >
+    <a
+      href={`http://localhost:3001/${f.filePath}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 text-blue-600"
+    >
+      <Paperclip size={11}/>
+      {f.fileName}
+    </a>
+
+    {/* bouton supprimer */}
+    <button
+      onClick={() => handleDeleteFile(f.id)}
+      className="text-red-500 hover:text-red-700"
+    >
+      <X size={12}/>
+    </button>
+  </div>
+))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+          Note de fermeture <span className="text-gray-400 font-normal">(optionnelle)</span>
+        </label>
+        <textarea
+          rows={2}
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Ex : Confirmé par l'employé le 25/04..."
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 resize-none focus:outline-none focus:border-gray-400 leading-relaxed"
+        />
+      </div>
+
+      <button
+        onClick={() => onClose(note, [], solution)}
+        disabled={closing || !solution.trim()}
+        className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 transition"
+      >
+        <Lock size={13}/>
+        {closing ? "Fermeture..." : "Fermer & enregistrer la solution"}
+      </button>
+    </div>
+  );
+}
 export default function ConversationActions({
   conversation, empInitials, empName, currentUser, convEndRef,
   activeTab, respondMode, solution, infoMsg, solutionFiles, infoFiles,
@@ -35,181 +122,227 @@ export default function ConversationActions({
   setActiveTab, setRespondMode, setSolution, setInfoMsg, setSolutionFiles, setInfoFiles,
   handleSend, handleRedirect, handleManualClose, setShowManualClose,
   setRedirectTechId, setRedirectServiceId, setRedirectCategory, setRedirectNote,
-  isClosed, ticket, services, techniciens, solutionBlocked, awaitingConfirm,
+  isClosed, ticket, services, techniciens, solutionBlocked, awaitingConfirm,fetchTicket,
 }) {
   const solutionBlockedLocal = solutionBlocked || false;
-
-  const inputStyle = {
-    width: '100%', fontSize: 12, padding: '8px 12px',
-    border: '1px solid #e5e7eb', borderRadius: 8,
-    background: '#f9fafb', color: '#111827',
-    outline: 'none', fontFamily: 'Inter, sans-serif',
-    boxSizing: 'border-box'
-  };
-
+ const [filteredTechs, setFilteredTechs] = useState([]);
+ useEffect(() => {
+    if (!redirectServiceId) {
+      setFilteredTechs(techniciens ?? []);
+      return;
+    }
+    fetch(`http://localhost:3001/api/tech/techniciens/service/${redirectServiceId}`)
+      .then(r => r.json())
+      .then(setFilteredTechs)
+      .catch(() => setFilteredTechs([]));
+  }, [redirectServiceId, techniciens]);
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 16, fontFamily: 'Inter, sans-serif' }}>
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
 
-      {/* ── CONVERSATION ── */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', height: 520, display: 'flex', flexDirection: 'column' }}>
-
-        {/* Header */}
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <MessageSquare size={13} color="#9ca3af" />
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Conversation</p>
-          </div>
-          <span style={{ fontSize: 11, background: '#f3f4f6', color: '#6b7280', padding: '2px 10px', borderRadius: 99, fontWeight: 600 }}>
+      {/* ── Conversation ── */}
+      <div className="bg-white rounded-xl border border-gray-200 h-[500px] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+            <MessageSquare size={12}/> Conversation
+          </h2>
+          <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
             {conversation.length} msg
           </span>
         </div>
-
-        {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+        <div className="flex-1 overflow-y-auto px-4 py-4">
           {conversation.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}>
-              <MessageSquare size={28} color="#e5e7eb" />
-              <p style={{ fontSize: 13, color: '#9ca3af', fontWeight: 500, margin: '10px 0 4px' }}>Aucun message</p>
-              <p style={{ fontSize: 12, color: '#d1d5db', margin: 0 }}>Les échanges apparaîtront ici.</p>
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <MessageSquare size={28} className="text-gray-200 mb-3"/>
+              <p className="text-[12px] text-gray-400 font-medium">Aucun message</p>
+              <p className="text-[11px] text-gray-300 mt-1">Les échanges apparaîtront ici.</p>
             </div>
           ) : (
             conversation.map(item => (
-              <ConvBubble key={item.id} item={item} currentUser={currentUser} empInitials={empInitials} empName={empName} />
+              <ConvBubble
+                key={item.id}
+                item={item}
+                currentUser={currentUser}
+                empInitials={empInitials}
+                empName={empName}
+              />
             ))
           )}
-          <div ref={convEndRef} />
+          <div ref={convEndRef}/>
         </div>
       </div>
 
-      {/* ── ACTIONS ── */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', height: 520, display: 'flex', flexDirection: 'column' }}>
+      {/* ── Actions ── */}
+      <div className="bg-white rounded-xl border border-gray-200 h-[500px] flex flex-col">
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #f3f4f6', flexShrink: 0 }}>
+        <div className="flex border-b border-gray-100 shrink-0">
           {[
-            { id: 'respond',  label: 'Répondre'  },
-            { id: 'redirect', label: 'Rediriger' },
-            { id: 'close',    label: 'Fermer'    },
+            { id: "respond",  label: "Répondre"  },
+            { id: "redirect", label: "Rediriger" },
+            { id: "close",    label: "Fermer"    },
           ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={TAB_STYLE(activeTab === tab.id, tabColor[tab.id])}
-            >
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 text-[11px] font-semibold border-b-2 transition-all bg-transparent cursor-pointer
+                ${activeTab === tab.id
+                  ? "text-blue-700 border-blue-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"}`}>
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Contenu */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
 
-          {/* ── RÉPONDRE ── */}
-          {activeTab === 'respond' && (
+          {/* ── RESPOND tab ── */}
+          {activeTab === "respond" && (
             isClosed ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6b7280' }}>
-                  <Lock size={15} />
-                  <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>Ticket fermé — aucune action disponible</p>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Lock size={15}/>
+                  <p className="text-sm font-semibold">Ticket fermé — aucune action disponible</p>
                 </div>
                 {ticket.solution && (
-                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 14px' }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={11} /> Solution finale
-                    </p>
-                    <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: ticket.solution }} />
-                  </div>
-                )}
-                {ticket.closing_note && (
-                  <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px' }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', margin: '0 0 6px 0' }}>Note de fermeture</p>
-                    <p style={{ fontSize: 12, color: '#374151', margin: 0 }}>{ticket.closing_note}</p>
+  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+    <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+      <CheckCircle2 size={11}/> Solution finale
+    </p>
+    <div className="text-[12px] text-gray-700 leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+
+    {/* Pièces jointes liées à la solution/fermeture */}
+    {(() => {
+      // Dernier message solution ou comment de fermeture uniquement
+const lastMsg = [...conversation]
+  .reverse()
+  .find(c => ["solution", "comment"].includes(c.type));
+const files = lastMsg?.files ?? [];
+      return files.length > 0 ? (
+        <div className="mt-2 pt-2 border-t border-green-200 flex flex-col gap-1">
+          <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1 flex items-center gap-1">
+            <Paperclip size={10}/> Pièces jointes
+          </p>
+          {files.map((f, i) => (
+            <a key={f.id ?? i}
+              href={`http://localhost:3001/${f.filePath}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-[11px] text-blue-600 hover:underline px-2 py-1 rounded hover:bg-green-100 transition truncate"
+            >
+              <Paperclip size={10} className="shrink-0"/> {f.fileName}
+            </a>
+          ))}
+        </div>
+      ) : null;
+    })()}
+  </div>
+)}
+{ticket.closing_note && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Note de fermeture</p>
+                    <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                {/* Toggle Solution / Commentaire */}
-                <div style={{ display: 'flex', background: '#f3f4f6', borderRadius: 10, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
-                  {[
-                    { id: 'solution', label: 'Solution',    Icon: CheckCircle2, color: '#3b82f6' },
-                    { id: 'info',     label: 'Commentaire', Icon: MessageSquare, color: '#d97706' },
-                  ].map(m => (
-                    <button key={m.id} onClick={() => setRespondMode(m.id)} style={{
-                      flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 700,
-                      border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                      background: respondMode === m.id ? '#fff' : 'transparent',
-                      color: respondMode === m.id ? m.color : '#9ca3af',
-                      borderRadius: respondMode === m.id ? 8 : 0,
-                      boxShadow: respondMode === m.id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                      transition: 'all 0.15s'
-                    }}>
-                      <m.Icon size={12} /> {m.label}
-                    </button>
-                  ))}
+                {/* Mode toggle: Solution / Commentaire */}
+                <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
+                  <button onClick={() => setRespondMode("solution")}
+                    className={`flex-1 py-2 text-[11px] font-semibold transition flex items-center justify-center gap-1
+                      ${respondMode === "solution" ? "bg-white text-blue-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                    <CheckCircle2 size={12}/> Solution
+                  </button>
+                  <button onClick={() => setRespondMode("info")}
+                    className={`flex-1 py-2 text-[11px] font-semibold transition flex items-center justify-center gap-1
+                      ${respondMode === "info" ? "bg-white text-amber-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                    <MessageSquare size={12}/> Commentaire
+                  </button>
                 </div>
-
+{/* ── Solution précédente après réouverture ── */}
+{!isClosed && ticket.solution && (
+  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest flex items-center gap-1">
+      <Info size={11}/> Solution précédente (ticket réouvert)
+    </p>
+    <div className="text-[12px] text-gray-700 leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+    <div className="flex gap-2 pt-1">
+      <button
+        onClick={async () => {
+          await fetch(`http://localhost:3001/api/tech/tickets/${ticket.id}/clear-solution`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+          });
+          await fetchTicket(true);  // ← besoin de passer fetchTicket en prop
+        }}
+        className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+      >
+        Supprimer
+      </button>
+      <span className="text-[11px] text-amber-600 flex items-center">
+        ou envoyez une nouvelle solution ci-dessous pour la remplacer.
+      </span>
+    </div>
+  </div>
+)}
                 {/* Notices */}
-                {respondMode === 'solution' && solutionBlockedLocal && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#92400e', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                    <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+                {respondMode === "solution" && solutionBlockedLocal && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 flex items-start gap-2">
+                    <Info size={13} className="shrink-0 mt-0.5"/>
                     Solution envoyée — en attente de la confirmation de l'employé.
                   </div>
                 )}
                 {ticket?.is_resolved_confirmed && (
-                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <CheckCircle2 size={13} /> Résolution confirmée par l'employé.
+                  <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-700 flex items-center gap-2">
+                    <CheckCircle2 size={13}/> Résolution confirmée par l'employé.
                   </div>
                 )}
 
-                {/* Label + éditeur */}
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 6 }}>
-                    {respondMode === 'solution' ? 'Solution' : 'Commentaire'}
+                  <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
+                    {respondMode === "solution" ? "Solution" : "Commentaire"}
                   </label>
                   <RichTextArea
-                    onChange={respondMode === 'solution' ? setSolution : setInfoMsg}
-                    placeholder={respondMode === 'solution' ? 'Décrivez la solution...' : 'Ajoutez un commentaire...'}
+                    onChange={respondMode === "solution" ? setSolution : setInfoMsg}
+                    placeholder={respondMode === "solution" ? "Décrivez la solution..." : "Ajoutez un commentaire..."}
                     rows={5}
-                    disabled={respondMode === 'solution' && solutionBlockedLocal}
+                    disabled={respondMode === "solution" && solutionBlockedLocal}
                     clearSignal={clearSignal}
                   />
                 </div>
 
                 <FileAttachment
-                  disabled={respondMode === 'solution' && solutionBlockedLocal}
-                  files={respondMode === 'solution' ? solutionFiles : infoFiles}
-                  onAdd={f => respondMode === 'solution' ? setSolutionFiles(p => [...p, ...f]) : setInfoFiles(p => [...p, ...f])}
-                  onRemove={i => respondMode === 'solution' ? setSolutionFiles(p => p.filter((_, x) => x !== i)) : setInfoFiles(p => p.filter((_, x) => x !== i))}
+               disabled={respondMode === "solution" && solutionBlockedLocal}
+                  files={respondMode === "solution" ? solutionFiles : infoFiles}
+                  onAdd={f => respondMode === "solution"
+                    ? setSolutionFiles(p => [...p, ...f])
+                    : setInfoFiles(p => [...p, ...f])}
+                  onRemove={i => respondMode === "solution"
+                    ? setSolutionFiles(p => p.filter((_, x) => x !== i))
+                    : setInfoFiles(p => p.filter((_, x) => x !== i))}
                 />
 
                 {sentError && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <AlertTriangle size={13} /> {sentError}
+                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-[11px] text-red-700">
+                    <AlertTriangle size={13}/> {sentError}
                   </div>
                 )}
 
-                <button
-                  onClick={handleSend}
-                  disabled={sending || (respondMode === 'solution' && solutionBlockedLocal) || (!solution.replace(/<[^>]*>/g, '').trim() && !infoMsg.replace(/<[^>]*>/g, '').trim() && solutionFiles.length === 0 && infoFiles.length === 0)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    padding: '10px 16px', borderRadius: 10, border: 'none',
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    background: respondMode === 'solution' ? '#3b82f6' : '#d97706',
-                    color: '#fff', fontFamily: 'Inter, sans-serif',
-                    opacity: (sending || (respondMode === 'solution' && solutionBlockedLocal)) ? 0.4 : 1,
-                    transition: 'background 0.15s'
-                  }}
-                >
-                  <Send size={13} />
-                  {sending ? 'Envoi...' : respondMode === 'solution' ? 'Envoyer solution' : 'Envoyer commentaire'}
+                <button onClick={handleSend}
+                 disabled={sending || (respondMode === "solution" && solutionBlockedLocal) || (
+  !solution.replace(/<[^>]*>/g, "").trim() &&
+  !infoMsg.replace(/<[^>]*>/g, "").trim() &&
+  solutionFiles.length === 0 && infoFiles.length === 0
+)}
+                  className={`flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg text-white disabled:opacity-40 disabled:cursor-not-allowed transition
+                    ${respondMode === "solution" ? "bg-blue-600 hover:bg-blue-700" : "bg-amber-500 hover:bg-amber-600"}`}>
+                  <Send size={13}/>
+                  {sending ? "Envoi..." : respondMode === "solution" ? "Envoyer solution" : "Envoyer commentaire"}
                 </button>
 
-                {respondMode === 'solution' && (
-                  <p style={{ fontSize: 10, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 4, margin: 0 }}>
-                    <ShieldCheck size={11} color="#16a34a" />
+                {respondMode === "solution" && (
+                  <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                    <ShieldCheck size={11} className="text-green-500"/>
                     Une demande de confirmation sera envoyée à l'employé.
                   </p>
                 )}
@@ -217,108 +350,159 @@ export default function ConversationActions({
             )
           )}
 
-          {/* ── REDIRIGER ── */}
-          {activeTab === 'redirect' && (
-            isClosed ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9ca3af', fontSize: 13 }}>
-                <Lock size={13} /> Ticket fermé
-              </div>
-            ) : (
-              <>
-                <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#7c3aed', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                  <Forward size={13} style={{ flexShrink: 0, marginTop: 1 }} />
-                  Sélectionnez le technicien ou service vers lequel rediriger.
-                </div>
+          {/* ── REDIRECT tab ── */}
+         {activeTab === "redirect" && (
+  isClosed ? (
+   <></>
 
-                {[
-                  { label: 'Technicien', Icon: User, value: redirectTechId, setter: setRedirectTechId, options: techniciens?.map(t => ({ value: t.id, label: `${t.name} ${t.surname}` })) },
-                  { label: 'Service',    Icon: Layers, value: redirectServiceId, setter: setRedirectServiceId, options: services?.map(s => ({ value: s.id, label: s.name })) },
-                  { label: 'Catégorie', Icon: Tag, value: redirectCategory, setter: setRedirectCategory, options: CATEGORIES_EN?.map(c => ({ value: c, label: CATEGORY_FR[c] ?? c })) },
-                ].map(({ label, Icon, value, setter, options }) => (
-                  <div key={label}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-                      <Icon size={11} color="#9ca3af" /> {label}
-                    </label>
-                    <select value={value} onChange={e => setter(e.target.value)} style={{ ...inputStyle }}>
-                      <option value="">Choisir...</option>
-                      {options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  </div>
-                ))}
+  ) : (
+    <>
+      <div className="flex items-start gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-[11px] text-purple-700">
+        <Forward size={13} className="shrink-0 mt-0.5"/>
+        Choisissez un service (obligatoire), puis un technicien de ce service (optionnel).
+      </div>
+ 
+      {/* 1. Service — OBLIGATOIRE */}
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
+          <Layers size={11} className="text-gray-400"/> Service
+          <span className="text-red-400">*</span>
+        </label>
+        <select
+          value={redirectServiceId}
+          onChange={e => { setRedirectServiceId(e.target.value); setRedirectTechId(""); }}
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-purple-400"
+        >
+          <option value="">Choisir un service...</option>
+          {services?.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </div>
 
-                <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-                    <MessageSquare size={11} color="#9ca3af" /> Raison <span style={{ fontWeight: 400, color: '#9ca3af' }}>(obligatoire)</span>
-                  </label>
-                  <textarea rows={3} value={redirectNote} onChange={e => setRedirectNote(e.target.value)}
-                    placeholder="Pourquoi rediriger ?"
-                    style={{ ...inputStyle, resize: 'none', lineHeight: 1.5 }} />
-                </div>
+      {/* 2. Technicien — OPTIONNEL, filtré par service */}
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
+          <User size={11} className="text-gray-400"/> Technicien
+          <span className="text-gray-400 font-normal">(optionnel)</span>
+        </label>
+        <select
+          value={redirectTechId}
+          onChange={e => setRedirectTechId(e.target.value)}
+          disabled={!redirectServiceId}
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-purple-400 disabled:opacity-50"
+        >
+          <option value="">Aucun (service seulement)</option>
+          {filteredTechs.map(t => (
+            <option key={t.id} value={t.id}>{t.name} {t.surname}</option>
+          ))}
+        </select>
+      </div>
 
-                <button onClick={handleRedirect}
-                  disabled={(!redirectTechId && !redirectServiceId) || !redirectNote?.trim() || redirecting}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    padding: '10px 16px', borderRadius: 10, border: 'none',
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    background: '#7c3aed', color: '#fff', fontFamily: 'Inter, sans-serif',
-                    opacity: ((!redirectTechId && !redirectServiceId) || !redirectNote?.trim() || redirecting) ? 0.4 : 1
-                  }}>
-                  <Forward size={13} /> {redirecting ? '...' : 'Rediriger'}
-                </button>
-              </>
-            )
-          )}
+      {/* 3. Catégorie — OBLIGATOIRE */}
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
+          <Tag size={11} className="text-gray-400"/> Catégorie
+          <span className="text-red-400">*</span>
+        </label>
+        <select
+          value={redirectCategory}
+          onChange={e => setRedirectCategory(e.target.value)}
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:border-purple-400"
+        >
+          <option value="">Choisir une catégorie...</option>
+          {CATEGORIES_EN?.map(c => (
+            <option key={c} value={c}>{CATEGORY_FR[c] ?? c}</option>
+          ))}
+        </select>
+      </div>
 
-          {/* ── FERMER ── */}
-          {activeTab === 'close' && (
-            isClosed ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6b7280' }}>
-                  <Lock size={15} /> <span style={{ fontSize: 13, fontWeight: 600 }}>Fermé</span>
-                </div>
-                {ticket.closing_note && (
-                  <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '12px 14px' }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', margin: '0 0 6px 0' }}>Note</p>
-                    <p style={{ fontSize: 12, color: '#374151', margin: 0 }}>{ticket.closing_note}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                {ticket?.is_resolved_confirmed && (
-                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <CheckCircle2 size={13} /> Confirmé par l'employé — prêt à fermer.
-                  </div>
-                )}
-                {awaitingConfirm && !ticket?.is_resolved_confirmed && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: '#92400e', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Info size={13} /> En attente de confirmation de l'employé.
-                  </div>
-                )}
-                <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111827', margin: '0 0 6px 0' }}>Fermeture manuelle</p>
-                  <p style={{ fontSize: 11, color: '#6b7280', margin: '0 0 14px 0', lineHeight: 1.5 }}>
-                    Résolu hors système (téléphone, sur site...) ? Documentez la solution avant de fermer.
-                  </p>
-                  <button onClick={() => setShowManualClose(true)} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    width: '100%', padding: '9px 16px', borderRadius: 10,
-                    border: '1px solid #e5e7eb', background: '#fff',
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer', color: '#374151',
-                    fontFamily: 'Inter, sans-serif'
-                  }}>
-                    <Lock size={13} /> Fermer manuellement
-                  </button>
-                </div>
-              </>
-            )
-          )}
+      {/* 4. Raison — OBLIGATOIRE */}
+      <div>
+        <label className="text-[11px] font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
+          <MessageSquare size={11} className="text-gray-400"/> Raison
+          <span className="text-red-400">*</span>
+        </label>
+        <textarea
+          rows={3}
+          value={redirectNote}
+          onChange={e => setRedirectNote(e.target.value)}
+          placeholder="Pourquoi rediriger ?"
+          className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 resize-none focus:outline-none focus:border-purple-400"
+        />
+      </div>
+
+      <button
+        onClick={handleRedirect}
+        disabled={
+          !redirectServiceId ||
+          !redirectCategory  ||
+          !redirectNote?.trim() ||
+          redirecting
+        }
+        className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-40 transition"
+      >
+        <Forward size={13}/>{redirecting ? "..." : "Rediriger"}
+      </button>
+    </>
+  )
+)}
+
+          {/* ── CLOSE tab ── */}
+         {activeTab === "close" && (
+  isClosed ? (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold">
+        <Lock size={15}/> Fermé
+      </div>
+      {ticket.closing_note && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">Note</p>
+          <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
+        </div>
+      )}
+    </div>
+  ) : ticket?.is_resolved_confirmed ? (
+    // ✅ Employé a confirmé → formulaire de fermeture rapide
+    <ConfirmedCloseForm
+      ticket={ticket}
+      onClose={handleManualClose}
+      closing={closingManually}
+      conversation={conversation}
+    />
+  ) : (
+    <>
+      {awaitingConfirm && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-[11px] text-amber-700 flex items-center gap-2">
+          <Info size={13}/> En attente de confirmation de l'employé.
+        </div>
+      )}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
+        <div>
+          <p className="text-[12px] font-bold text-gray-800 mb-1">Fermeture manuelle</p>
+          <p className="text-[11px] text-gray-500">
+            Résolu hors système (téléphone, sur site...) ? Documentez la solution avant de fermer.
+          </p>
+        </div>
+        <button onClick={() => setShowManualClose(true)}
+          className="flex items-center justify-center gap-2 text-[12px] font-semibold px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 bg-white w-full">
+          <Lock size={13}/> Fermer manuellement
+        </button>
+      </div>
+    </>
+  )
+)}
+
         </div>
       </div>
 
+      {/* Modal fermeture manuelle */}
       {showManualClose && (
-        <ManualCloseModal loading={closingManually} onConfirm={handleManualClose} onCancel={() => setShowManualClose(false)} />
+        <ManualCloseModal
+          loading={closingManually}
+          onConfirm={handleManualClose}
+          onCancel={() => setShowManualClose(false)}
+        />
       )}
     </div>
   );

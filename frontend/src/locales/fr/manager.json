@@ -1,0 +1,242 @@
+{
+  "table": {
+    "id": "#",
+    "title": "Titre",
+    "employee": "Employé",
+    "service": "Service",
+    "priority": "Priorité",
+    "status": "Statut"
+  },
+
+  "status": {
+    "in_progress": "En cours",
+    "resolved": "Résolu",
+    "pending": "En attente",
+    "rejected": "Rejeté",
+    "closed": "Clôturé",
+    "open": "Ouvert"
+  },
+
+  "priority": {
+    "high": "Haute",
+    "normal": "Normale",
+    "low": "Basse",
+    "critical": "Critique",
+    "medium": "Moyenne"
+  },
+
+  "accueil": {
+    "title": "Vue globale des tickets",
+    "subtitle": "Suivi en temps réel de tous les tickets DJEZZY",
+    "byService": "Répartition par service",
+    "byPriority": "Répartition par priorité",
+    "techPerformance": "Performance des techniciens",
+    "recentTickets": "Tickets récents",
+    "resolvedCount": "{{count}} résolus",
+    "stats": {
+      "total": "Total",
+      "inProgress": "En cours",
+      "pending": "En attente",
+      "resolved": "Résolus",
+      "rejected": "Rejetés"
+    }
+  },
+
+  "performances": {
+    "title": "Analytique & Performance",
+    "managerView": "Vue manager",
+    "loading": "Chargement du tableau de bord…",
+
+    "kpi": {
+      "total": "Total tickets",
+      "serviceRate": "Taux de résolution",
+      "resolved": "Tickets résolus",
+      "slaIn": "Dans les délais SLA",
+      "slaOut": "Hors délais SLA"
+    },
+
+    "filter": {
+      "filterBy": "Filtrer par :",
+      "year": "Année",
+      "month": "Mois",
+      "all": "Tous",
+      "allPeriods": "Toutes les périodes",
+      "reset": "Réinitialiser"
+    },
+
+    "export": {
+      "excel": "Excel",
+      "pdf": "Rapport PDF",
+      "reportTitle": "Rapport de performance",
+      "period": "Période",
+      "indicator": "Indicateur",
+      "value": "Valeur",
+      "count": "Nombre",
+      "totalService": "Total tickets (service)",
+      "resolutionService": "Taux de résolution (service)",
+      "resolutionGlobal": "Taux de résolution (global)",
+      "slaIn": "Tickets dans les délais SLA",
+      "slaOut": "Tickets hors délais SLA"
+    },
+
+    "sheets": {
+      "statuses": "Statuts",
+      "technicians": "Techniciens",
+      "priorities": "Priorités",
+      "trends": "Tendances"
+    },
+
+    "sections": {
+      "teamEfficiency": "Efficacité de l'équipe",
+      "fluxDistribution": "Répartition des tickets",
+      "categoryDistribution": "Répartition par catégorie",
+      "timeTrends": "Tendances temporelles"
+    },
+
+    "charts": {
+      "workVolume": "Charge par technicien",
+      "currentStatus": "Statut actuel des tickets",
+      "typeDistribution": "Répartition par type",
+      "ticketsByCategory": "Tickets par catégorie",
+      "dailyEvolution": "Évolution journalière",
+      "monthlyEvolution": "Évolution mensuelle",
+      "avg": "Moy.",
+      "total": "Total",
+      "priorityDistribution": "Répartition par priorité"
+    },
+
+    "techDetail": {
+      "title": "Détail des techniciens",
+      "rateNote": "Taux = assignés ÷ total service",
+      "tech": "Technicien",
+      "assigned": "Assignés",
+      "resolved": "Résolus",
+      "closed": "Clôturés",
+      "rejected": "Rejetés",
+      "resolutionRate": "Taux de résolution",
+      "noTech": "Aucun technicien trouvé",
+      "excellent": "Excellent",
+      "average": "Moyen",
+      "weak": "Faible"
+    },
+
+    "statusDistribution": "Répartition par statut"
+  },
+
+  "sidebar": {
+    "dashboard": "Tableau de bord",
+    "performances": "Performance",
+    "tickets": "Tickets",
+    "team": "Mon équipe",
+    "reports": "Rapports",
+    "settings": "Paramètres"
+  },
+
+  "ticketsService": {
+    "headerManage": "Gestion des tickets",
+    "headerService": "Tickets du service",
+    "allTickets": "Tous les tickets",
+    "service": "Service",
+    "loading": "Chargement…",
+    "tabs": {
+      "current": "Tickets actuels",
+      "archives": "Archives (avant {{year}})"
+    },
+    "filters": {
+      "label": "Filtres",
+      "search": "Recherche",
+      "searchPlaceholder": "ID ou titre…",
+      "status": "Statut",
+      "allStatuses": "Tous les statuts",
+      "category": "Catégorie",
+      "allCategories": "Toutes les catégories",
+      "assignment": "Assignation",
+      "all": "Toutes",
+      "assigned": "Assignés",
+      "unassigned": "Non assignés",
+      "closureYear": "Année de clôture",
+      "reset": "Réinitialiser",
+      "count": "{{shown}} ticket{{shownPlural}} sur {{total}} total",
+      "countSimple": "{{shown}} ticket{{shownPlural}}"
+    },
+    "cols": {
+      "id": "ID",
+      "title": "Titre",
+      "category": "Catégorie",
+      "priority": "Priorité",
+      "status": "Statut",
+      "sla": "SLA",
+      "employee": "Employé",
+      "technician": "Technicien",
+      "createdAt": "Créé le",
+      "assignedAt": "Assigné le",
+      "closedAt": "Date clôture"
+    },
+    "unassigned": "Non assigné",
+    "noTickets": "Aucun ticket pour les filtres sélectionnés.",
+    "sla": {
+      "exceeded": "dépassé +{{h}}h {{m}}m",
+      "closed": "clôturé ✓",
+      "frozen": "{{h}}h {{m}}m figé",
+      "remaining": "{{h}}h {{m}}m",
+      "overdue": "⚠ +{{h}}h dépassé"
+    }
+  },
+
+  "ticketDetail": {
+    "backToTickets": "Retour aux tickets",
+    "ticketRef": "Référence Ticket",
+    "incidentDesc": "Description de l'incident",
+    "ticketInfo": "Informations du ticket",
+    "cols": {
+      "priority": "Priorité",
+      "category": "Catégorie",
+      "service": "Service",
+      "impact": "Impact",
+      "urgency": "Urgence",
+      "createdAt": "Date Création"
+    },
+    "slaSection": "Temps de résolution (SLA)",
+    "slaPaused": "En pause",
+    "slaClosed": "Clôturé",
+    "slaOverrun": "Dépassement détecté",
+    "slaLimit": "Limite",
+    "redirected": "Ticket redirigé",
+    "redirectService": "Service",
+    "redirectTechnician": "Technicien",
+    "redirectReason": "Raison",
+    "redirectedAt": "Redirigé le",
+    "redirectedAtTime": "à",
+    "assignedTech": "Technicien assigné",
+    "notAssigned": "Non assigné",
+    "assignedOn": "Assigné le :",
+    "closedOn": "Clôturé le :",
+    "ticketClosed": "Ticket clôturé",
+    "cancelBtn": "Annuler",
+    "assignBtn": "Assigner le ticket",
+    "reassignBtn": "Modifier l'expert",
+    "panelChooseNew": "Choisir un nouvel expert",
+    "panelChoose": "Choisir un expert à assigner",
+    "currentBadge": "Actuel",
+    "techRole": "Technicien",
+    "techFields": {
+      "email": "Email",
+      "contact": "Contact",
+      "office": "Bureau",
+      "workload": "Charge"
+    },
+    "activeTickets": "{{count}} actif{{plural}}",
+    "confirmAssign": "Confirmer l'assignation",
+    "confirmReassign": "Confirmer la modification",
+    "modal": {
+      "assigned": "Ticket assigné à",
+      "reassigned": "Ticket réassigné à",
+      "confirmed": "Assignation confirmée",
+      "whatNext": "Que souhaitez-vous faire ensuite ?",
+      "backToList": "Retour à la liste des tickets",
+      "stayOnTicket": "Rester sur ce ticket",
+      "employee": "Employé",
+      "role": "Employé"
+    }
+  }
+}

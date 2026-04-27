@@ -1,0 +1,242 @@
+{
+  "table": {
+    "id": "#",
+    "title": "Title",
+    "employee": "Employee",
+    "service": "Service",
+    "priority": "Priority",
+    "status": "Status"
+  },
+
+  "status": {
+    "in_progress": "In Progress",
+    "resolved": "Resolved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "closed": "Closed",
+    "open": "Open"
+  },
+
+  "priority": {
+    "high": "High",
+    "normal": "Normal",
+    "low": "Low",
+    "critical": "Critical",
+    "medium": "Medium"
+  },
+
+  "accueil": {
+    "title": "Global Ticket Overview",
+    "subtitle": "Real-time tracking of all DJEZZY tickets",
+    "byService": "Distribution by Service",
+    "byPriority": "Distribution by Priority",
+    "techPerformance": "Technician Performance",
+    "recentTickets": "Recent Tickets",
+    "resolvedCount": "{{count}} resolved",
+    "stats": {
+      "total": "Total",
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "rejected": "Rejected"
+    }
+  },
+
+  "performances": {
+    "title": "Analytics & Performance",
+    "managerView": "Manager View",
+    "loading": "Loading dashboard...",
+
+    "kpi": {
+      "total": "Total Tickets",
+      "serviceRate": "Resolution Rate",
+      "resolved": "Resolved Tickets",
+      "slaIn": "Within SLA",
+      "slaOut": "Outside SLA"
+    },
+
+    "filter": {
+      "filterBy": "Filter by:",
+      "year": "Year",
+      "month": "Month",
+      "all": "All",
+      "allPeriods": "All periods",
+      "reset": "Reset"
+    },
+
+    "export": {
+      "excel": "Excel",
+      "pdf": "PDF Report",
+      "reportTitle": "Performance Report",
+      "period": "Period",
+      "indicator": "Indicator",
+      "value": "Value",
+      "count": "Count",
+      "totalService": "Total Tickets (Service)",
+      "resolutionService": "Resolution Rate (Service)",
+      "resolutionGlobal": "Resolution Rate (Global)",
+      "slaIn": "Tickets Within SLA",
+      "slaOut": "Tickets Outside SLA"
+    },
+
+    "sheets": {
+      "statuses": "Statuses",
+      "technicians": "Technicians",
+      "priorities": "Priorities",
+      "trends": "Trends"
+    },
+
+    "sections": {
+      "teamEfficiency": "Team Efficiency",
+      "fluxDistribution": "Ticket Distribution",
+      "categoryDistribution": "Distribution by Category",
+      "timeTrends": "Time Trends"
+    },
+
+    "charts": {
+      "workVolume": "Workload by Technician",
+      "currentStatus": "Current Ticket Status",
+      "typeDistribution": "Distribution by Type",
+      "ticketsByCategory": "Tickets by Category",
+      "dailyEvolution": "Daily Evolution",
+      "monthlyEvolution": "Monthly Evolution",
+      "avg": "Avg",
+      "total": "Total",
+      "priorityDistribution": "Distribution by Priority"
+    },
+
+    "techDetail": {
+      "title": "Technician Details",
+      "rateNote": "Rate = assigned ÷ total service",
+      "tech": "Technician",
+      "assigned": "Assigned",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "rejected": "Rejected",
+      "resolutionRate": "Resolution Rate",
+      "noTech": "No technician found",
+      "excellent": "Excellent",
+      "average": "Average",
+      "weak": "Weak"
+    },
+
+    "statusDistribution": "Distribution by Status"
+  },
+
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "performances": "Performance",
+    "tickets": "Tickets",
+    "team": "My Team",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+
+  "ticketsService": {
+    "headerManage": "Ticket Management",
+    "headerService": "Service Tickets",
+    "allTickets": "All Tickets",
+    "service": "Service",
+    "loading": "Loading…",
+    "tabs": {
+      "current": "Current Tickets",
+      "archives": "Archives (before {{year}})"
+    },
+    "filters": {
+      "label": "Filters",
+      "search": "Search",
+      "searchPlaceholder": "ID or title…",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "category": "Category",
+      "allCategories": "All categories",
+      "assignment": "Assignment",
+      "all": "All",
+      "assigned": "Assigned",
+      "unassigned": "Unassigned",
+      "closureYear": "Closure Year",
+      "reset": "Reset",
+      "count": "{{shown}} ticket{{shownPlural}} of {{total}} total",
+      "countSimple": "{{shown}} ticket{{shownPlural}}"
+    },
+    "cols": {
+      "id": "ID",
+      "title": "Title",
+      "category": "Category",
+      "priority": "Priority",
+      "status": "Status",
+      "sla": "SLA",
+      "employee": "Employee",
+      "technician": "Technician",
+      "createdAt": "Created",
+      "assignedAt": "Assigned",
+      "closedAt": "Closed"
+    },
+    "unassigned": "Unassigned",
+    "noTickets": "No tickets match the selected filters.",
+    "sla": {
+      "exceeded": "exceeded +{{h}}h {{m}}m",
+      "closed": "closed ✓",
+      "frozen": "{{h}}h {{m}}m frozen",
+      "remaining": "{{h}}h {{m}}m",
+      "overdue": "⚠ +{{h}}h exceeded"
+    }
+  },
+
+  "ticketDetail": {
+    "backToTickets": "Back to tickets",
+    "ticketRef": "Ticket Reference",
+    "incidentDesc": "Incident Description",
+    "ticketInfo": "Ticket Information",
+    "cols": {
+      "priority": "Priority",
+      "category": "Category",
+      "service": "Service",
+      "impact": "Impact",
+      "urgency": "Urgency",
+      "createdAt": "Creation Date"
+    },
+    "slaSection": "Resolution Time (SLA)",
+    "slaPaused": "On Hold",
+    "slaClosed": "Closed",
+    "slaOverrun": "Overrun detected",
+    "slaLimit": "Limit",
+    "redirected": "Redirected Ticket",
+    "redirectService": "Service",
+    "redirectTechnician": "Technician",
+    "redirectReason": "Reason",
+    "redirectedAt": "Redirected on",
+    "redirectedAtTime": "at",
+    "assignedTech": "Assigned Technician",
+    "notAssigned": "Unassigned",
+    "assignedOn": "Assigned on",
+    "closedOn": "Closed on",
+    "ticketClosed": "Ticket closed",
+    "cancelBtn": "Cancel",
+    "assignBtn": "Assign ticket",
+    "reassignBtn": "Change expert",
+    "panelChooseNew": "Choose a new expert",
+    "panelChoose": "Choose an expert to assign",
+    "currentBadge": "Current",
+    "techRole": "Technician",
+    "techFields": {
+      "email": "Email",
+      "contact": "Contact",
+      "office": "Office",
+      "workload": "Workload"
+    },
+    "activeTickets": "{{count}} active ticket{{plural}}",
+    "confirmAssign": "Confirm assignment",
+    "confirmReassign": "Confirm change",
+    "modal": {
+      "assigned": "Ticket assigned to",
+      "reassigned": "Ticket reassigned to",
+      "confirmed": "Assignment confirmed",
+      "whatNext": "What would you like to do next?",
+      "backToList": "Back to ticket list",
+      "stayOnTicket": "Stay on this ticket",
+      "employee": "Employee",
+      "role": "Employee"
+    }
+  }
+}

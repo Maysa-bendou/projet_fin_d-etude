@@ -24,10 +24,8 @@ import AccueilTechnicien from "./pages/technicien/AccueilTechnicien/AccueilTechn
 import TicketsAssignesPage from "./pages/technicien/TicketsAssignesPage/TicketsAssignesPage";
 import TicketsServicePage from "./pages/technicien/TicketsServicePage/TicketsServicePage";
 import TicketsDetailsPage from "./pages/technicien/TicketsDetailsPage/TicketsDetailsPage";
-import HistoriqueTechnicien from "./pages/technicien/HistoriqueTechnicien/HistoriqueTechnicien";
 import TicketDetailTechnicien from "./pages/technicien/TicketDetailTechnicien/TicketDetailTechnicien";
 /* CHEF */
-import AccueilChef from "./pages/chefService/AccueilChef/AccueilChef";
 import RepartitionPage from "./pages/chefService/RepartitionPage/RepartitionPage";
 import StatistiqueGlobal from "./pages/chefService/statistiqueGlobal/statistiqueGlobal";
 
@@ -92,7 +90,7 @@ export default function App() {
 <Route path="ticket-technicien/:id" element={<TicketDetailTechnicien />} />
   <Route path="tickets-service" element={<TicketsServicePage />} />
 <Route path="tickets-service/:id" element={<TicketsDetailsPage />} />
-          <Route path="historique" element={<HistoriqueTechnicien />} />
+          
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 

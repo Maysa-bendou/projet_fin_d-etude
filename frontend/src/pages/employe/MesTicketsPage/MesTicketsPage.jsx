@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   HiOutlineTicket,
   HiOutlineArchiveBox,
@@ -8,17 +9,15 @@ import {
   HiOutlineFunnel,
 } from "react-icons/hi2";
 import RefreshButton from "../../../components/common/RefreshButton";
-// AJOUTER après les imports existants
 import { PRIORITY_CONFIG, STATUS_CONFIG } from "../../../config/styles";
 import Pill from "../../../components/common/Pill";
-// ── Config ─────────────────────────────────────────────────────────────────
 
+// ── Config ─────────────────────────────────────────────────────────────────
 
 const THIS_YEAR = new Date().getFullYear();
 
 // ── Date helpers ───────────────────────────────────────────────────────────
 
-/** Format any ISO/date string → "14 Jan 2025  10:32" */
 const fmtDate = (str, withTime = false) => {
   if (!str) return "—";
   const d = new Date(str);
@@ -92,10 +91,12 @@ const FilterSelect = ({ label, value, onChange, children }) => (
 // ── Tab Switch ─────────────────────────────────────────────────────────────
 
 const TabSwitch = ({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
+  const { t } = useTranslation('employee');
+
   const tabs = [
     {
       key: "actuels",
-      label: "Tickets actuels",
+      label: t("mesTickets.tabs.current"),
       Icon: HiOutlineTicket,
       count: actuelCount,
       activeColor: "#1d4ed8",
@@ -104,7 +105,7 @@ const TabSwitch = ({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
     },
     {
       key: "archives",
-      label: `Archives (avant ${THIS_YEAR})`,
+      label: t("mesTickets.tabs.archives", { year: THIS_YEAR }),
       Icon: HiOutlineArchiveBox,
       count: archiveCount,
       activeColor: "#6b7280",
@@ -114,7 +115,6 @@ const TabSwitch = ({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
   ];
 
   return (
-    /* Outer pill track */
     <div style={{
       display: "inline-flex",
       background: "#ede9e3",
@@ -160,7 +160,6 @@ const TabSwitch = ({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
               }}
             />
             <span>{label}</span>
-            {/* Badge */}
             <span style={{
               display: "inline-flex",
               alignItems: "center",
@@ -190,117 +189,112 @@ const TabSwitch = ({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
 
 const CELL = { padding: "13px 14px", fontSize: 13, whiteSpace: "nowrap" };
 
-const TicketTable = ({ tickets, navigate, hoveredTicketId, setHoveredTicketId, activeTab }) => (
-  <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc" }}>
-    {tickets.length === 0 ? (
-      <div style={{ padding: "56px 24px", textAlign: "center" }}>
-        <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
-        <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>
-          Aucun ticket pour les filtres sélectionnés.
-        </p>
-      </div>
-    ) : (
-      <div style={{ margin: 16, border: "1px solid #e8e2d9", borderRadius: 10, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-          <thead>
-            <tr style={{ background: "#f9f6f2" }}>
-              {[
-                "ID", "Titre", "Service", "Assigné à", "Priorité", "Statut",
-                "Date création",
-                activeTab === "archives" ? "Date clôture" : "Dernière MAJ",
-              ].map(col => (
-                <th key={col} style={{
-                  padding: "11px 14px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#94a3b8",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.4px",
-                  borderBottom: "1px solid #e8e2d9",
-                  whiteSpace: "nowrap",
-                }}>
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map((t, idx) => {
-             
-              const lastDate = activeTab === "archives"
-  ? fmtDate(t.closed_at)
-  : fmtDate(t.updated_at || t.created_at);
+const TicketTable = ({ tickets, navigate, hoveredTicketId, setHoveredTicketId, activeTab }) => {
+  const { t } = useTranslation();
 
-              return (
-                <tr
-                  key={t.id}
-                  onClick={() => navigate(`/employee/ticket/${t.id}`)}
-                  onMouseEnter={() => setHoveredTicketId(t.id)}
-                  onMouseLeave={() => setHoveredTicketId(null)}
-                  style={{
-                    background: "#fff",
-                    borderBottom: idx < tickets.length - 1 ? "1px solid #f1ede8" : "none",
-                    cursor: "pointer",
-                    transition: "background 0.12s",
-                  }}
-                  onMouseOver={e => e.currentTarget.style.background = "#faf7f4"}
-                  onMouseOut={e => e.currentTarget.style.background = "#fff"}
-                >
-                  {/* ID */}
-                  <td style={{ ...CELL, fontWeight: 600, color: "#c4bfb8" }}>
-                    #{t.id}
-                  </td>
+  const columns = [
+    t("table.id"),
+    t("table.title"),
+    t("table.service"),
+    t("table.assignedTo"),
+    t("table.priority"),
+    t("table.status"),
+    t("table.createdAt"),
+    activeTab === "archives" ? t("table.closedAt") : t("table.lastUpdate"),
+  ];
 
-                  {/* Title */}
-                  <td style={{ ...CELL, fontWeight: 600, color: "#0f172a", maxWidth: 220 }}>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                      {t.title}
-                    </span>
-                  </td>
+  return (
+    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc" }}>
+      {tickets.length === 0 ? (
+        <div style={{ padding: "56px 24px", textAlign: "center" }}>
+          <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
+          <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>
+            {t("common.noTicketsFilter")}
+          </p>
+        </div>
+      ) : (
+        <div style={{ margin: 16, border: "1px solid #e8e2d9", borderRadius: 10, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <thead>
+              <tr style={{ background: "#f9f6f2" }}>
+                {columns.map(col => (
+                  <th key={col} style={{
+                    padding: "11px 14px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#94a3b8",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.4px",
+                    borderBottom: "1px solid #e8e2d9",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.map((ticket, idx) => {
+                const lastDate = activeTab === "archives"
+                  ? fmtDate(ticket.closed_at)
+                  : fmtDate(ticket.updated_at || ticket.created_at);
 
-                  {/* Service */}
-                  <td style={{ ...CELL, color: "#64748b" }}>
-                    {t.service || <span style={{ color: "#d1d5db" }}>—</span>}
-                  </td>
-
-                  {/* Assigned to */}
-                  <td style={{ ...CELL, color: "#64748b" }}>
-                    {t.technicien || <span style={{ color: "#d1d5db" }}>Non assigné</span>}
-                  </td>
-
-                  {/* Priority */}
-                  <td style={CELL}>
-                    <Pill config={PRIORITY_CONFIG} value={t.priority} />
-                  </td>
-
-                  {/* Status */}
-                  <td style={CELL}>
-                   <Pill config={STATUS_CONFIG} value={t.status} />
-
-                  </td>
-
-                  {/* Date création — same format as last column */}
-                  <td style={{ ...CELL, color: "#94a3b8" }}>
-                    {fmtDate(t.created_at)}
-                  </td>
-
-                  {/* Last date (MAJ or clôture) */}
-                  <td style={{ ...CELL, color: "#94a3b8" }}>
-                    {lastDate}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-);
+                return (
+                  <tr
+                    key={ticket.id}
+                    onClick={() => navigate(`/employee/ticket/${ticket.id}`)}
+                    onMouseEnter={() => setHoveredTicketId(ticket.id)}
+                    onMouseLeave={() => setHoveredTicketId(null)}
+                    style={{
+                      background: "#fff",
+                      borderBottom: idx < tickets.length - 1 ? "1px solid #f1ede8" : "none",
+                      cursor: "pointer",
+                      transition: "background 0.12s",
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = "#faf7f4"}
+                    onMouseOut={e => e.currentTarget.style.background = "#fff"}
+                  >
+                    <td style={{ ...CELL, fontWeight: 600, color: "#c4bfb8" }}>
+                      #{ticket.id}
+                    </td>
+                    <td style={{ ...CELL, fontWeight: 600, color: "#0f172a", maxWidth: 220 }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                        {ticket.title}
+                      </span>
+                    </td>
+                    <td style={{ ...CELL, color: "#64748b" }}>
+                      {ticket.service || <span style={{ color: "#d1d5db" }}>—</span>}
+                    </td>
+                    <td style={{ ...CELL, color: "#64748b" }}>
+                      {ticket.technicien || <span style={{ color: "#d1d5db" }}>{t("common.unassigned")}</span>}
+                    </td>
+                    <td style={CELL}>
+                      <Pill config={PRIORITY_CONFIG} value={ticket.priority} />
+                    </td>
+                    <td style={CELL}>
+                      <Pill config={STATUS_CONFIG} value={ticket.status} />
+                    </td>
+                    <td style={{ ...CELL, color: "#94a3b8" }}>
+                      {fmtDate(ticket.created_at)}
+                    </td>
+                    <td style={{ ...CELL, color: "#94a3b8" }}>
+                      {lastDate}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export default function MesTicketsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [ticketsData, setTicketsData]         = useState([]);
   const [loading, setLoading]                 = useState(true);
@@ -332,7 +326,7 @@ export default function MesTicketsPage() {
 
       setDbEnums(await enumRes.json());
       setDbServices(await serviceRes.json());
-      if (!ticketRes.ok) throw new Error("Erreur lors de la récupération des tickets");
+      if (!ticketRes.ok) throw new Error(t("mesTickets.fetchError"));
       setTicketsData(await ticketRes.json());
     } catch (err) {
       console.error(err);
@@ -346,11 +340,11 @@ export default function MesTicketsPage() {
 
   const applyCommonFilters = (list, tab) =>
     list
-      .filter(t =>
-        (!filterStatus   || t.status   === filterStatus)   &&
-        (!filterPriority || t.priority === filterPriority) &&
-        (!filterService  || t.service  === filterService)  &&
-        (!filterCategory || t.category === filterCategory)
+      .filter(ticket =>
+        (!filterStatus   || ticket.status   === filterStatus)   &&
+        (!filterPriority || ticket.priority === filterPriority) &&
+        (!filterService  || ticket.service  === filterService)  &&
+        (!filterCategory || ticket.category === filterCategory)
       )
       .sort((a, b) => {
         const da = tab === "archives" ? (a.closed_at || a.created_at) : (a.updated_at || a.created_at);
@@ -363,20 +357,20 @@ export default function MesTicketsPage() {
     const archivesList = [];
     const yearsSet     = new Set();
 
-    for (const t of ticketsData) {
-      if (isArchived(t)) {
-        archivesList.push(t);
-        const y = getArchiveYear(t);
+    for (const ticket of ticketsData) {
+      if (isArchived(ticket)) {
+        archivesList.push(ticket);
+        const y = getArchiveYear(ticket);
         if (y) yearsSet.add(y);
       } else {
-        actuelsList.push(t);
+        actuelsList.push(ticket);
       }
     }
 
     return {
       actuels:      applyCommonFilters(actuelsList, "actuels"),
       archives:     applyCommonFilters(archivesList, "archives")
-                      .filter(t => !filterYear || getArchiveYear(t) === parseInt(filterYear)),
+                      .filter(ticket => !filterYear || getArchiveYear(ticket) === parseInt(filterYear)),
       archiveYears: [...yearsSet].sort((a, b) => b - a),
     };
   }, [ticketsData, filterStatus, filterPriority, filterService, filterCategory, filterYear]);
@@ -389,12 +383,12 @@ export default function MesTicketsPage() {
 
   if (loading) return (
     <div style={{ padding: 40, textAlign: "center", color: "#1d4ed8", fontWeight: 600, background: "#f9f6f2", minHeight: "100vh" }}>
-      Chargement des tickets…
+      {t("common.loading")}
     </div>
   );
   if (error) return (
     <div style={{ padding: 40, textAlign: "center", color: "#dc2626", background: "#f9f6f2", minHeight: "100vh" }}>
-      Erreur : {error}
+      {t("common.error")} : {error}
     </div>
   );
 
@@ -414,7 +408,7 @@ export default function MesTicketsPage() {
           background: "#1e293b", color: "#fff", fontSize: 11,
           padding: "4px 10px", borderRadius: 6, whiteSpace: "nowrap",
         }}>
-          Cliquer pour voir les détails
+          {t("common.clickForDetails")}
         </div>
       )}
 
@@ -427,10 +421,10 @@ export default function MesTicketsPage() {
       }}>
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>
-            Mes Tickets
+            {t("mesTickets.title")}
           </h1>
           <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
-            Suivez et gérez l'état de vos demandes de support.
+            {t("mesTickets.subtitle")}
           </p>
         </div>
         <RefreshButton onRefresh={fetchData} />
@@ -455,57 +449,50 @@ export default function MesTicketsPage() {
         padding: "16px 20px",
         marginBottom: 24,
       }}>
-        {/* Row: label + selects + reset + count */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, alignItems: "flex-end" }}>
 
-          {/* "Filtres" label aligned at top like the others, then icon below */}
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={LABEL_STYLE}>Filtres</span>
-            <div style={{
-              height: 38,
-              display: "flex",
-              alignItems: "center",
-              paddingLeft: 2,
-            }}>
+            <span style={LABEL_STYLE}>{t("mesTickets.filters.label")}</span>
+            <div style={{ height: 38, display: "flex", alignItems: "center", paddingLeft: 2 }}>
               <HiOutlineFunnel size={16} color="#c4bfb8" />
             </div>
           </div>
 
-          <FilterSelect label="Statut" value={filterStatus} onChange={setFilterStatus}>
-            <option value="">Tous les statuts</option>
+          <FilterSelect label={t("mesTickets.filters.status")} value={filterStatus} onChange={setFilterStatus}>
+            <option value="">{t("mesTickets.filters.allStatuses")}</option>
             {dbEnums.statuts?.map(s => (
               <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>
             ))}
           </FilterSelect>
 
-          <FilterSelect label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
-            <option value="">Toutes les catégories</option>
+          <FilterSelect label={t("mesTickets.filters.category")} value={filterCategory} onChange={setFilterCategory}>
+            <option value="">{t("mesTickets.filters.allCategories")}</option>
             {dbEnums.categories?.map(c => <option key={c} value={c}>{c}</option>)}
           </FilterSelect>
 
-          <FilterSelect label="Priorité" value={filterPriority} onChange={setFilterPriority}>
-            <option value="">Toutes les priorités</option>
+          <FilterSelect label={t("mesTickets.filters.priority")} value={filterPriority} onChange={setFilterPriority}>
+            <option value="">{t("mesTickets.filters.allPriorities")}</option>
             {dbEnums.priorites?.map(p => (
               <option key={p} value={p}>{PRIORITY_CONFIG[p]?.label || p}</option>
             ))}
           </FilterSelect>
 
-          <FilterSelect label="Service" value={filterService} onChange={setFilterService}>
-            <option value="">Tous les services</option>
+          <FilterSelect label={t("mesTickets.filters.service")} value={filterService} onChange={setFilterService}>
+            <option value="">{t("mesTickets.filters.allServices")}</option>
             {dbServices.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
           </FilterSelect>
 
           {/* Year — archives tab only */}
           {activeTab === "archives" && archiveYears.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={LABEL_STYLE}>Année de clôture</span>
+              <span style={LABEL_STYLE}>{t("mesTickets.filters.closeYear")}</span>
               <div style={{ position: "relative" }}>
                 <select
                   value={filterYear}
                   onChange={e => setFilterYear(e.target.value)}
                   style={{ ...selectStyle, minWidth: 130 }}
                 >
-                  <option value="">Toutes</option>
+                  <option value="">{t("mesTickets.filters.allYears")}</option>
                   {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
                 <HiOutlineChevronDown size={13} color="#94a3b8" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
@@ -513,9 +500,8 @@ export default function MesTicketsPage() {
             </div>
           )}
 
-          {/* Reset — aligned to bottom of selects */}
+          {/* Reset button */}
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {/* invisible label spacer so button sits at the same baseline */}
             <span style={{ ...LABEL_STYLE, visibility: "hidden" }}>_</span>
             <button
               onClick={resetFilters}
@@ -537,7 +523,7 @@ export default function MesTicketsPage() {
               }}
             >
               <HiOutlineArrowPath size={14} />
-              Réinitialiser
+              {t("mesTickets.filters.reset")}
             </button>
           </div>
 
@@ -547,10 +533,11 @@ export default function MesTicketsPage() {
             <div style={{ height: 38, display: "flex", alignItems: "center" }}>
               <span style={{ fontSize: 13, color: "#94a3b8" }}>
                 <span style={{ fontWeight: 700, color: "#0f172a" }}>{displayedTickets.length}</span>{" "}
-                ticket{displayedTickets.length !== 1 ? "s" : ""}
+                {t("mesTickets.ticketCount", { count: displayedTickets.length })}
               </span>
             </div>
           </div>
+
         </div>
       </div>
 

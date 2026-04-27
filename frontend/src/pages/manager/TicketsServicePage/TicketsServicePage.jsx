@@ -2,6 +2,7 @@ import React, {
   useState, useEffect, useMemo, useCallback, memo
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   HiOutlineTicket, HiOutlineArchiveBox, HiOutlineChevronDown,
   HiOutlineArrowPath, HiOutlineFunnel, HiOutlineMagnifyingGlass, HiOutlineXMark,
@@ -14,8 +15,6 @@ import Pill from "../../../components/common/Pill";
 // ── Constants (module-level, never re-created) ─────────────────────────────
 
 const THIS_YEAR = new Date().getFullYear();
-
-
 
 const LABEL_STYLE = {
   fontSize: 11, fontWeight: 700, color: "#94a3b8",
@@ -52,8 +51,8 @@ const isArchived = (t) => {
 function useDebounce(value, delay = 220) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
   }, [value, delay]);
   return debounced;
 }
@@ -71,7 +70,6 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
   const debut    = slaDebut ? new Date(slaDebut).getTime() : due - 86400000;
   const window   = due - debut;
 
-  // ── Terminal ──
   if (TERMINAL.includes(status)) {
     const closed   = closedAt ? new Date(closedAt).getTime() : due;
     const exceeded = closed > due;
@@ -91,7 +89,6 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
     );
   }
 
-  // ── Pause ──
   if (PAUSED.includes(status)) {
     const frozen = slaPauseElapsed != null ? window - slaPauseElapsed : Math.max(0, due - now);
     const pct    = Math.min(100, Math.max(0, ((window - frozen) / window) * 100));
@@ -108,7 +105,6 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
     );
   }
 
-  // ── Actif ──
   const diffMs    = due - now;
   const exceeded  = diffMs <= 0;
   const pct       = Math.max(0, Math.min(100, ((window - Math.max(0, diffMs)) / window) * 100));
@@ -145,9 +141,10 @@ const FilterSelect = memo(({ label, value, onChange, children }) => (
 // ── TabSwitch ──────────────────────────────────────────────────────────────
 
 const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
+  const { t } = useTranslation("manager");
   const tabs = [
-    { key: "actuels",  label: "Tickets actuels",               Icon: HiOutlineTicket,    count: actuelCount,  ac: "#1d4ed8", ab: "#eff6ff", abr: "#bfdbfe" },
-    { key: "archives", label: `Archives (avant ${THIS_YEAR})`, Icon: HiOutlineArchiveBox, count: archiveCount, ac: "#6b7280", ab: "#f3f4f6", abr: "#d1d5db" },
+    { key: "actuels",  label: t("ticketsService.tabs.current"),                       Icon: HiOutlineTicket,     count: actuelCount,  ac: "#1d4ed8", ab: "#eff6ff", abr: "#bfdbfe" },
+    { key: "archives", label: t("ticketsService.tabs.archives", { year: THIS_YEAR }), Icon: HiOutlineArchiveBox, count: archiveCount, ac: "#6b7280", ab: "#f3f4f6", abr: "#d1d5db" },
   ];
   return (
     <div style={{ display: "inline-flex", background: "#ede9e3", borderRadius: 14, padding: 4, gap: 2, marginBottom: 24, border: "1px solid #d9d4cc", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.07)" }}>
@@ -173,14 +170,15 @@ const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) 
   );
 });
 
-// ── TicketRow (memoized — no re-render unless ticket data changes) ──────────
+// ── TicketRow (memoized) ───────────────────────────────────────────────────
 
-const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
+const TicketRow = memo(({ ticket, navigate, role, activeTab, isLast }) => {
+  const { t } = useTranslation("manager");
 
-  const technician = t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers;
-  const empName  = t.employee ? `${t.employee.name || ""} ${t.employee.surname || ""}`.trim() : null;
+  const technician = ticket.assignedTo || ticket.assigned_to || ticket.users_tickets_assigned_toTousers;
+  const empName  = ticket.employee ? `${ticket.employee.name || ""} ${ticket.employee.surname || ""}`.trim() : null;
   const techName = technician ? `${technician.name || ""} ${technician.surname || ""}`.trim() : null;
-  const lastDate = activeTab === "archives" ? fmtDate(t.closed_at) : fmtDate(t.assigned_at);
+  const lastDate = activeTab === "archives" ? fmtDate(ticket.closed_at) : fmtDate(ticket.assigned_at);
 
   const TD = ({ style, children }) => (
     <td style={{ padding: "11px 14px", fontSize: 13, whiteSpace: "nowrap", ...style }}>{children}</td>
@@ -188,55 +186,45 @@ const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
 
   return (
     <tr
-      onClick={() => navigate(`/manager/tickets-service/${t.id}`)}
+      onClick={() => navigate(`/manager/tickets-service/${ticket.id}`)}
       style={{ background: "#fff", borderBottom: isLast ? "none" : "1px solid #f1ede8", cursor: "pointer" }}
       onMouseOver={e => e.currentTarget.style.background = "#faf7f4"}
       onMouseOut={e  => e.currentTarget.style.background = "#fff"}
     >
-      {/* ID */}
-      <TD style={{ fontWeight: 700, color: "#c4bfb8", fontSize: 12 }}>#{t.id}</TD>
+      <TD style={{ fontWeight: 700, color: "#c4bfb8", fontSize: 12 }}>#{ticket.id}</TD>
 
-      {/* Titre */}
       <td style={{ padding: "11px 14px", maxWidth: 240 }}>
         <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
-          {t.title || "N/A"}
+          {ticket.title || "N/A"}
         </span>
       </td>
 
-      {/* Catégorie */}
       <TD>
         <span style={{ background: "#f8fafc", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
-        <Pill config={CATEGORY_CONFIG} value={t.category || t.categorie} />  </span>
+          <Pill config={CATEGORY_CONFIG} value={ticket.category || ticket.categorie} />
+        </span>
       </TD>
 
-      {/* Priorité */}
-      <TD>
-       <Pill config={PRIORITY_CONFIG} value={t.priority} />
-      </TD>
+      <TD><Pill config={PRIORITY_CONFIG} value={ticket.priority} /></TD>
 
-      {/* Statut */}
-      <TD>
-       <Pill config={STATUS_CONFIG} value={t.status} />   </TD>
+      <TD><Pill config={STATUS_CONFIG} value={ticket.status} /></TD>
 
-      {/* SLA */}
       <td style={{ padding: "11px 14px", width: 120 }}>
         {activeTab === "archives"
           ? <span style={{ color: "#d1d5db", fontSize: 11 }}>—</span>
           : <SlaBar
-  slaDueDate={t.sla_date_limite}
-  slaDebut={t.sla_date_debut}
-  status={t.status}
-  closedAt={t.closed_at}
-  slaPauseElapsed={t.sla_pause_elapsed_ms ?? null}
-/>}
+              slaDueDate={ticket.sla_date_limite}
+              slaDebut={ticket.sla_date_debut}
+              status={ticket.status}
+              closedAt={ticket.closed_at}
+              slaPauseElapsed={ticket.sla_pause_elapsed_ms ?? null}
+            />}
       </td>
 
-      {/* Employé */}
       <TD style={{ color: "#64748b" }}>
         {empName || <span style={{ color: "#d1d5db" }}>—</span>}
       </TD>
 
-      {/* Technicien */}
       <TD>
         {techName ? (
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -248,87 +236,92 @@ const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
             <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{techName}</span>
           </div>
         ) : (
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#fb923c", fontStyle: "italic" }}>Non assigné</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#fb923c", fontStyle: "italic" }}>
+            {t("ticketsService.unassigned")}
+          </span>
         )}
       </TD>
 
-      {/* Créé le */}
-      <TD style={{ fontSize: 12, color: "#94a3b8" }}>{fmtDate(t.created_at)}</TD>
-
-      {/* Assigné le / Clôture */}
+      <TD style={{ fontSize: 12, color: "#94a3b8" }}>{fmtDate(ticket.created_at)}</TD>
       <TD style={{ fontSize: 12, color: "#94a3b8" }}>{lastDate}</TD>
     </tr>
   );
 });
 
-// ── Column config ──────────────────────────────────────────────────────────
-
-const COLS = [
-  { label: "ID",         width: "64px"  },
-  { label: "Titre",      width: "240px" },
-  { label: "Catégorie",  width: "120px" },
-  { label: "Priorité",   width: "105px" },
-  { label: "Statut",     width: "150px" },
-  { label: "SLA",        width: "120px" },
-  { label: "Employé",    width: "160px" },
-  { label: "Technicien", width: "180px" },
-  { label: "Créé le",    width: "115px" },
-  { label: null,         width: "115px" }, // dynamic label
-];
-
 // ── TicketTable ────────────────────────────────────────────────────────────
 
-const TicketTable = memo(({ tickets, navigate, role, activeTab }) => (
-  <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", overflow: "hidden" }}>
-    {tickets.length === 0 ? (
-      <div style={{ padding: "56px 24px", textAlign: "center" }}>
-        <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
-        <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>Aucun ticket pour les filtres sélectionnés.</p>
-      </div>
-    ) : (
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse", tableLayout: "fixed" }}>
-          <colgroup>
-            {COLS.map((c, i) => <col key={i} style={{ width: c.width }} />)}
-          </colgroup>
-          <thead>
-            <tr style={{ background: "#f9f6f2", borderBottom: "2px solid #e8e2d9" }}>
-              {COLS.map((c, i) => (
-                <th key={i} style={{
-                  padding: "10px 14px", fontSize: 11, fontWeight: 700,
-                  color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px",
-                  whiteSpace: "nowrap", textAlign: "left",
-                  borderRight: i < COLS.length - 1 ? "1px solid #f1ede8" : "none",
-                }}>
-                  {c.label ?? (activeTab === "archives" ? "Date clôture" : "Assigné le")}
-                </th>
+const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
+  const { t } = useTranslation("manager");
+
+  const COLS = [
+    { label: t("ticketsService.cols.id"),         width: "64px"  },
+    { label: t("ticketsService.cols.title"),      width: "240px" },
+    { label: t("ticketsService.cols.category"),   width: "120px" },
+    { label: t("ticketsService.cols.priority"),   width: "105px" },
+    { label: t("ticketsService.cols.status"),     width: "150px" },
+    { label: t("ticketsService.cols.sla"),        width: "120px" },
+    { label: t("ticketsService.cols.employee"),   width: "160px" },
+    { label: t("ticketsService.cols.technician"), width: "180px" },
+    { label: t("ticketsService.cols.createdAt"),  width: "115px" },
+    { label: null,                                width: "115px" },
+  ];
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", overflow: "hidden" }}>
+      {tickets.length === 0 ? (
+        <div style={{ padding: "56px 24px", textAlign: "center" }}>
+          <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
+          <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>
+            {t("ticketsService.noTickets")}
+          </p>
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <colgroup>
+              {COLS.map((c, i) => <col key={i} style={{ width: c.width }} />)}
+            </colgroup>
+            <thead>
+              <tr style={{ background: "#f9f6f2", borderBottom: "2px solid #e8e2d9" }}>
+                {COLS.map((c, i) => (
+                  <th key={i} style={{
+                    padding: "10px 14px", fontSize: 11, fontWeight: 700,
+                    color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px",
+                    whiteSpace: "nowrap", textAlign: "left",
+                    borderRight: i < COLS.length - 1 ? "1px solid #f1ede8" : "none",
+                  }}>
+                    {c.label ?? (activeTab === "archives"
+                      ? t("ticketsService.cols.closedAt")
+                      : t("ticketsService.cols.assignedAt"))}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.map((tk, idx) => (
+                <TicketRow
+                  key={tk.id}
+                  ticket={tk}
+                  navigate={navigate}
+                  role={role}
+                  activeTab={activeTab}
+                  isLast={idx === tickets.length - 1}
+                />
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map((t, idx) => (
-              <TicketRow
-                key={t.id}
-                t={t}
-                navigate={navigate}
-                role={role}
-                activeTab={activeTab}
-                isLast={idx === tickets.length - 1}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-));
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+});
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
 const TicketsServicePage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("manager");
 
-  // Parse user once (not on every render)
   const { role, serviceId } = useMemo(() => {
     const u = JSON.parse(localStorage.getItem("user") || "null");
     return { role: u?.role || "", serviceId: u?.serviceId || u?.service_id || null };
@@ -346,7 +339,6 @@ const TicketsServicePage = () => {
   const [filterAssignment, setFilterAssignment] = useState("");
   const [filterYear,       setFilterYear]       = useState("");
 
-  // Debounce search — filters only trigger 220ms after the user stops typing
   const debouncedSearch = useDebounce(filterSearch, 220);
 
   // ── Fetch ────────────────────────────────────────────────────────────────
@@ -366,7 +358,7 @@ const TicketsServicePage = () => {
       const allTickets = await ticketsRes.json();
 
       const filtered = serviceId
-        ? allTickets.filter(t => (t.serviceId || t.service_id) === serviceId)
+        ? allTickets.filter(tk => (tk.serviceId || tk.service_id) === serviceId)
         : allTickets;
 
       setTickets(filtered);
@@ -385,31 +377,31 @@ const TicketsServicePage = () => {
   const { actuelsList, archivesList, archiveYears } = useMemo(() => {
     const actuals = [], archives = [];
     const yearsSet = new Set();
-    for (const t of tickets) {
-      if (isArchived(t)) {
-        archives.push(t);
-        const y = getArchiveYear(t);
+    for (const tk of tickets) {
+      if (isArchived(tk)) {
+        archives.push(tk);
+        const y = getArchiveYear(tk);
         if (y) yearsSet.add(y);
       } else {
-        actuals.push(t);
+        actuals.push(tk);
       }
     }
     return { actuelsList: actuals, archivesList: archives, archiveYears: [...yearsSet].sort((a,b) => b-a) };
   }, [tickets]);
 
-  // ── Filter (with debounced search) ───────────────────────────────────────
+  // ── Filter ───────────────────────────────────────────────────────────────
 
   const filterList = useCallback((list, withYear = false) => {
     const q = debouncedSearch.trim().toLowerCase();
-    return list.filter(t => {
-      const cat      = t.category || t.categorie || "";
-      const assigned = !!(t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers);
+    return list.filter(tk => {
+      const cat      = tk.category || tk.categorie || "";
+      const assigned = !!(tk.assignedTo || tk.assigned_to || tk.users_tickets_assigned_toTousers);
       return (
-        (!q || String(t.id).includes(q) || (t.title || "").toLowerCase().includes(q)) &&
-        (!filterStatus     || t.status === filterStatus) &&
-        (!filterCategory   || cat      === filterCategory) &&
+        (!q || String(tk.id).includes(q) || (tk.title || "").toLowerCase().includes(q)) &&
+        (!filterStatus     || tk.status === filterStatus) &&
+        (!filterCategory   || cat       === filterCategory) &&
         (!filterAssignment || (filterAssignment === "assigned" ? assigned : !assigned)) &&
-        (!withYear || !filterYear || getArchiveYear(t) === parseInt(filterYear))
+        (!withYear || !filterYear || getArchiveYear(tk) === parseInt(filterYear))
       );
     });
   }, [debouncedSearch, filterStatus, filterCategory, filterAssignment, filterYear]);
@@ -433,7 +425,9 @@ const TicketsServicePage = () => {
       <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div style={{ width: 32, height: 32, border: "2px solid #d9d4cc", borderTopColor: "#374151", borderRadius: "50%", animation: "_spin 0.8s linear infinite" }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>Chargement…</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>
+          {t("ticketsService.loading")}
+        </span>
       </div>
     </div>
   );
@@ -444,16 +438,16 @@ const TicketsServicePage = () => {
     <div style={{ minHeight: "100vh", background: "#f9f6f2", fontFamily: "sans-serif" }}>
 
       {/* Header */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #e8e2d9", padding: "18px 32px", position: "realative", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: "#fff", borderBottom: "1px solid #e8e2d9", padding: "18px 32px", position: "relative", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 3px" }}>
-              {role === "manager" ? "Gestion des tickets" : "Tickets du service"}
+              {role === "manager" ? t("ticketsService.headerManage") : t("ticketsService.headerService")}
             </p>
             <h1 style={{ fontSize: 21, fontWeight: 900, color: "#0f172a", margin: 0, lineHeight: 1 }}>
               {serviceName
-                ? <>Service <span style={{ color: "#1d4ed8" }}>{serviceName}</span></>
-                : "Tous les tickets"}
+                ? <>{t("ticketsService.service")} <span style={{ color: "#1d4ed8" }}>{serviceName}</span></>
+                : t("ticketsService.allTickets")}
             </h1>
           </div>
           <span style={{ background: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 800, padding: "4px 12px", borderRadius: 99, textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -479,7 +473,7 @@ const TicketsServicePage = () => {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
 
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={LABEL_STYLE}>Filtres</span>
+              <span style={LABEL_STYLE}>{t("ticketsService.filters.label")}</span>
               <div style={{ height: 38, display: "flex", alignItems: "center" }}>
                 <HiOutlineFunnel size={16} color="#c4bfb8" />
               </div>
@@ -487,13 +481,13 @@ const TicketsServicePage = () => {
 
             {/* Search */}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={LABEL_STYLE}>Recherche</span>
+              <span style={LABEL_STYLE}>{t("ticketsService.filters.search")}</span>
               <div style={{ position: "relative" }}>
                 <HiOutlineMagnifyingGlass size={14} color="#94a3b8"
                   style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
                 <input
                   type="text"
-                  placeholder="ID ou titre…"
+                  placeholder={t("ticketsService.filters.searchPlaceholder")}
                   value={filterSearch}
                   onChange={e => setFilterSearch(e.target.value)}
                   style={{ border: "1.5px solid #d9d4cc", borderRadius: 8, padding: "0 30px 0 32px", fontSize: 13, fontWeight: 500, color: "#1e293b", background: "#fff", outline: "none", height: 38, width: 200 }}
@@ -508,28 +502,29 @@ const TicketsServicePage = () => {
               </div>
             </div>
 
-            <FilterSelect label="Statut" value={filterStatus} onChange={setFilterStatus}>
-              <option value="">Tous les statuts</option>
+            <FilterSelect label={t("ticketsService.filters.status")} value={filterStatus} onChange={setFilterStatus}>
+              <option value="">{t("ticketsService.filters.allStatuses")}</option>
               {dbEnums.statuts?.map(s => <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>)}
             </FilterSelect>
 
-            <FilterSelect label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
-              <option value="">Toutes les catégories</option>
-            {dbEnums.categories?.map(c => <option key={c} value={c}>{CATEGORY_CONFIG[c]?.label || c}</option>)} </FilterSelect>
+            <FilterSelect label={t("ticketsService.filters.category")} value={filterCategory} onChange={setFilterCategory}>
+              <option value="">{t("ticketsService.filters.allCategories")}</option>
+              {dbEnums.categories?.map(c => <option key={c} value={c}>{CATEGORY_CONFIG[c]?.label || c}</option>)}
+            </FilterSelect>
 
-            <FilterSelect label="Assignation" value={filterAssignment} onChange={setFilterAssignment}>
-              <option value="">Toutes</option>
-              <option value="assigned">Assignés</option>
-              <option value="unassigned">Non assignés</option>
+            <FilterSelect label={t("ticketsService.filters.assignment")} value={filterAssignment} onChange={setFilterAssignment}>
+              <option value="">{t("ticketsService.filters.all")}</option>
+              <option value="assigned">{t("ticketsService.filters.assigned")}</option>
+              <option value="unassigned">{t("ticketsService.filters.unassigned")}</option>
             </FilterSelect>
 
             {/* Year — archives only */}
             {activeTab === "archives" && archiveYears.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={LABEL_STYLE}>Année de clôture</span>
+                <span style={LABEL_STYLE}>{t("ticketsService.filters.closureYear")}</span>
                 <div style={{ position: "relative" }}>
                   <select value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{ ...SELECT_STYLE, minWidth: 130 }}>
-                    <option value="">Toutes</option>
+                    <option value="">{t("ticketsService.filters.all")}</option>
                     {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                   <HiOutlineChevronDown size={13} color="#94a3b8" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
@@ -542,7 +537,7 @@ const TicketsServicePage = () => {
               <span style={{ ...LABEL_STYLE, visibility: "hidden" }}>_</span>
               <button onClick={resetFilters} style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", border: `1.5px solid ${hasFilters ? "#fca5a5" : "#d9d4cc"}`, borderRadius: 8, fontSize: 13, fontWeight: 500, color: hasFilters ? "#dc2626" : "#94a3b8", background: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
                 <HiOutlineArrowPath size={14} />
-                Réinitialiser
+                {t("ticketsService.filters.reset")}
               </button>
             </div>
 
@@ -553,7 +548,13 @@ const TicketsServicePage = () => {
                 <span style={{ fontSize: 13, color: "#94a3b8" }}>
                   <span style={{ fontWeight: 700, color: "#0f172a" }}>{displayedTickets.length}</span>{" "}
                   ticket{displayedTickets.length !== 1 ? "s" : ""}
-                  {displayedTickets.length !== sourceList.length && <> sur {sourceList.length} total</>}
+                  {displayedTickets.length !== sourceList.length && (
+                    <> {t("ticketsService.filters.count", {
+                      shown: "",
+                      shownPlural: "",
+                      total: sourceList.length,
+                    }).replace(/^\s*\S*\s*(ticket\S*\s*)?/, "")}</>
+                  )}
                 </span>
               </div>
             </div>

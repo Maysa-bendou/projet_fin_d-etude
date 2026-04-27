@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -72,7 +73,10 @@ export default function TopNavbar({ pageTitle = "" }) {
   const [notifOpen,   setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [langOpen,    setLangOpen]    = useState(false);
-  const [activeLang,  setActiveLang]  = useState(LANGUAGES[0]);
+const { i18n } = useTranslation();
+const [activeLang, setActiveLang] = useState(
+  LANGUAGES.find(l => l.code === (localStorage.getItem('lang') || 'en')) || LANGUAGES[1]
+);
   const [notifs,      setNotifs]      = useState([]);
   const [time,        setTime]        = useState(new Date());
 
@@ -160,7 +164,12 @@ export default function TopNavbar({ pageTitle = "" }) {
                 {LANGUAGES.map(lang => (
                   <button
                     key={lang.code}
-                    onClick={() => { setActiveLang(lang); setLangOpen(false); }}
+                    onClick={() => {
+  setActiveLang(lang);
+  i18n.changeLanguage(lang.code);
+  localStorage.setItem('lang', lang.code);
+  setLangOpen(false);
+}}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition border-none cursor-pointer
                       ${activeLang.code === lang.code
                         ? "bg-blue-50 text-blue-600 font-bold"

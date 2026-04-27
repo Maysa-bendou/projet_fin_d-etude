@@ -2,6 +2,7 @@ import React, {
   useState, useEffect, useMemo, useCallback, memo
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   HiOutlineTicket, HiOutlineArchiveBox, HiOutlineChevronDown,
   HiOutlineArrowPath, HiOutlineFunnel, HiOutlineMagnifyingGlass, HiOutlineXMark,
@@ -60,6 +61,8 @@ function useDebounce(value, delay = 220) {
 // ── SLA Bar ────────────────────────────────────────────────────────────────
 
 const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }) => {
+  const { t } = useTranslation("technicien");
+
   if (!slaDueDate)
     return <span style={{ color: "#94a3b8", fontSize: 11, fontStyle: "italic" }}>N/A</span>;
 
@@ -84,7 +87,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
           <div style={{ height: "100%", width: `${pct}%`, background: exceeded ? "#f87171" : "#34d399" }} />
         </div>
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#6b7280" }}>
-          {exceeded ? `dépassé +${h}h ${m}m` : `clôturé ✓`}
+          {exceeded ? t("ticketsService.sla.exceeded", { h, m }) : t("ticketsService.sla.closed")}
         </span>
       </div>
     );
@@ -101,7 +104,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
           <div style={{ height: "100%", width: `${pct}%`, background: "#a78bfa" }} />
         </div>
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: "#7c3aed" }}>
-          ⏸ {h}h {m}m figé
+          ⏸ {t("ticketsService.sla.frozen", { h, m })}
         </span>
       </div>
     );
@@ -120,7 +123,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
         <div style={{ height: "100%", width: `${pct}%`, background: barColor }} />
       </div>
       <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#94a3b8" }}>
-        {exceeded ? `⚠ +${h}h dépassé` : `${h}h ${m}m`}
+        {exceeded ? t("ticketsService.sla.alert", { h }) : t("ticketsService.sla.remaining", { h, m })}
       </span>
     </div>
   );
@@ -144,9 +147,10 @@ const FilterSelect = memo(({ label, value, onChange, children }) => (
 // ── TabSwitch ──────────────────────────────────────────────────────────────
 
 const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
+  const { t } = useTranslation("technicien");
   const tabs = [
-    { key: "actuels",  label: "Tickets actuels",               Icon: HiOutlineTicket,    count: actuelCount,  ac: "#1d4ed8", ab: "#eff6ff", abr: "#bfdbfe" },
-    { key: "archives", label: `Archives (avant ${THIS_YEAR})`, Icon: HiOutlineArchiveBox, count: archiveCount, ac: "#6b7280", ab: "#f3f4f6", abr: "#d1d5db" },
+    { key: "actuels",  label: t("ticketsService.tabs.current"),                        Icon: HiOutlineTicket,    count: actuelCount,  ac: "#1d4ed8", ab: "#eff6ff", abr: "#bfdbfe" },
+    { key: "archives", label: t("ticketsService.tabs.archives", { year: THIS_YEAR }),  Icon: HiOutlineArchiveBox, count: archiveCount, ac: "#6b7280", ab: "#f3f4f6", abr: "#d1d5db" },
   ];
   return (
     <div style={{ display: "inline-flex", background: "#ede9e3", borderRadius: 14, padding: 4, gap: 2, marginBottom: 24, border: "1px solid #d9d4cc", boxShadow: "inset 0 1px 4px rgba(0,0,0,0.07)" }}>
@@ -175,6 +179,7 @@ const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) 
 // ── TicketRow (memoized — no re-render unless ticket data changes) ──────────
 
 const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
+  const { t: i18n } = useTranslation("technicien");
   const technician = t.assignedTo || t.users_tickets_assigned_toTousers || null;
 
   const empName = t.employee
@@ -252,7 +257,7 @@ const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
             <span style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{techName}</span>
           </div>
         ) : (
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#fb923c", fontStyle: "italic" }}>Non assigné</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#fb923c", fontStyle: "italic" }}>{i18n("ticketsService.row.unassigned")}</span>
         )}
       </TD>
 
@@ -268,69 +273,73 @@ const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
 // ── Column config ──────────────────────────────────────────────────────────
 
 const COLS = [
-  { label: "ID",         width: "64px"  },
-  { label: "Titre",      width: "240px" },
-  { label: "Catégorie",  width: "120px" },
-  { label: "Priorité",   width: "105px" },
-  { label: "Statut",     width: "150px" },
-  { label: "SLA",        width: "120px" },
-  { label: "Employé",    width: "160px" },
-  { label: "Technicien", width: "180px" },
-  { label: "Créé le",    width: "115px" },
-  { label: null,         width: "115px" }, // dynamic label
+  { label: "ticketsService.table.id",         width: "64px"  },
+  { label: "ticketsService.table.title",      width: "240px" },
+  { label: "ticketsService.table.category",   width: "120px" },
+  { label: "ticketsService.table.priority",   width: "105px" },
+  { label: "ticketsService.table.status",     width: "150px" },
+  { label: "ticketsService.table.sla",        width: "120px" },
+  { label: "ticketsService.table.employee",   width: "160px" },
+  { label: "ticketsService.table.technician", width: "180px" },
+  { label: "ticketsService.table.createdAt",  width: "115px" },
+  { label: null,                               width: "115px" }, // dynamic label
 ];
 
 // ── TicketTable ────────────────────────────────────────────────────────────
 
-const TicketTable = memo(({ tickets, navigate, role, activeTab }) => (
-  <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", overflow: "hidden" }}>
-    {tickets.length === 0 ? (
-      <div style={{ padding: "56px 24px", textAlign: "center" }}>
-        <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
-        <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>Aucun ticket pour les filtres sélectionnés.</p>
-      </div>
-    ) : (
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse", tableLayout: "fixed" }}>
-          <colgroup>
-            {COLS.map((c, i) => <col key={i} style={{ width: c.width }} />)}
-          </colgroup>
-          <thead>
-            <tr style={{ background: "#f9f6f2", borderBottom: "2px solid #e8e2d9" }}>
-              {COLS.map((c, i) => (
-                <th key={i} style={{
-                  padding: "10px 14px", fontSize: 11, fontWeight: 700,
-                  color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px",
-                  whiteSpace: "nowrap", textAlign: "left",
-                  borderRight: i < COLS.length - 1 ? "1px solid #f1ede8" : "none",
-                }}>
-                  {c.label ?? (activeTab === "archives" ? "Date clôture" : "Assigné le")}
-                </th>
+const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
+  const { t } = useTranslation("technicien");
+  return (
+    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #d9d4cc", overflow: "hidden" }}>
+      {tickets.length === 0 ? (
+        <div style={{ padding: "56px 24px", textAlign: "center" }}>
+          <HiOutlineTicket size={36} color="#d1d5db" style={{ marginBottom: 12 }} />
+          <p style={{ color: "#94a3b8", fontSize: 14, margin: 0 }}>{t("ticketsService.empty")}</p>
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <colgroup>
+              {COLS.map((c, i) => <col key={i} style={{ width: c.width }} />)}
+            </colgroup>
+            <thead>
+              <tr style={{ background: "#f9f6f2", borderBottom: "2px solid #e8e2d9" }}>
+                {COLS.map((c, i) => (
+                  <th key={i} style={{
+                    padding: "10px 14px", fontSize: 11, fontWeight: 700,
+                    color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px",
+                    whiteSpace: "nowrap", textAlign: "left",
+                    borderRight: i < COLS.length - 1 ? "1px solid #f1ede8" : "none",
+                  }}>
+                    {c.label != null ? t(c.label) : (activeTab === "archives" ? t("ticketsService.table.closedAt") : t("ticketsService.table.assignedAt"))}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.map((t, idx) => (
+                <TicketRow
+                  key={t.id}
+                  t={t}
+                  navigate={navigate}
+                  role={role}
+                  activeTab={activeTab}
+                  isLast={idx === tickets.length - 1}
+                />
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map((t, idx) => (
-              <TicketRow
-                key={t.id}
-                t={t}
-                navigate={navigate}
-                role={role}
-                activeTab={activeTab}
-                isLast={idx === tickets.length - 1}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-));
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+});
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
 const TicketsServicePage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("technicien");
 
   // Parse user once (not on every render)
   const { role, serviceId } = useMemo(() => {
@@ -441,7 +450,7 @@ const fetchData = useCallback(async () => {
       <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div style={{ width: 32, height: 32, border: "2px solid #d9d4cc", borderTopColor: "#374151", borderRadius: "50%", animation: "_spin 0.8s linear infinite" }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>Chargement…</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>{t("ticketsService.loading")}</span>
       </div>
     </div>
   );
@@ -456,12 +465,12 @@ const fetchData = useCallback(async () => {
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 3px" }}>
-              {role === "manager" ? "Gestion des tickets" : "Tickets du service"}
+              {role === "manager" ? t("ticketsService.header.subtitleManager") : t("ticketsService.header.subtitle")}
             </p>
             <h1 style={{ fontSize: 21, fontWeight: 900, color: "#0f172a", margin: 0, lineHeight: 1 }}>
               {serviceName
-                ? <>Service <span style={{ color: "#1d4ed8" }}>{serviceName}</span></>
-                : "Tous les tickets"}
+                ? <>{t("ticketsService.header.titlePrefix")} <span style={{ color: "#1d4ed8" }}>{serviceName}</span></>
+                : t("ticketsService.header.titleFallback")}
             </h1>
           </div>
           <span style={{ background: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 800, padding: "4px 12px", borderRadius: 99, textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -487,7 +496,7 @@ const fetchData = useCallback(async () => {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
 
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={LABEL_STYLE}>Filtres</span>
+              <span style={LABEL_STYLE}>{t("ticketsService.filters.label")}</span>
               <div style={{ height: 38, display: "flex", alignItems: "center" }}>
                 <HiOutlineFunnel size={16} color="#c4bfb8" />
               </div>
@@ -495,13 +504,13 @@ const fetchData = useCallback(async () => {
 
             {/* Search */}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={LABEL_STYLE}>Recherche</span>
+              <span style={LABEL_STYLE}>{t("ticketsService.filters.search")}</span>
               <div style={{ position: "relative" }}>
                 <HiOutlineMagnifyingGlass size={14} color="#94a3b8"
                   style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
                 <input
                   type="text"
-                  placeholder="ID ou titre…"
+                  placeholder={t("ticketsService.filters.searchPlaceholder")}
                   value={filterSearch}
                   onChange={e => setFilterSearch(e.target.value)}
                   style={{ border: "1.5px solid #d9d4cc", borderRadius: 8, padding: "0 30px 0 32px", fontSize: 13, fontWeight: 500, color: "#1e293b", background: "#fff", outline: "none", height: 38, width: 200 }}
@@ -516,29 +525,29 @@ const fetchData = useCallback(async () => {
               </div>
             </div>
 
-            <FilterSelect label="Statut" value={filterStatus} onChange={setFilterStatus}>
-              <option value="">Tous les statuts</option>
+            <FilterSelect label={t("ticketsService.filters.status")} value={filterStatus} onChange={setFilterStatus}>
+              <option value="">{t("ticketsService.filters.statusAll")}</option>
               {dbEnums.statuts?.map(s => <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>)}
             </FilterSelect>
 
-            <FilterSelect label="Catégorie" value={filterCategory} onChange={setFilterCategory}>
-              <option value="">Toutes les catégories</option>
+            <FilterSelect label={t("ticketsService.filters.category")} value={filterCategory} onChange={setFilterCategory}>
+              <option value="">{t("ticketsService.filters.categoryAll")}</option>
               {dbEnums.categories?.map(c => <option key={c} value={c}>{CATEGORY_CONFIG[c]?.label || c}</option>)}
             </FilterSelect>
 
-            <FilterSelect label="Assignation" value={filterAssignment} onChange={setFilterAssignment}>
-              <option value="">Toutes</option>
-              <option value="assigned">Assignés</option>
-              <option value="unassigned">Non assignés</option>
+            <FilterSelect label={t("ticketsService.filters.assignment")} value={filterAssignment} onChange={setFilterAssignment}>
+              <option value="">{t("ticketsService.filters.assignmentAll")}</option>
+              <option value="assigned">{t("ticketsService.filters.assigned")}</option>
+              <option value="unassigned">{t("ticketsService.filters.unassigned")}</option>
             </FilterSelect>
 
             {/* Year — archives only */}
             {activeTab === "archives" && archiveYears.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={LABEL_STYLE}>Année de clôture</span>
+                <span style={LABEL_STYLE}>{t("ticketsService.filters.closeYear")}</span>
                 <div style={{ position: "relative" }}>
                   <select value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{ ...SELECT_STYLE, minWidth: 130 }}>
-                    <option value="">Toutes</option>
+                    <option value="">{t("ticketsService.filters.closeYearAll")}</option>
                     {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                   <HiOutlineChevronDown size={13} color="#94a3b8" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
@@ -551,7 +560,7 @@ const fetchData = useCallback(async () => {
               <span style={{ ...LABEL_STYLE, visibility: "hidden" }}>_</span>
               <button onClick={resetFilters} style={{ display: "flex", alignItems: "center", gap: 6, height: 38, padding: "0 14px", border: `1.5px solid ${hasFilters ? "#fca5a5" : "#d9d4cc"}`, borderRadius: 8, fontSize: 13, fontWeight: 500, color: hasFilters ? "#dc2626" : "#94a3b8", background: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
                 <HiOutlineArrowPath size={14} />
-                Réinitialiser
+                {t("ticketsService.filters.reset")}
               </button>
             </div>
 
@@ -562,7 +571,7 @@ const fetchData = useCallback(async () => {
                 <span style={{ fontSize: 13, color: "#94a3b8" }}>
                   <span style={{ fontWeight: 700, color: "#0f172a" }}>{displayedTickets.length}</span>{" "}
                   ticket{displayedTickets.length !== 1 ? "s" : ""}
-                  {displayedTickets.length !== sourceList.length && <> sur {sourceList.length} total</>}
+                  {displayedTickets.length !== sourceList.length && <> {t("ticketsService.filters.outOf", { total: sourceList.length })}</>}
                 </span>
               </div>
             </div>

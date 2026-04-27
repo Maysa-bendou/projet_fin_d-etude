@@ -2,36 +2,35 @@ import { useEffect, useState } from "react";
 import { MdPeople, MdAssignment, MdTimer, MdCheckCircle } from "react-icons/md";
 
 const PRIORITY_LABELS = {
-  critical: { label: "Critique", color: "#A32D2D", bg: "#FCEBEB" },
-  high:     { label: "Haute",    color: "#854F0B", bg: "#FAEEDA" },
-  medium:   { label: "Moyenne",  color: "#185FA5", bg: "#E6F1FB" },
-  low:      { label: "Basse",    color: "#3B6D11", bg: "#EAF3DE" },
+  critical: { label: "Critical", color: "#A32D2D", bg: "#FCEBEB" },
+  high:     { label: "High",     color: "#854F0B", bg: "#FAEEDA" },
+  medium:   { label: "Medium",   color: "#185FA5", bg: "#E6F1FB" },
+  low:      { label: "Low",      color: "#3B6D11", bg: "#EAF3DE" },
 };
 
 const PRIORITY_ORDER = ["critical", "high", "medium", "low"];
 
-function formatDelai(heures) {
-  if (!heures || heures < 1) return "—";
-  if (heures < 24) return `${heures} heure${heures > 1 ? "s" : ""}`;
-  const jours = heures / 24;
-  if (Number.isInteger(jours)) return `${jours} jour${jours > 1 ? "s" : ""}`;
-  return `${jours.toFixed(1)} jours`;
+function formatDeadline(hours) {
+  if (!hours || hours < 1) return "—";
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""}`;
+  const days = hours / 24;
+  if (Number.isInteger(days)) return `${days} day${days > 1 ? "s" : ""}`;
+  return `${days.toFixed(1)} days`;
 }
 
-// ... (Les objets de traduction STATUTS_FR, IMPACTS_FR, etc. restent identiques)
-const STATUTS_FR = { open: "Ouvert", in_progress: "En cours", pending: "En attente", pending_supplier: "Attente fournisseur", resolved: "Résolu", closed: "Fermé", rejected: "Rejeté" };
-const IMPACTS_FR   = { low: "Faible", medium: "Moyen", high: "Élevé" };
-const URGENCES_FR  = { low: "Faible", medium: "Moyenne", high: "Élevée" };
-const PRIORITES_FR = { low: "Basse", medium: "Moyenne", high: "Haute", critical: "Critique" };
-const ROLES_FR = { employee: "Employé", technician: "Technicien", chef_service: "Chef de service", manager: "Manager", admin: "Administrateur" };
-const CATEGORIES_FR = { hardware: "Matériel", software: "Logiciel", network: "Réseau", access: "Accès", security: "Sécurité", account: "Compte" };
+const STATUSES_EN    = { open: "Open", in_progress: "In Progress", pending: "Pending", pending_supplier: "Awaiting Supplier", resolved: "Resolved", closed: "Closed", rejected: "Rejected" };
+const IMPACTS_EN     = { low: "Low", medium: "Medium", high: "High" };
+const URGENCIES_EN   = { low: "Low", medium: "Medium", high: "High" };
+const PRIORITIES_EN  = { low: "Low", medium: "Medium", high: "High", critical: "Critical" };
+const ROLES_EN       = { employee: "Employee", technician: "Technician", chef_service: "Service Manager", manager: "Manager", admin: "Administrator" };
+const CATEGORIES_EN  = { hardware: "Hardware", software: "Software", network: "Network", access: "Access", security: "Security", account: "Account" };
 
 export default function ParametresAdmin() {
-  const [stats, setStats]     = useState({});
-  const [sla, setSla]         = useState([]);
-  const [config, setConfig]   = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
+  const [stats, setStats]       = useState({});
+  const [sla, setSla]           = useState([]);
+  const [config, setConfig]     = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [savedId, setSavedId]   = useState(null);
 
@@ -68,7 +67,7 @@ export default function ParametresAdmin() {
       });
       setSavedId(id);
       setTimeout(() => setSavedId(null), 2000);
-    } catch (err) { setError("Erreur de mise à jour."); } finally { setSavingId(null); }
+    } catch (err) { setError("Update error."); } finally { setSavingId(null); }
   };
 
   const slaOrdered = PRIORITY_ORDER.map(p => sla.find(s => s.priority === p)).filter(Boolean);
@@ -82,23 +81,22 @@ export default function ParametresAdmin() {
   return (
     <div className="min-h-screen bg-[#f9f6f2] p-8 md:p-10 font-sans">
 
-      {/* HEADER : Titre à gauche, sans icône */}
+      {/* HEADER */}
       <div className="max-w-7xl mx-auto mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Paramètres administrateur</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Administrator Settings</h1>
         <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
-            Configuration du système et des règles SLA
-          </p>
+          System configuration and SLA rules
+        </p>
       </div>
 
-      {/* KPI CARDS : Largeur complète */}
+      {/* KPI CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white border border-gray-300 rounded-xl p-6 flex items-center gap-5 shadow-sm">
-          {/* Icône utilisateur remise en BLEU */}
           <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
             <MdPeople className="text-2xl text-blue-600" />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Utilisateurs</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Users</p>
             <p className="text-3xl font-black text-slate-900">{stats.totalUsers ?? "—"}</p>
           </div>
         </div>
@@ -119,7 +117,7 @@ export default function ParametresAdmin() {
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
             <MdTimer className="text-red-700 text-xl" />
-            Configuration SLA
+            SLA Configuration
           </h2>
         </div>
 
@@ -128,7 +126,7 @@ export default function ParametresAdmin() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-[#f9f6f2] border-b border-gray-300">
-                  {['Priorité', 'Durée (heures)', 'Délai indicatif', 'Statut'].map((col, i) => (
+                  {['Priority', 'Duration (hours)', 'Indicative Deadline', 'Status'].map((col, i) => (
                     <th key={i} className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-left">
                       {col}
                     </th>
@@ -154,12 +152,12 @@ export default function ParametresAdmin() {
                         />
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 font-medium">
-                        {formatDelai(s.duration_hours)}
+                        {formatDeadline(s.duration_hours)}
                       </td>
                       <td className="px-6 py-4 text-xs font-bold">
-                        {savingId === s.id ? <span className="text-blue-600">Enregistrement...</span> : 
-                         savedId === s.id ? <span className="text-green-600">✓ Enregistré</span> : 
-                         <span className="text-green-500 bg-green-50 px-2 py-0.5 rounded border border-green-100">Actif</span>}
+                        {savingId === s.id ? <span className="text-blue-600">Saving...</span> :
+                         savedId  === s.id ? <span className="text-green-600">✓ Saved</span> :
+                         <span className="text-green-500 bg-green-50 px-2 py-0.5 rounded border border-green-100">Active</span>}
                       </td>
                     </tr>
                   );
@@ -168,35 +166,35 @@ export default function ParametresAdmin() {
             </table>
           </div>
 
-          {/* AJOUT : LA LOI ET LE TEXTE CALCUL AUTOMATIQUE */}
+          {/* AUTO-CALCULATION NOTE */}
           <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-             <p className="text-blue-800 text-xs leading-relaxed">
-              <strong className="font-bold">Calcul automatique :</strong> lors de la création du ticket, 
-              la date limite de résolution est calculée selon la loi suivante :
+            <p className="text-blue-800 text-xs leading-relaxed">
+              <strong className="font-bold">Automatic calculation:</strong> when a ticket is created,
+              the resolution deadline is calculated according to the following rule:
             </p>
             <div className="mt-2 inline-block bg-white px-3 py-1.5 border border-blue-200 rounded-lg shadow-sm">
               <code className="text-[11px] font-bold text-blue-700 italic">
-                sla_date_limite = date_creation + duration_hours
+                sla_deadline = creation_date + duration_hours
               </code>
             </div>
           </div>
         </div>
       </div>
 
-      {/* VALEURS SYSTÈME */}
+      {/* SYSTEM VALUES */}
       <div className="bg-white border border-gray-300 rounded-xl overflow-hidden shadow-sm">
         <div className="p-6 border-b border-gray-100 bg-white">
-          <h2 className="text-base font-bold text-slate-800">Valeurs du système</h2>
+          <h2 className="text-base font-bold text-slate-800">System Values</h2>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { label: 'Priorités',  items: config?.enums?.priorities || [], map: PRIORITES_FR },
-              { label: 'Statuts',    items: config?.enums?.statuses   || [], map: STATUTS_FR   },
-              { label: 'Impact',     items: config?.enums?.impacts    || [], map: IMPACTS_FR   },
-              { label: 'Urgence',    items: config?.enums?.urgencies  || [], map: URGENCES_FR  },
-              { label: 'Catégories', items: config?.enums?.categories || [], map: CATEGORIES_FR },
-              { label: 'Rôles',      items: config?.enums?.roles      || [], map: ROLES_FR     },
+              { label: 'Priorities',  items: config?.enums?.priorities || [], map: PRIORITIES_EN },
+              { label: 'Statuses',    items: config?.enums?.statuses   || [], map: STATUSES_EN   },
+              { label: 'Impact',      items: config?.enums?.impacts    || [], map: IMPACTS_EN    },
+              { label: 'Urgency',     items: config?.enums?.urgencies  || [], map: URGENCIES_EN  },
+              { label: 'Categories',  items: config?.enums?.categories || [], map: CATEGORIES_EN },
+              { label: 'Roles',       items: config?.enums?.roles      || [], map: ROLES_EN      },
             ].map(({ label, items, map }) => (
               <div key={label}>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">{label}</p>

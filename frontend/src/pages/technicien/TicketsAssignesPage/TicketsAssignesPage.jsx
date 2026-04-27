@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import RefreshButton from "../../../components/common/RefreshButton";
 import {
   HiOutlineTicket, HiOutlineArchiveBox, HiOutlineChevronDown,
@@ -9,30 +10,31 @@ import {
 const THIS_YEAR = new Date().getFullYear();
 
 const statutStyle = {
-  "Ouvert":                 "bg-blue-100 text-blue-700",     // #1d4ed8
-  "En cours":               "bg-violet-100 text-violet-700", // #7c3aed
-  "En attente":             "bg-yellow-100 text-yellow-700", // #a16207
-  "En attente fournisseur": "bg-orange-100 text-orange-700", // #c2410c
-  "Résolu":                 "bg-green-100 text-green-700",   // #15803d
-  "Fermé":                  "bg-gray-100 text-gray-500",     // #6b7280
-  "Rejeté":                 "bg-red-100 text-red-600",       // #dc2626
+  "Ouvert":                 "bg-blue-100 text-blue-700",
+  "En cours":               "bg-violet-100 text-violet-700",
+  "En attente":             "bg-yellow-100 text-yellow-700",
+  "En attente fournisseur": "bg-orange-100 text-orange-700",
+  "Résolu":                 "bg-green-100 text-green-700",
+  "Fermé":                  "bg-gray-100 text-gray-500",
+  "Rejeté":                 "bg-red-100 text-red-600",
 };
 
 const prioriteStyle = {
-  "Haute":   "bg-orange-100 text-orange-600",   // #ea580c
-  "Normale": "bg-yellow-100 text-yellow-600",   // #ca8a04
-  "Basse":   "bg-green-100 text-green-700",     // #16a34a
+  "Haute":   "bg-orange-100 text-orange-600",
+  "Normale": "bg-yellow-100 text-yellow-600",
+  "Basse":   "bg-green-100 text-green-700",
 };
 
 const categorieStyle = {
-  "Hardware":                  "bg-blue-100 text-blue-700",    // #1d4ed8
-  "Logiciels":                 "bg-violet-100 text-violet-700",// #7c3aed
-  "Réseau":                    "bg-teal-100 text-teal-700",    // #0f766e
-  "Sécurité":                  "bg-orange-100 text-orange-700",// #c2410c
-  "Accès":                     "bg-indigo-100 text-indigo-700",// #4338ca
-  "Collaboration & Messagerie":"bg-pink-100 text-pink-700",    // #db2777
+  "Hardware":                  "bg-blue-100 text-blue-700",
+  "Logiciels":                 "bg-violet-100 text-violet-700",
+  "Réseau":                    "bg-teal-100 text-teal-700",
+  "Sécurité":                  "bg-orange-100 text-orange-700",
+  "Accès":                     "bg-indigo-100 text-indigo-700",
+  "Collaboration & Messagerie":"bg-pink-100 text-pink-700",
 };
 
+// DB key ↔ French display label maps — used for API mapping only, NOT for display
 const statusFR = {
   open:             "Ouvert",
   in_progress:      "En cours",
@@ -53,29 +55,19 @@ const statusEN = {
   "Rejeté":                 "rejected",
 };
 
-const priorityFR = { low: "Basse", medium: "Normale", high: "Haute" }; // ← supprimer critical
+const priorityFR = { low: "Basse", medium: "Normale", high: "Haute" };
 const categoryFR = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", messagerie: "Collaboration & Messagerie" };
-const STAT_CARDS = [
-  { label: "Total",                  key: null,                      cls: "text-gray-700"   },
-  { label: "Ouvert",                 key: "Ouvert",                  cls: "text-blue-600"   },
-  { label: "En cours",               key: "En cours",                cls: "text-yellow-600" },
-  { label: "En attente",             key: "En attente",              cls: "text-purple-600" },
-  { label: "Att. fournisseur",       key: "En attente fournisseur",  cls: "text-orange-600" },
-  { label: "Résolu",                 key: "Résolu",                  cls: "text-green-600"  },
-  { label: "Fermé",                  key: "Fermé",                   cls: "text-gray-500"   },
-  { label: "Rejeté",                 key: "Rejeté",                  cls: "text-red-600"    },
-];
 
 // ── Helpers ───────────────────────────────────────
 const fmtDate = (str) => {
   if (!str) return "N/A";
   const d = new Date(str);
   if (isNaN(d)) return "N/A";
- return d.toLocaleDateString("fr-FR", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
+  return d.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const isArchived = (t) => {
@@ -92,24 +84,23 @@ const getArchiveYear = (t) => {
 };
 
 // ── SLA Bar ───────────────────────────────────────
-// Nouveau SlaBar
-function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
-  if (!slaDueDate) return <span className="text-gray-400 text-xs">N/A</span>;
+function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed, t }) {
+  if (!slaDueDate) return <span className="text-gray-400 text-xs">{t("ticketsService.sla.na")}</span>;
 
   const PAUSED   = ["En attente", "En attente fournisseur"];
   const TERMINAL = ["Résolu", "Fermé", "Rejeté"];
   const now      = Date.now();
   const due      = new Date(slaDueDate).getTime();
-  const debut    = due - 24 * 3600 * 1000; // fenêtre SLA
+  const debut    = due - 24 * 3600 * 1000;
   const window   = due - debut;
 
-  // ── Terminal : bilan figé ──
+  // ── Terminal ──
   if (TERMINAL.includes(statut)) {
-    const closed  = closedAt ? new Date(closedAt).getTime() : due;
+    const closed   = closedAt ? new Date(closedAt).getTime() : due;
     const exceeded = closed > due;
-    const used    = Math.min(window, window - (due - closed));
-    const pct     = Math.round(Math.min(100, Math.max(0, (used / window) * 100)));
-    const delta   = Math.abs(closed - due);
+    const used     = Math.min(window, window - (due - closed));
+    const pct      = Math.round(Math.min(100, Math.max(0, (used / window) * 100)));
+    const delta    = Math.abs(closed - due);
     const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
     return (
       <div className="flex flex-col gap-1 min-w-[140px]">
@@ -118,16 +109,18 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
         </div>
         <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${exceeded ? "bg-red-50 text-red-700" : "bg-gray-100 text-gray-500"}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${exceeded ? "bg-red-400" : "bg-gray-400"}`} />
-          {exceeded ? `Clôturé — dépassé de ${h}h ${m}m` : `Clôturé — respecté`}
+          {exceeded
+            ? t("ticketsService.sla.exceeded", { h, m })
+            : t("ticketsService.sla.closed")}
         </span>
       </div>
     );
   }
 
-  // ── Pause : figé ──
+  // ── Paused ──
   if (PAUSED.includes(statut)) {
-    const frozen  = slaPauseElapsed != null ? window - slaPauseElapsed : Math.max(0, due - now);
-    const pct     = Math.round(Math.min(100, Math.max(0, ((window - frozen) / window) * 100)));
+    const frozen = slaPauseElapsed != null ? window - slaPauseElapsed : Math.max(0, due - now);
+    const pct    = Math.round(Math.min(100, Math.max(0, ((window - frozen) / window) * 100)));
     const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
     return (
       <div className="flex flex-col gap-1 min-w-[140px]">
@@ -136,13 +129,13 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
         </div>
         <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">
           <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-          {`Pause — ${h}h ${m}m figé`}
+          {t("ticketsService.sla.frozen", { h, m })}
         </span>
       </div>
     );
   }
 
-  // ── Actif ──
+  // ── Active ──
   const remaining = due - now;
   const exceeded  = remaining <= 0;
   const pct       = Math.round(Math.min(100, Math.max(0, ((window - Math.max(0, remaining)) / window) * 100)));
@@ -150,10 +143,10 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
   const barCls    = exceeded ? "bg-red-500" : pct > 75 ? "bg-orange-400" : pct > 40 ? "bg-yellow-400" : "bg-green-400";
   const badge     = exceeded
-    ? { bg: "bg-red-50 text-red-700",     dot: "bg-red-500 animate-pulse",    label: `Dépassé — +${h}h ${m}m` }
+    ? { bg: "bg-red-50 text-red-700",       dot: "bg-red-500 animate-pulse",    label: t("ticketsService.sla.alert", { h, m }) }
     : pct > 75
-    ? { bg: "bg-orange-50 text-orange-700", dot: "bg-orange-400 animate-pulse", label: `En cours — ${h}h ${m}m` }
-    : { bg: "bg-green-50 text-green-700",  dot: "bg-green-500",               label: `Respecté — ${h}h ${m}m` };
+    ? { bg: "bg-orange-50 text-orange-700", dot: "bg-orange-400 animate-pulse", label: t("ticketsService.sla.remaining", { h, m }) }
+    : { bg: "bg-green-50 text-green-700",   dot: "bg-green-500",                label: t("ticketsService.sla.remaining", { h, m }) };
 
   return (
     <div className="flex flex-col gap-1 min-w-[140px]">
@@ -167,11 +160,12 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
     </div>
   );
 }
+
 // ── TabSwitch ─────────────────────────────────────
-const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
+const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount, t }) => {
   const tabs = [
-    { key: "actuels",  label: "Tickets actuels",               Icon: HiOutlineTicket,    count: actuelCount  },
-    { key: "archives", label: `Archives (avant ${THIS_YEAR})`, Icon: HiOutlineArchiveBox, count: archiveCount },
+    { key: "actuels",  label: t("ticketsService.tabs.current"),                       Icon: HiOutlineTicket,    count: actuelCount  },
+    { key: "archives", label: t("ticketsService.tabs.archives", { year: THIS_YEAR }), Icon: HiOutlineArchiveBox, count: archiveCount },
   ];
   return (
     <div className="inline-flex bg-gray-100 rounded-xl p-1 gap-1 mb-5 border border-gray-200">
@@ -202,6 +196,7 @@ const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) 
 // ── Main ──────────────────────────────────────────
 export default function TicketsAssignesPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation("technicien");
   const user = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
   const [ticketsData,     setTicketsData]     = useState([]);
@@ -220,7 +215,21 @@ export default function TicketsAssignesPage() {
   const [enumPriorites,   setEnumPriorites]   = useState([]);
   const [enumCategories,  setEnumCategories]  = useState([]);
 
-  // Fetch enums
+  // ── Stat cards — labels translated via i18n ────────────────────────────────
+  // The `key` field stays in French (DB internal values) — only `label` is translated.
+  const STAT_CARDS = useMemo(() => [
+    { label: t("ticketsService.stats.total"),           key: null,                      cls: "text-gray-700"   },
+    { label: t("ticketsService.stats.open"),            key: "Ouvert",                  cls: "text-blue-600"   },
+    { label: t("ticketsService.stats.inProgress"),      key: "En cours",                cls: "text-yellow-600" },
+    { label: t("ticketsService.stats.pending"),         key: "En attente",              cls: "text-purple-600" },
+    { label: t("ticketsService.stats.pendingSupplier"), key: "En attente fournisseur",  cls: "text-orange-600" },
+    { label: t("ticketsService.stats.resolved"),        key: "Résolu",                  cls: "text-green-600"  },
+    { label: t("ticketsService.stats.closed"),          key: "Fermé",                   cls: "text-gray-500"   },
+    { label: t("ticketsService.stats.rejected"),        key: "Rejeté",                  cls: "text-red-600"    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [t]);
+
+  // ── Fetch enums ────────────────────────────────────────────────────────────
   useEffect(() => {
     fetch("http://localhost:3001/api/tech/enums")
       .then(r => r.json())
@@ -232,7 +241,7 @@ export default function TicketsAssignesPage() {
       .catch(console.error);
   }, []);
 
-  // Fetch tickets
+  // ── Fetch tickets ──────────────────────────────────────────────────────────
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -240,99 +249,95 @@ export default function TicketsAssignesPage() {
       const res = await fetch(`http://localhost:3001/api/tech/assigned/${user.id}`);
       if (!res.ok) throw new Error("Erreur fetch");
       const data = await res.json();
-      const mapped = data.map(t => ({
-        id:          t.id,
-        titre:       t.title,
-        employe:     t.employee_name,
-        priorite:    priorityFR[t.priority]  ?? t.priority,
-        categorie:   categoryFR[t.category]  ?? t.category,
-        statut:      statusFR[t.status]      ?? t.status,
-        createdAt:   t.created_at,
-        assignedAt:  t.assigned_at,
-        closedAt:    t.closed_at,
-        slaDueDate:  t.sla_date_limite,
-        slaStatut:          t.sla_statut,
-slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
+      const mapped = data.map(tk => ({
+        id:              tk.id,
+        titre:           tk.title,
+        employe:         tk.employee_name,
+        priorite:        priorityFR[tk.priority]  ?? tk.priority,
+        categorie:       categoryFR[tk.category]  ?? tk.category,
+        statut:          statusFR[tk.status]       ?? tk.status,
+        createdAt:       tk.created_at,
+        assignedAt:      tk.assigned_at,
+        closedAt:        tk.closed_at,
+        slaDueDate:      tk.sla_date_limite,
+        slaStatut:       tk.sla_statut,
+        slaPauseElapsed: tk.sla_pause_elapsed_ms ?? null,
       }));
       setTicketsData(mapped);
-      setStatuts(Object.fromEntries(mapped.map(t => [t.id, t.statut])));
+      setStatuts(Object.fromEntries(mapped.map(tk => [tk.id, tk.statut])));
     } catch (err) {
-      setError("Impossible de récupérer les tickets.");
+      setError(t("ticketsService.loading"));
     } finally {
       setLoading(false);
     }
-  }, [user.id]);
+  }, [user.id, t]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
-  // Change status
+  // ── Change status ──────────────────────────────────────────────────────────
   async function changerStatut(e, id, nouveauStatut) {
-
     e.stopPropagation();
-     // ✅ 1. update statut local
-  setStatuts(prev => ({ ...prev, [id]: nouveauStatut }));
-
-  // ✅ 2. update ticketsData (IMPORTANT)
-  setTicketsData(prev =>
-  prev.map(t =>
-    t.id === id
-      ? {
-          ...t,
-          statut: nouveauStatut,
-          closedAt:
-            ["Fermé", "Résolu", "Rejeté"].includes(nouveauStatut)
-              ? new Date().toISOString()
-              : null,
-        }
-      : t
-  )
-);
-   try {
+    setStatuts(prev => ({ ...prev, [id]: nouveauStatut }));
+    setTicketsData(prev =>
+      prev.map(tk =>
+        tk.id === id
+          ? {
+              ...tk,
+              statut: nouveauStatut,
+              closedAt:
+                ["Fermé", "Résolu", "Rejeté"].includes(nouveauStatut)
+                  ? new Date().toISOString()
+                  : null,
+            }
+          : tk
+      )
+    );
+    try {
       await fetch(`http://localhost:3001/api/tech/tickets/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({ 
-  status: statusEN[nouveauStatut],
-  technicianId: user.id   // ✅ ADD THIS LINE
-})
+        body: JSON.stringify({
+          status: statusEN[nouveauStatut],
+          technicianId: user.id,
+        }),
       });
-       await fetchTickets();
+      await fetchTickets();
     } catch (err) {
       console.error("Erreur mise à jour statut:", err);
     }
   }
 
-  // Partition actuels / archives
+  // ── Partition actuels / archives ───────────────────────────────────────────
   const { actuelsList, archivesList, archiveYears } = useMemo(() => {
     const actuels = [], archives = [];
     const yearsSet = new Set();
-    for (const t of ticketsData) {
-      if (isArchived(t)) {
-        archives.push(t);
-        const y = getArchiveYear(t);
+    for (const tk of ticketsData) {
+      if (isArchived(tk)) {
+        archives.push(tk);
+        const y = getArchiveYear(tk);
         if (y) yearsSet.add(y);
       } else {
-        actuels.push(t);
+        actuels.push(tk);
       }
     }
     return { actuelsList: actuels, archivesList: archives, archiveYears: [...yearsSet].sort((a, b) => b - a) };
   }, [ticketsData]);
 
-  // Filter
+  // ── Filter ─────────────────────────────────────────────────────────────────
   const filterList = useCallback((list, withYear = false) => {
     const q = search.toLowerCase();
-    return list.filter(t => {
+    return list.filter(tk => {
       const matchSearch =
         !search ||
-        String(t.id).includes(q) ||
-        t.titre?.toLowerCase().includes(q) ||
-        fmtDate(t.createdAt).includes(q);
+        String(tk.id).includes(q) ||
+        tk.titre?.toLowerCase().includes(q) ||
+        fmtDate(tk.createdAt).includes(q);
       return (
         matchSearch &&
-        (!filterStatut    || statuts[t.id] === filterStatut) &&
-        (!filterPriorite  || t.priorite    === filterPriorite) &&
-        (!filterCategorie || t.categorie   === filterCategorie) &&
-        (!withYear || !filterYear || getArchiveYear(t) === parseInt(filterYear))
+        (!filterStatut    || statuts[tk.id] === filterStatut) &&
+        (!filterPriorite  || tk.priorite    === filterPriorite) &&
+        (!filterCategorie || tk.categorie   === filterCategorie) &&
+        (!withYear || !filterYear || getArchiveYear(tk) === parseInt(filterYear))
       );
     });
   }, [search, filterStatut, filterPriorite, filterCategorie, filterYear, statuts]);
@@ -340,40 +345,41 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
   const filteredActuels  = useMemo(() => filterList(actuelsList, false), [filterList, actuelsList]);
   const filteredArchives = useMemo(() => filterList(archivesList, true),  [filterList, archivesList]);
   const filtered = activeTab === "actuels" ? filteredActuels : filteredArchives;
+
   const sortedTickets = useMemo(() => {
-  return [...filtered].sort((a, b) => {
-    const dateA = new Date(
-      activeTab === "archives" ? (a.closedAt || a.createdAt) : (a.assignedAt || a.createdAt)
-    ).getTime();
+    return [...filtered].sort((a, b) => {
+      const dateA = new Date(
+        activeTab === "archives" ? (a.closedAt || a.createdAt) : (a.assignedAt || a.createdAt)
+      ).getTime();
+      const dateB = new Date(
+        activeTab === "archives" ? (b.closedAt || b.createdAt) : (b.assignedAt || b.createdAt)
+      ).getTime();
+      return dateB - dateA;
+    });
+  }, [filtered, activeTab]);
 
-    const dateB = new Date(
-      activeTab === "archives" ? (b.closedAt || b.createdAt) : (b.assignedAt || b.createdAt)
-    ).getTime();
-
-    return dateB - dateA; // 👈 DESC (récent → ancien)
-  });
-}, [filtered, activeTab]);
   const sourceList = activeTab === "actuels" ? actuelsList : archivesList;
 
-  // Stats (on actuelsList only)
+  // ── Stats (on actuelsList only) ────────────────────────────────────────────
   const counts = useMemo(() => Object.fromEntries(
-    STAT_CARDS.filter(c => c.key).map(c => [c.key, actuelsList.filter(t => statuts[t.id] === c.key).length])
-  ), [actuelsList, statuts]);
+    STAT_CARDS.filter(c => c.key).map(c => [c.key, actuelsList.filter(tk => statuts[tk.id] === c.key).length])
+  ), [STAT_CARDS, actuelsList, statuts]);
 
- const slaDepasses = useMemo(() =>
-  actuelsList.filter(t => {
-    const TERMINAL = ["Résolu", "Fermé", "Rejeté"];
-    if (TERMINAL.includes(statuts[t.id] ?? t.statut)) return false;
-    return t.slaDueDate && new Date(t.slaDueDate) < new Date();
-  }),
-[actuelsList, statuts]);
+  const slaDepasses = useMemo(() =>
+    actuelsList.filter(tk => {
+      const TERMINAL = ["Résolu", "Fermé", "Rejeté"];
+      if (TERMINAL.includes(statuts[tk.id] ?? tk.statut)) return false;
+      return tk.slaDueDate && new Date(tk.slaDueDate) < new Date();
+    }),
+  [actuelsList, statuts]);
 
   const resetFilters = () => { setSearch(""); setFilterStatut(""); setFilterPriorite(""); setFilterCategorie(""); setFilterYear(""); };
   const hasFilters = search || filterStatut || filterPriorite || filterCategorie || filterYear;
 
+  // ── Loading / Error states ─────────────────────────────────────────────────
   if (loading) return (
     <div className="p-6 flex items-center gap-2 text-gray-500 text-sm">
-      <span className="animate-spin">↻</span> Chargement…
+      <span className="animate-spin">↻</span> {t("ticketsService.loading")}
     </div>
   );
   if (error) return (
@@ -383,34 +389,38 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
   return (
     <div className="p-6">
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="mb-5">
-        <h1 className="text-2xl font-semibold text-gray-800">Mes tickets assignés</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          {t("ticketsService.header.subtitle")}
+        </h1>
         <p className="text-sm text-gray-400 mt-1">
-          Suivi des incidents qui vous sont attribués — mettez à jour les statuts et respectez les délais SLA.
+          {t("ticketsService.header.subtitleManager")}
         </p>
       </div>
 
-      {/* Alerte SLA */}
+      {/* ── SLA Alert banner ── */}
       {slaDepasses.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5 flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
-          <p className="text-red-700 text-sm font-medium">{slaDepasses.length} ticket(s) ont dépassé le délai SLA</p>
+          <p className="text-red-700 text-sm font-medium">
+            {t("ticketsService.sla.alertBanner", { count: slaDepasses.length })}
+          </p>
           <div className="ml-auto flex gap-2 flex-wrap">
-            {slaDepasses.map(t => (
+            {slaDepasses.map(tk => (
               <span
-                key={t.id}
-                onClick={() => navigate(`/technician/ticket-technicien/${t.id}`)}
+                key={tk.id}
+                onClick={() => navigate(`/technician/ticket-technicien/${tk.id}`)}
                 className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium cursor-pointer hover:bg-red-200 transition"
               >
-                #{t.id}
+                #{tk.id}
               </span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Stats cards (actuelsList only) */}
+      {/* ── Stats cards ── */}
       <div className="grid grid-cols-4 lg:grid-cols-8 gap-2 mb-6">
         {STAT_CARDS.map(({ label, key, cls }) => (
           <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
@@ -422,40 +432,53 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
         ))}
       </div>
 
-      {/* Tabs */}
+      {/* ── Tabs ── */}
       <TabSwitch
         activeTab={activeTab}
         setActiveTab={(tab) => { setActiveTab(tab); if (tab !== "archives") setFilterYear(""); }}
         actuelCount={actuelsList.length}
         archiveCount={archivesList.length}
+        t={t}
       />
 
-      {/* Filtres */}
+      {/* ── Filters ── */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 mb-4 flex flex-wrap gap-2 items-end">
         <input
           type="text"
-          placeholder="Recherche par ID, titre ou date…"
+          placeholder={t("ticketsService.filters.searchPlaceholder")}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-100"
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
 
-        <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none" value={filterStatut} onChange={e => setFilterStatut(e.target.value)}>
-          <option value="">Tous les statuts</option>
+        <select
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+          value={filterStatut}
+          onChange={e => setFilterStatut(e.target.value)}
+        >
+          <option value="">{t("ticketsService.filters.statusAll")}</option>
           {enumStatuts.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
-        <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none" value={filterPriorite} onChange={e => setFilterPriorite(e.target.value)}>
-          <option value="">Toutes les priorités</option>
+        <select
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+          value={filterPriorite}
+          onChange={e => setFilterPriorite(e.target.value)}
+        >
+          <option value="">{t("ticketsService.filters.priorityAll")}</option>
           {enumPriorites.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
 
-        <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none" value={filterCategorie} onChange={e => setFilterCategorie(e.target.value)}>
-          <option value="">Toutes les catégories</option>
+        <select
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+          value={filterCategorie}
+          onChange={e => setFilterCategorie(e.target.value)}
+        >
+          <option value="">{t("ticketsService.filters.categoryAll")}</option>
           {enumCategories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
 
-        {/* Filtre année — archives seulement */}
+        {/* Archive year filter */}
         {activeTab === "archives" && archiveYears.length > 0 && (
           <div className="relative">
             <select
@@ -463,7 +486,7 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
               value={filterYear}
               onChange={e => setFilterYear(e.target.value)}
             >
-              <option value="">Toutes les années</option>
+              <option value="">{t("ticketsService.filters.closeYearAll")}</option>
               {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
             <HiOutlineChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -474,7 +497,7 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
           className={`border px-3 py-2 rounded-lg text-sm transition ${hasFilters ? "text-red-500 border-red-200 hover:bg-red-50" : "text-gray-400 border-gray-200"}`}
           onClick={resetFilters}
         >
-          Réinitialiser
+          {t("ticketsService.filters.reset")}
         </button>
 
         <div className="ml-auto flex items-end pb-0.5">
@@ -482,87 +505,92 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
         </div>
       </div>
 
-      {/* Compteur */}
+      {/* ── Counter ── */}
       <p className="text-xs text-gray-400 mb-2">
-        <span className="font-semibold text-gray-700">{filtered.length}</span> ticket(s) affiché(s)
-        {filtered.length !== sourceList.length && <> sur {sourceList.length}</>}
+        <span className="font-semibold text-gray-700">{filtered.length}</span>{" "}
+        {t("ticketsService.filters.countSuffix_other", { count: filtered.length })}
+        {filtered.length !== sourceList.length && (
+          <> {t("ticketsService.filters.outOf", { total: sourceList.length })}</>
+        )}
       </p>
 
-      {/* Tableau */}
+      {/* ── Table ── */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm" style={{ minWidth: 1000 }}>
             <thead className="bg-gray-50 text-gray-500">
               <tr className="text-left">
-                <th className="px-4 py-3 font-medium">ID</th>
-                <th className="px-4 py-3 font-medium">Titre</th>
-                <th className="px-4 py-3 font-medium">Catégorie</th>
-                 <th className="px-4 py-3 font-medium">Priorité</th>
-                  <th className="px-4 py-3 font-medium">Statut</th>
-                  <th className="px-4 py-3 font-medium">SLA </th>
-                <th className="px-4 py-3 font-medium">Employé</th>
-                <th className="px-4 py-3 font-medium">Créé le</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.id")}</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.title")}</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.category")}</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.priority")}</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.status")}</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.sla")}</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.employee")}</th>
+                <th className="px-4 py-3 font-medium">{t("ticketsService.table.createdAt")}</th>
                 <th className="px-4 py-3 font-medium">
-                  {activeTab === "archives" ? "Date clôture" : "Assigné le"}
+                  {activeTab === "archives"
+                    ? t("ticketsService.table.closedAt")
+                    : t("ticketsService.table.assignedAt")}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {sortedTickets.map(t => (
+              {sortedTickets.map(tk => (
                 <tr
-                  key={t.id}
-                  onClick={() => navigate(`/technician/ticket-technicien/${t.id}`)}
+                  key={tk.id}
+                  onClick={() => navigate(`/technician/ticket-technicien/${tk.id}`)}
                   className="border-t border-gray-100 hover:bg-gray-50 transition cursor-pointer"
                 >
-                  <td className="px-4 py-3 font-mono text-gray-400 text-xs">#{t.id}</td>
+                  <td className="px-4 py-3 font-mono text-gray-400 text-xs">#{tk.id}</td>
 
                   <td className="px-4 py-3 font-medium text-gray-800 max-w-[160px]">
-                    <span className="block truncate">{t.titre}</span>
+                    <span className="block truncate">{tk.titre}</span>
                   </td>
 
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${categorieStyle[t.categorie] ?? "bg-gray-100 text-gray-600"}`}>
-                      {t.categorie ?? "N/A"}
-                    </span>
-                  </td>
-  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${prioriteStyle[t.priorite] ?? "bg-gray-100 text-gray-600"}`}>
-                      {t.priorite ?? "N/A"}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${categorieStyle[tk.categorie] ?? "bg-gray-100 text-gray-600"}`}>
+                      {tk.categorie ?? "N/A"}
                     </span>
                   </td>
 
-                  {/* Statut — stop propagation */}
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${prioriteStyle[tk.priorite] ?? "bg-gray-100 text-gray-600"}`}>
+                      {tk.priorite ?? "N/A"}
+                    </span>
+                  </td>
+
+                  {/* Status dropdown — stopPropagation keeps row click from firing */}
                   <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     <select
-                      value={statuts[t.id] ?? ""}
-                      onChange={e => changerStatut(e, t.id, e.target.value)}
-                      className={`border-none rounded-full px-2 py-1 text-xs font-medium cursor-pointer focus:outline-none ${statutStyle[statuts[t.id]] ?? "bg-gray-100 text-gray-600"}`}
+                      value={statuts[tk.id] ?? ""}
+                      onChange={e => changerStatut(e, tk.id, e.target.value)}
+                      className={`border-none rounded-full px-2 py-1 text-xs font-medium cursor-pointer focus:outline-none ${statutStyle[statuts[tk.id]] ?? "bg-gray-100 text-gray-600"}`}
                     >
                       {Object.keys(statusEN).map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
                   </td>
-                   <td className="px-4 py-3">
+
+                  <td className="px-4 py-3">
                     {activeTab === "archives"
                       ? <span className="text-gray-300 text-xs">—</span>
-                      :<SlaBar
-  slaDueDate={t.slaDueDate}
-  statut={statuts[t.id] ?? t.statut}
-  closedAt={t.closedAt}
-  slaPauseElapsed={t.slaPauseElapsed}
-/>}
+                      : <SlaBar
+                          slaDueDate={tk.slaDueDate}
+                          statut={statuts[tk.id] ?? tk.statut}
+                          closedAt={tk.closedAt}
+                          slaPauseElapsed={tk.slaPauseElapsed}
+                          t={t}
+                        />}
                   </td>
 
-                  <td className="px-4 py-3 text-gray-600 text-xs">{t.employe || "N/A"}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{tk.employe || "N/A"}</td>
 
-                
-
-                 
-                  <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(t.createdAt)}</td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(tk.createdAt)}</td>
 
                   <td className="px-4 py-3 text-gray-400 text-xs">
-                    {activeTab === "archives" ? fmtDate(t.closedAt) : fmtDate(t.assignedAt)}
+                    {activeTab === "archives" ? fmtDate(tk.closedAt) : fmtDate(tk.assignedAt)}
                   </td>
                 </tr>
               ))}
@@ -572,7 +600,7 @@ slaPauseElapsed:    t.sla_pause_elapsed_ms ?? null,
 
         {filtered.length === 0 && (
           <div className="text-center py-12 text-gray-400 text-sm">
-            Aucun ticket trouvé
+            {t("ticketsService.empty")}
           </div>
         )}
       </div>

@@ -1,0 +1,178 @@
+{
+  "ticketsService": {
+    "header": {
+      "subtitle": "Service Tickets",
+      "subtitleManager": "Ticket Management",
+      "titlePrefix": "Service",
+      "titleFallback": "All Tickets",
+      "ticketCount_one": "{{count}} ticket",
+      "ticketCount_other": "{{count}} tickets"
+    },
+    "tabs": {
+      "current": "Current Tickets",
+      "archives": "Archives (before {{year}})"
+    },
+    "stats": {
+      "total": "Total",
+      "open": "Open",
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "pendingSupplier": "Pend. Supplier",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "rejected": "Rejected"
+    },
+    "filters": {
+      "label": "Filters",
+      "search": "Search",
+      "searchPlaceholder": "ID or title…",
+      "status": "Status",
+      "statusAll": "All statuses",
+      "priority": "Priority",
+      "priorityAll": "All priorities",
+      "category": "Category",
+      "categoryAll": "All categories",
+      "assignment": "Assignment",
+      "assignmentAll": "All",
+      "assigned": "Assigned",
+      "unassigned": "Unassigned",
+      "closeYear": "Closing Year",
+      "closeYearAll": "All",
+      "reset": "Reset",
+      "countSuffix_one": "ticket",
+      "countSuffix_other": "tickets",
+      "outOf": "of {{total}} total"
+    },
+    "table": {
+      "id": "ID",
+      "title": "Title",
+      "category": "Category",
+      "priority": "Priority",
+      "status": "Status",
+      "sla": "SLA",
+      "employee": "Employee",
+      "technician": "Technician",
+      "createdAt": "Created On",
+      "assignedAt": "Assigned On",
+      "closedAt": "Closed On"
+    },
+    "row": {
+      "unassigned": "Unassigned"
+    },
+    "empty": "No tickets for the selected filters.",
+    "loading": "Loading…",
+    "sla": {
+      "na": "N/A",
+      "exceeded": "exceeded +{{h}}h {{m}}m",
+      "closed": "closed ✓",
+      "frozen": "{{h}}h {{m}}m frozen",
+      "remaining": "{{h}}h {{m}}m",
+      "alert": "⚠ +{{h}}h {{m}}m exceeded",
+      "alertBanner": "{{count}} ticket(s) have exceeded the SLA deadline"
+    }
+  },
+  "ticketDetail": {
+    "back": "Back to tickets",
+    "reference": "Ticket Reference",
+    "description": "Incident Description",
+    "info": "Ticket Information",
+    "assignedTech": "Assigned Technician",
+    "managedByYou": "You are managing this ticket",
+    "waitingExpert": "Waiting for expert",
+    "assignedOn": "Assigned on",
+    "closedOn": "Closed on",
+    "profile": {
+      "employee": "Employee",
+      "email": "Email",
+      "department": "Department",
+      "position": "Position",
+      "contact": "Contact",
+      "office": "Office"
+    },
+    "cols": {
+      "priority": "Priority",
+      "category": "Category",
+      "service": "Service",
+      "impact": "Impact",
+      "urgency": "Urgency",
+      "createdAt": "Created On"
+    },
+    "sla": {
+      "title": "Resolution Time (SLA)",
+      "paused": "On hold",
+      "closed": "Closed",
+      "breachDetected": "Breach detected",
+      "limit": "Deadline",
+      "exceeded": "+{{h}}h {{m}}m exceeded",
+      "closedOk": "Closed — respected ✓",
+      "frozen": "⏸ {{h}}h {{m}}m frozen",
+      "remaining": "{{h}}h {{m}}m remaining"
+    },
+    "redirect": {
+      "title": "Redirected Ticket",
+      "service": "Service",
+      "technician": "Technician",
+      "redirectedAt": "Redirected on",
+      "reason": "Reason"
+    },
+    "modal": {
+      "title": "Ticket taken over",
+      "status": "In Progress",
+      "body": "You are now responsible for this ticket. What would you like to do?",
+      "stayHere": "Stay on this ticket",
+      "backToList": "Back to ticket list"
+    },
+    "btn": {
+      "takeCharge": "Take charge",
+      "alreadyAssigned": "Already Assigned",
+      "taking": "Processing..."
+    }
+  },
+  "ticketDetailTech": {
+    "loading": "Loading ticket...",
+    "notFound": "Ticket not found.",
+    "error": "Error",
+    "errorClose": "Error while closing.",
+    "errorRedirect": "Error while redirecting.",
+    "actuality": {
+      "assigned": "Ticket assigned",
+      "reopened": "🔄 Ticket reopened"
+    }
+  },
+  "accueilTech": {
+    "loading": "Loading…",
+    "timeAgo": {
+      "justNow": "just now",
+      "days": "d"
+    },
+    "header": {
+      "subtitle": "Dashboard · Technician",
+      "title": "My Interventions"
+    },
+    "stats": {
+      "overdue": "Overdue",
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "activeTotal": "Active Total"
+    },
+    "charts": {
+      "priority": "Priority · active",
+      "categories": "Categories · service",
+      "volumeTitle": "Monthly Activity Volume",
+      "volumeSubtitle": "Assigned vs resolved/closed · {{year}}"
+    },
+    "spark": {
+      "assigned": "Assigned",
+      "resolved": "Resolved/Closed",
+      "remaining": "Remaining"
+    },
+    "table": {
+      "title": "Recently Assigned Tickets",
+      "id": "ID",
+      "title_col": "Title",
+      "priority": "Priority",
+      "status": "Status",
+      "lastActivity": "Last Activity"
+    }
+  }
+}

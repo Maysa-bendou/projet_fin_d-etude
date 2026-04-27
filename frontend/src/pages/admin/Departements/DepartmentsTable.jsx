@@ -1,6 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 function DepartmentsTable({ departments = [], onRowClick }) {
+  const { t } = useTranslation('admin');
 
   if (!departments.length) {
     return (
@@ -9,10 +11,10 @@ function DepartmentsTable({ departments = [], onRowClick }) {
         fontFamily: 'Inter, sans-serif'
       }}>
         <p style={{ fontSize: 14, fontWeight: 700, color: '#111827', margin: '0 0 4px 0' }}>
-          Aucun département trouvé
+          {t('departments.empty.title')}
         </p>
         <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
-          Ajustez vos filtres ou ajoutez une entité.
+          {t('departments.empty.subtitle')}
         </p>
       </div>
     );
@@ -22,10 +24,14 @@ function DepartmentsTable({ departments = [], onRowClick }) {
     <div style={{ overflowX: 'auto', fontFamily: 'Inter, sans-serif' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
 
-        {/* EN-TÊTE BEIGE — comme dans la capture originale */}
         <thead>
           <tr style={{ background: '#f9f6f2', borderBottom: '1px solid #e8e4de' }}>
-            {['ID', 'Département', 'Description', 'Date de Création'].map((col, i) => (
+            {[
+              t('departments.table.id'),
+              t('departments.table.name'),
+              t('departments.table.description'),
+              t('departments.table.createdAt'),
+            ].map((col, i) => (
               <th key={i} style={{
                 padding: '12px 24px',
                 fontSize: 11, fontWeight: 700,
@@ -41,7 +47,6 @@ function DepartmentsTable({ departments = [], onRowClick }) {
           </tr>
         </thead>
 
-        {/* LIGNES */}
         <tbody>
           {departments.map((d, idx) => (
             <tr
@@ -61,7 +66,7 @@ function DepartmentsTable({ departments = [], onRowClick }) {
                 #{d.id}
               </td>
 
-              {/* Nom avec avatar */}
+              {/* Name with avatar */}
               <td style={{ padding: '16px 24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{

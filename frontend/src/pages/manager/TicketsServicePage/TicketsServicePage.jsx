@@ -282,7 +282,7 @@ const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
               {COLS.map((c, i) => <col key={i} style={{ width: c.width }} />)}
             </colgroup>
             <thead>
-              <tr style={{ background: "#f9f6f2", borderBottom: "2px solid #e8e2d9" }}>
+              <tr style={{ background: "#faf9f7", borderBottom: "2px solid #e8e2d9" }}>
                 {COLS.map((c, i) => (
                   <th key={i} style={{
                     padding: "10px 14px", fontSize: 11, fontWeight: 700,
@@ -435,7 +435,7 @@ const TicketsServicePage = () => {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9f6f2", fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#faf9f7", fontFamily: "sans-serif" }}>
 
       {/* Header */}
       <div style={{ background: "#fff", borderBottom: "1px solid #e8e2d9", padding: "18px 32px", position: "relative", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>

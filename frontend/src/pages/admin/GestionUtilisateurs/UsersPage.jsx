@@ -97,13 +97,13 @@ function UsersPage() {
   }, [users, searchTerm]);
 
   if (loading) return (
-    <div className="flex justify-center items-center h-screen bg-[#f9f6f2]">
+    <div className="flex justify-center items-center h-screen bg-[#faf9f7]">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#f9f6f2] p-8 font-sans">
+    <div className="min-h-screen bg-[#faf9f7] p-8 font-sans">
 
       <h1 className="text-2xl font-bold text-slate-900">Gestion des Utilisateurs</h1>
       <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
@@ -131,7 +131,7 @@ function UsersPage() {
                 placeholder="Rechercher un utilisateur..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-72 pl-9 pr-4 py-2.5 bg-[#f9f6f2] border border-[#e8e4df] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e8e4df] focus:border-[#d0cac3] transition-all text-slate-600 placeholder:text-slate-400"
+                className="w-72 pl-9 pr-4 py-2.5 bg-[#faf9f7] border border-[#e8e4df] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e8e4df] focus:border-[#d0cac3] transition-all text-slate-600 placeholder:text-slate-400"
               />
             </div>
             <button

@@ -18,8 +18,8 @@ const StatCard = ({ title, value, IconComponent, bgColor, iconColor }) => (
       <IconComponent size={21} style={{ color: iconColor }} />
     </div>
     <div>
-      <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 3px 0', fontWeight: 400 }}>{title}</p>
-      <p style={{ fontSize: 28, fontWeight: 700, color: '#1e293b', margin: 0, lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 13, color: '#56606d', margin: '0 0 3px 0', fontWeight: 400 }}>{title}</p>
+      <p style={{ fontSize: 28, fontWeight: 700, color: '#2e353f', margin: 0, lineHeight: 1 }}>{value}</p>
     </div>
   </div>
 );
@@ -76,8 +76,9 @@ const AccueilPage = () => {
   return (
     <div style={{ padding: '25px', background: '#faf9f7', minHeight: '100vh' }}>
 
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 29 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t('accueil.title')}</h1>
+        <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>{t('accueil.subtitle')}</p>
       </div>
 
       {/* Stats */}

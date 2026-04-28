@@ -24,7 +24,7 @@ function DepartmentsTable({ departments = [], onRowClick }) {
 
         {/* EN-TÊTE BEIGE — comme dans la capture originale */}
         <thead>
-          <tr style={{ background: '#f9f6f2', borderBottom: '1px solid #e8e4de' }}>
+          <tr style={{ background: '#faf9f7', borderBottom: '1px solid #e8e4de' }}>
             {['ID', 'Département', 'Description', 'Date de Création'].map((col, i) => (
               <th key={i} style={{
                 padding: '12px 24px',

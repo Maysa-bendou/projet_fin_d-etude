@@ -241,7 +241,7 @@ export default function PerformancesPage() {
   }));
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }

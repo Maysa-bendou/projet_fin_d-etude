@@ -34,6 +34,7 @@
 
   "accueil": {
     "title": "Mon Espace Support",
+    "subtitle":"Suivi de vos tickets récents et de leur statut",
     "recentTickets": "Mes Tickets Récents",
     "viewAll": "Voir tous mes tickets",
     "stats": {

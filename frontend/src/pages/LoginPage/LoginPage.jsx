@@ -44,7 +44,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f9f6f2] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#faf9f7] px-4">
 
       {/* CARD */}
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-lg p-8">
@@ -99,7 +99,7 @@ export default function LoginPage() {
               Mot de passe
             </label>
 
-            <div className="mt-1 flex items-center gap-3 px-4 py-2.5 bg-[#f9f6f2] border border-[#e8e4df] rounded-lg focus-within:ring-2 focus-within:ring-red-200">
+            <div className="mt-1 flex items-center gap-3 px-4 py-2.5 bg-[#faf9f7] border border-[#e8e4df] rounded-lg focus-within:ring-2 focus-within:ring-red-200">
               <Lock size={16} className="text-slate-400" />
               <input
                 type="password"

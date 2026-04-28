@@ -420,11 +420,11 @@ export default function MesTicketsPage() {
         marginBottom: 28,
       }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>
-            {t("mesTickets.title")}
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 0px 0" }}>
+           {t("mesTickets.title")}
           </h1>
-          <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>
-            {t("mesTickets.subtitle")}
+          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530 }}>
+           {t("mesTickets.subtitle")}
           </p>
         </div>
         <RefreshButton onRefresh={fetchData} />

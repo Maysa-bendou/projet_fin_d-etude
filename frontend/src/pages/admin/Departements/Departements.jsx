@@ -50,7 +50,7 @@ export default function DepartementsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f9f6f2] p-8 md:p-10 font-sans">
+    <div className="min-h-screen bg-[#faf9f7] p-8 md:p-10 font-sans">
 
       {/* HEADER PAGE */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 37, flexWrap: 'wrap', gap: 16 }}>
@@ -87,8 +87,8 @@ export default function DepartementsPage() {
           </h2>
 
           <div className="flex items-center gap-3">
-            {/* 3: BARRE DE RECHERCHE EN BEIGE #f9f6f2 */}
-            <div className="flex items-center gap-2 bg-[#f9f6f2] border border-gray-300 rounded-lg px-4 py-2 min-w-[280px] focus-within:ring-2 focus-within:ring-slate-300 transition-all">
+            {/* 3: BARRE DE RECHERCHE EN BEIGE #faf9f7 */}
+            <div className="flex items-center gap-2 bg-[#faf9f7] border border-gray-300 rounded-lg px-4 py-2 min-w-[280px] focus-within:ring-2 focus-within:ring-slate-300 transition-all">
               <MdSearch className="text-slate-500 text-lg" />
               <input
                 type="text"
@@ -101,7 +101,7 @@ export default function DepartementsPage() {
 
             <button
               onClick={fetchDepartments}
-              className="p-2.5 bg-[#f9f6f2] border border-gray-300 text-slate-500 rounded-lg hover:text-red-700 transition-colors shadow-sm"
+              className="p-2.5 bg-[#faf9f7] border border-gray-300 text-slate-500 rounded-lg hover:text-red-700 transition-colors shadow-sm"
               title="Actualiser"
             >
               <MdRefresh className="text-xl" />

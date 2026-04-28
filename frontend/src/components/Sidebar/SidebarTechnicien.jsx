@@ -55,7 +55,7 @@ export default function SidebarTechnician() {
       relative flex flex-col h-[96vh] my-[2vh] ml-[2vh]
       transition-all duration-500 ease-in-out rounded-[2.5rem] py-6 shrink-0 z-50
       bg-white text-gray-800 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)]
-      ${isOpen ? "w-64" : "w-20"}
+      ${isOpen ? "w-60" : "w-17"}
     `}>
       
       {/* ── LOGO ── */}
@@ -83,7 +83,7 @@ export default function SidebarTechnician() {
               to={item.path}
               className={`
                 group relative flex items-center transition-all duration-300 rounded-2xl
-                ${isOpen ? "w-full px-5 py-3.5 gap-4" : "w-16 h-16 justify-center"}
+                ${isOpen ? "w-full px-5 py-3.5 gap-4" : "w-12 h-12 justify-center"}
                 ${isActive
                   ? "bg-[#fff5f5] text-[#ff0113]" 
                   : "text-gray-400 hover:bg-gray-50"
@@ -93,7 +93,7 @@ export default function SidebarTechnician() {
               {/* Tooltip quand le menu est fermé */}
               {!isOpen && (
                 <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 z-[70] origin-left">
-                   <div className="bg-[#fff5f5] text-[#ff0113] text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm border border-red-50 whitespace-nowrap">
+                   <div className="bg-[#fff5f5] text-[#ff0113] text-[12px] font-bold px-2 py-1 rounded-lg shadow-sm border border-red-50 whitespace-nowrap">
                      {item.label}
                    </div>
                 </div>
@@ -104,7 +104,7 @@ export default function SidebarTechnician() {
                 <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff0113] rounded-r-full" />
               )}
               
-              <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
               
               {isOpen && (
                 <span className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-500"}`}>

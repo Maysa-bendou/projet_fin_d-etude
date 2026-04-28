@@ -11,8 +11,8 @@ function UsersTable({ users = [], onRowClick }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
         </div>
-        <h3 className="text-sm font-bold text-slate-900 mb-1">Aucun utilisateur trouvé</h3>
-        <p className="text-xs text-slate-400">Ajustez vos filtres ou ajoutez un nouveau membre.</p>
+        <h3 className="text-sm font-bold text-slate-900 mb-1">No users found</h3>
+        <p className="text-xs text-slate-400">Adjust your filters or add a new member.</p>
       </div>
     );
   }
@@ -20,15 +20,14 @@ function UsersTable({ users = [], onRowClick }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
-        {/* ── EN-TÊTE — gris slate-500 comme dans la capture ── */}
         <thead className="bg-[#faf9f7] border-b border-[#eeebe7]">
           <tr>
             <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">ID</th>
-            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Collaborateur</th>
-            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Rôle</th>
-            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Département</th>
-            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Création</th>
-            <th className="px-8 py-4 text-center text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Statut</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Collaborator</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Role</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Department</th>
+            <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Created</th>
+            <th className="px-8 py-4 text-center text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Status</th>
           </tr>
         </thead>
 
@@ -50,7 +49,7 @@ function UsersTable({ users = [], onRowClick }) {
                     <p className="text-sm font-bold text-slate-800 leading-none mb-1">
                       {u.surname} {u.name}
                     </p>
-                    <p className="text-[10px] text-slate-400 font-medium">Membre vérifié</p>
+                    <p className="text-[10px] text-slate-400 font-medium">Verified Member</p>
                   </div>
                 </div>
               </td>
@@ -66,7 +65,7 @@ function UsersTable({ users = [], onRowClick }) {
               </td>
 
               <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-slate-500">
-                {new Date(u.created_at).toLocaleDateString('fr-FR', {
+                {new Date(u.created_at).toLocaleDateString('en-GB', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric'
@@ -81,7 +80,7 @@ function UsersTable({ users = [], onRowClick }) {
                       : 'bg-rose-50 text-rose-600 border border-rose-100'
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                    {u.is_active ? 'Actif' : 'Inactif'}
+                    {u.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
               </td>

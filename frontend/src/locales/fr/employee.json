@@ -62,6 +62,7 @@
     },
     "types": {
       "incident": "Incident",
+      "problem": "Problème",
       "service_request": "Demande de service"
     },
     "categories": {

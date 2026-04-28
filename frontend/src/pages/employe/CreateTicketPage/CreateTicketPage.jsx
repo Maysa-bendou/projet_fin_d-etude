@@ -11,7 +11,7 @@ const PRIORITY_MATRIX = {
   low:    { high: "medium",   medium: "low",     low: "low" },
 };
 
-const EMPTY_FORM = { type: "incident", title: "", description: "", category: "", impact: "", urgency: "" };
+const EMPTY_FORM = { type: "problem", title: "", description: "", category: "", impact: "", urgency: "" };
 
 const selectStyle = {
   width: "100%", border: "1.5px solid #d9d4cc", borderRadius: 10,
@@ -76,7 +76,7 @@ export default function CreateTicketPage() {
 
   // Options built inside component so t() is available
   const TYPE_OPTIONS = [
-    { value: "incident",        label: t('createTicket.types.incident') },
+    { value: "problem", label: t('createTicket.types.problem') },
     { value: "service_request", label: t('createTicket.types.service_request') },
   ];
   const CATEGORY_OPTIONS = [
@@ -212,13 +212,12 @@ export default function CreateTicketPage() {
 
   /* ── FORM ── */
   return (
-    <div style={{ padding: 25, background: "#faf9f7", minHeight: "100vh" }}>
+    <div style={{  background: "#faf9f7", minHeight: "100vh" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
         <div style={{ marginBottom: 29 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 0px 0" }}> {t('createTicket.pageTitle')}</h1>
-          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>{t('createTicket.pageSubtitle')}</p>
-        </div>
+          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>{t('createTicket.pageSubtitle')}</p>  </div>
 
         <form onSubmit={handleSubmit} noValidate>
           <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #d9d4cc", padding: "32px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>

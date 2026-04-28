@@ -3,6 +3,16 @@ import { initReactI18next } from 'react-i18next';
 
 import employeeEN from './locales/en/employee.json';
 import managerEN  from './locales/en/manager.json';
+import chefEN  from './locales/en/chef.json';
+import adminEN  from './locales/en/admin.json';
+import technicienEN  from './locales/en/technicien.json';
+import profilEN  from './locales/en/profil.json';
+import loginEN  from './locales/en/login.json';
+import loginFR from './locales/fr/login.json';
+import profilFR from './locales/fr/profil.json';
+import technicienFR from './locales/fr/technicien.json';
+import adminFR from './locales/fr/admin.json';
+import chefFR from './locales/fr/chef.json';
 import employeeFR from './locales/fr/employee.json';
 import managerFR  from './locales/fr/manager.json';
 
@@ -15,16 +25,26 @@ i18n
       en: {
         employee: employeeEN,
         manager:  managerEN,
+        chef:  chefEN,
+        admin:  adminEN,
+        technicien: technicienEN,
+        profil: profilEN,
+        login: loginEN,
       },
       fr: {
         employee: employeeFR,
         manager:  managerFR,
+        chef:  chefFR,
+        admin:  adminFR,
+        technicien: technicienFR,
+        profil: profilFR,
+        login: loginFR,
       },
     },
     lng:         savedLang,
     fallbackLng: 'en',
     defaultNS:   'employee',
-    ns:          ['employee', 'manager'],
+    ns:          ['employee', 'manager' , 'chef', 'admin' , 'technicien' , 'profil' , 'login'],
     interpolation: { escapeValue: false },
   });
 

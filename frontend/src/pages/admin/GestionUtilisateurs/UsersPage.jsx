@@ -25,7 +25,7 @@ function UsersPage() {
       if (sRes.ok) setServices(await sRes.json());
       if (dRes.ok) setDepartments(await dRes.json());
     } catch (err) {
-      setError("Erreur de chargement");
+      setError("Loading error");
     } finally {
       setLoading(false);
     }
@@ -33,7 +33,7 @@ function UsersPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ✅ Ajouter utilisateur
+  // ✅ Add user
   const addUser = async (newUser) => {
     try {
       const res = await fetch("http://localhost:3001/api/users", {
@@ -54,7 +54,7 @@ function UsersPage() {
     }
   };
 
-  // ✅ Modifier utilisateur
+  // ✅ Update user
   const updateUser = async (updatedUser) => {
     try {
       const res = await fetch(`http://localhost:3001/api/users/${updatedUser.id}`, {
@@ -74,7 +74,7 @@ function UsersPage() {
     }
   };
 
-  // ✅ Toggle actif/inactif
+  // ✅ Toggle active/inactive
   const toggleActive = async (id) => {
     try {
       const res = await fetch(`http://localhost:3001/api/users/${id}/toggle-active`, { method: "PUT" });
@@ -105,9 +105,9 @@ function UsersPage() {
   return (
     <div className="min-h-screen bg-[#faf9f7] p-8 font-sans">
 
-      <h1 className="text-2xl font-bold text-slate-900">Gestion des Utilisateurs</h1>
+      <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
       <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
-        Administration de l'annuaire et des roles
+        Directory administration and role management
       </p>
 
       <div className="max-w-7xl mx-auto mb-5 flex justify-end">
@@ -116,7 +116,7 @@ function UsersPage() {
           className="flex items-center gap-2 px-5 py-2.5 bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-lg hover:opacity-90 shadow-md transition-all active:scale-95"
         >
           <MdPersonAdd size={17} />
-          Ajouter utilisateur
+          Add User
         </button>
       </div>
 
@@ -128,7 +128,7 @@ function UsersPage() {
               <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
-                placeholder="Rechercher un utilisateur..."
+                placeholder="Search for a user..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-72 pl-9 pr-4 py-2.5 bg-[#faf9f7] border border-[#e8e4df] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e8e4df] focus:border-[#d0cac3] transition-all text-slate-600 placeholder:text-slate-400"
@@ -136,7 +136,7 @@ function UsersPage() {
             </div>
             <button
               onClick={fetchData}
-              className="p-2.5 bg-[#f9f6f2] text-slate-500 rounded-lg hover:bg-[#f0ece6] transition-colors border border-[#e8e4df]"
+              className="p-2.5 bg-[#faf9f7] text-slate-500 rounded-lg hover:bg-[#f0ece6] transition-colors border border-[#e8e4df]"
             >
               <MdRefresh size={18} />
             </button>
@@ -145,10 +145,10 @@ function UsersPage() {
 
         <div className="px-8 pt-5 pb-2 flex justify-between items-center">
           <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            Liste des collaborateurs
+            Collaborators List
           </span>
           <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase">
-            {filteredUsers.length} Comptes
+            {filteredUsers.length} Accounts
           </span>
         </div>
 
@@ -159,7 +159,7 @@ function UsersPage() {
         </div>
       </div>
 
-      {/* ✅ Props saveUser et toggleActive bien passées */}
+      {/* ✅ saveUser and toggleActive props properly passed */}
       {isAddModalOpen && (
         <UserModal
           services={services}

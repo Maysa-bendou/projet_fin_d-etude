@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import RefreshButton from '../../../components/common/RefreshButton';
 
 const mockStats = {
@@ -40,7 +41,6 @@ const mockRecentTickets = [
     service: 'Matériel',
     createdAt: '2024-10-13'
   },
-  // Add more for demo...
   {
     id: 453,
     title: 'Accès bloqué application RH',
@@ -54,32 +54,35 @@ const mockRecentTickets = [
 ];
 
 const statusColors = {
-  open: 'bg-yellow-100 text-yellow-800',
-  'in_progress': 'bg-blue-100 text-blue-800',
-  resolved: 'bg-green-100 text-green-800',
-  pending: 'bg-orange-100 text-orange-800',
-  closed: 'bg-gray-100 text-gray-800'
+  open:        'bg-yellow-100 text-yellow-800',
+  in_progress: 'bg-blue-100 text-blue-800',
+  resolved:    'bg-green-100 text-green-800',
+  pending:     'bg-orange-100 text-orange-800',
+  closed:      'bg-gray-100 text-gray-800'
 };
 
 export default function AccueilAdmin() {
+  const { t } = useTranslation();
+
   const refreshData = () => {
-    // Mock refresh
     console.log('Dashboard refreshed');
   };
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de bord Admin</h1>
-          <p className="text-gray-500 mt-1">Vue globale du système de gestion des tickets</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('adminAccueil.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('adminAccueil.subtitle')}</p>
         </div>
         <RefreshButton onRefresh={refreshData} />
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex items-center">
             <div className="p-3 bg-blue-100 rounded-xl">
@@ -88,7 +91,7 @@ export default function AccueilAdmin() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Utilisateurs</p>
+              <p className="text-sm font-medium text-gray-500">{t('adminAccueil.stats.users')}</p>
               <p className="text-2xl font-bold text-gray-900">{mockStats.totalUsers.toLocaleString()}</p>
             </div>
           </div>
@@ -102,7 +105,7 @@ export default function AccueilAdmin() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Tickets</p>
+              <p className="text-sm font-medium text-gray-500">{t('adminAccueil.stats.tickets')}</p>
               <p className="text-2xl font-bold text-gray-900">{mockStats.totalTickets.toLocaleString()}</p>
             </div>
           </div>
@@ -116,7 +119,7 @@ export default function AccueilAdmin() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Tickets ouverts</p>
+              <p className="text-sm font-medium text-gray-500">{t('adminAccueil.stats.openTickets')}</p>
               <p className="text-2xl font-bold text-gray-900">{mockStats.openTickets}</p>
             </div>
           </div>
@@ -130,27 +133,28 @@ export default function AccueilAdmin() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Services</p>
+              <p className="text-sm font-medium text-gray-500">{t('adminAccueil.stats.services')}</p>
               <p className="text-2xl font-bold text-gray-900">{mockStats.totalServices}</p>
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Recent Tickets */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Tickets récents</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{t('adminAccueil.recentTickets.title')}</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Titre</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priorité</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Créé par</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.id')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.title')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.status')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.priority')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.service')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('adminAccueil.recentTickets.createdBy')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.createdAt')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -162,16 +166,16 @@ export default function AccueilAdmin() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[ticket.status] || 'bg-gray-100 text-gray-800'}`}>
-                      {ticket.status.replace('_', ' ').toUpperCase()}
+                      {t(`adminAccueil.recentTickets.statuses.${ticket.status}`, { defaultValue: ticket.status.replace('_', ' ').toUpperCase() })}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
+                      ticket.priority === 'high'   ? 'bg-red-100 text-red-800' :
                       ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-green-100 text-green-800'
                     }`}>
-                      {ticket.priority?.toUpperCase()}
+                      {t(`adminAccueil.recentTickets.priorities.${ticket.priority}`, { defaultValue: ticket.priority?.toUpperCase() })}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.service}</td>
@@ -183,6 +187,7 @@ export default function AccueilAdmin() {
           </table>
         </div>
       </div>
+
     </div>
   );
 }

@@ -58,7 +58,7 @@ export default function SidebarManager() {
       relative flex flex-col h-[96vh] my-[2vh] ml-[2vh]
       transition-all duration-500 ease-in-out rounded-[2.5rem] py-6 shrink-0 z-50
       bg-white text-gray-800 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)]
-      ${isOpen ? "w-64" : "w-20"}
+      ${isOpen ? "w-60" : "w-17"}
     `}>
       
       {/* LOGO */}

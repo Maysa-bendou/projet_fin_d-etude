@@ -1,12 +1,16 @@
 import { useState, useRef } from "react";
 import { Lock, Paperclip, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
-  const [solution, setSolution] = useState(""); // ← AJOUTÉ
-  const [note, setNote] = useState("");
-  const [files, setFiles] = useState([]);
+  const { t } = useTranslation("technicien");
+
+  const [solution, setSolution] = useState("");
+  const [note,     setNote]     = useState("");
+  const [files,    setFiles]    = useState([]);
   const fileInputRef = useRef(null);
 
+  // ── logic unchanged ───────────────────────────────────────────────────────
   const handleFiles = (e) => {
     const selected = Array.from(e.target.files);
     setFiles(prev => [...prev, ...selected]);
@@ -16,6 +20,7 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
   const removeFile = (index) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -27,45 +32,46 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
             <Lock size={20} className="text-gray-600" />
           </div>
           <div>
-            <p className="font-bold text-gray-900 text-sm">Fermer le ticket manuellement</p>
+            <p className="font-bold text-gray-900 text-sm">{t("manualClose.title")}</p>
             <p className="text-[12px] text-gray-500 mt-0.5">
-              Utilisez cette option si vous avez résolu le problème par téléphone ou en personne.
+              {t("manualClose.subtitle")}
             </p>
           </div>
         </div>
 
-        {/* ← AJOUTÉ : Solution obligatoire */}
+        {/* Solution — required */}
         <div>
           <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
-            Solution <span className="text-red-400">*</span>
+            {t("manualClose.solutionLabel")} <span className="text-red-400">*</span>
           </label>
           <textarea
             rows={4}
             value={solution}
             onChange={e => setSolution(e.target.value)}
-            placeholder="Décrivez la solution apportée..."
+            placeholder={t("manualClose.solutionPlaceholder")}
             className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 resize-none focus:outline-none focus:border-blue-400 leading-relaxed"
           />
         </div>
 
-        {/* Note — rendue optionnelle ← MODIFIÉ */}
+        {/* Note — optional */}
         <div>
           <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
-            Note de fermeture <span className="text-gray-400 font-normal">(optionnelle)</span>
+            {t("manualClose.noteLabel")}{" "}
+            <span className="text-gray-400 font-normal">({t("manualClose.optional")})</span>
           </label>
           <textarea
             rows={3}
             value={note}
             onChange={e => setNote(e.target.value)}
-            placeholder="Ex : Résolu par téléphone à 11h30 — problème confirmé résolu par l'employé."
+            placeholder={t("manualClose.notePlaceholder")}
             className="w-full text-[12px] px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 resize-none focus:outline-none focus:border-gray-400 leading-relaxed"
           />
         </div>
 
-        {/* Pièces jointes — inchangé */}
+        {/* Attachments — optional */}
         <div>
           <label className="text-[11px] font-semibold text-gray-500 mb-1.5 block">
-            Pièces jointes (optionnel)
+            {t("manualClose.attachmentsLabel")}
           </label>
 
           {files.length > 0 && (
@@ -97,7 +103,7 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
             className="flex items-center gap-2 text-[11px] font-medium text-gray-500 border border-dashed border-gray-300 rounded-lg px-3 py-2 w-full hover:border-gray-400 hover:bg-gray-50 transition"
           >
             <Paperclip size={12} />
-            Joindre un fichier
+            {t("manualClose.attachBtn")}
           </button>
           <input
             ref={fileInputRef}
@@ -115,15 +121,15 @@ export default function ManualCloseModal({ onConfirm, onCancel, loading }) {
             disabled={loading}
             className="px-4 py-2 text-[12px] font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 bg-transparent cursor-pointer transition"
           >
-            Annuler
+            {t("manualClose.cancel")}
           </button>
           <button
-            onClick={() => onConfirm(note, files, solution)} // ← MODIFIÉ
-            disabled={loading || !solution.trim()} // ← MODIFIÉ
+            onClick={() => onConfirm(note, files, solution)}
+            disabled={loading || !solution.trim()}
             className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-gray-800 text-white hover:bg-gray-900 disabled:opacity-50 cursor-pointer transition flex items-center gap-2"
           >
             <Lock size={13} />
-            {loading ? "Fermeture..." : "Fermer le ticket"}
+            {loading ? t("manualClose.closing") : t("manualClose.confirm")}
           </button>
         </div>
 

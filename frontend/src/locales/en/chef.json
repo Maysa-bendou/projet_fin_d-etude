@@ -1,0 +1,141 @@
+{
+  "months": {
+    "jan": "January", "feb": "February", "mar": "March",    "apr": "April",
+    "may": "May",     "jun": "June",     "jul": "July",     "aug": "August",
+    "sep": "September","oct": "October", "nov": "November", "dec": "December"
+  },
+
+  "loading": {
+    "services":  "Loading services...",
+    "dashboard": "Loading dashboard..."
+  },
+
+  "filter": {
+    "filterBy":   "Filter by:",
+    "year":       "Year",
+    "month":      "Month",
+    "all":        "All",
+    "allMonths":  "All",
+    "reset":      "Reset",
+    "allPeriods": "All periods"
+  },
+
+  "repartition": {
+    "title":          "Distribution by Service",
+    "subtitle":       "Select a service to analyse its performance in detail.",
+    "tickets":        "tickets",
+    "resolved":       "resolved",
+    "analyze":        "Analyse",
+    "backToServices": "Back to services"
+  },
+
+  "dashboard": {
+    "title":        "Analysis & Performance",
+    "detailedView": "Detailed View"
+  },
+
+  "export": {
+    "excel": "Excel",
+    "pdf":   "PDF Report"
+  },
+
+  "kpi": {
+    "total":               "Total Tickets",
+    "totalDesc":           "All tickets in this service",
+    "resolutionRate":      "Resolution Rate",
+    "resolutionRateDesc":  "Resolved ÷ total",
+    "resolved":            "Resolved Tickets",
+    "resolvedDesc":        "Number of resolved tickets",
+    "slaIn":               "Within SLA",
+    "slaInDesc":           "Tickets resolved within SLA deadline",
+    "slaOut":              "Outside SLA",
+    "slaOutDesc":          "Tickets outside SLA deadline"
+  },
+
+  "section": {
+    "teamEfficiency":     "Team Efficiency",
+    "flowDistribution":   "Flow Distribution",
+    "categoryDistribution": "Distribution by Category",
+    "timeTrends":         "Time Trends",
+    "servicePerformance": "Performance by Service"
+  },
+
+  "chart": {
+    "workloadByTech":      "Workload by Technician",
+    "techDetail":          "Technician Detail",
+    "rateFormula":         "Rate = resolved ÷ assigned",
+    "currentStatus":       "Current Ticket Status",
+    "typeDistribution":    "Distribution by Type",
+    "ticketsByCategory":   "Tickets by Category",
+    "priorityDistribution":"Distribution by Priority",
+    "dailyEvolution":      "Daily Evolution",
+    "monthlyEvolution":    "Monthly Evolution",
+    "total":               "Total",
+    "avg":                 "Avg"
+  },
+
+  "table": {
+    "technician":    "Technician",
+    "assigned":      "Assigned",
+    "resolved":      "Resolved",
+    "rejected":      "Rejected",
+    "resolutionRate":"Resolution Rate",
+    "noTech":        "No technician found",
+    "service":       "Service",
+    "totalTickets":  "Total Tickets",
+    "status":        "Status",
+    "count":         "Count"
+  },
+
+  "legend": {
+    "excellent": "≥ 70% Excellent",
+    "average":   "40–69% Average",
+    "weak":      "< 40% Weak"
+  },
+
+  "pdf": {
+    "reportTitle":        "Performance Report",
+    "period":             "Period",
+    "indicator":          "Indicator",
+    "value":              "Value",
+    "totalTickets":       "Total Tickets (Service)",
+    "resolutionRate":     "Resolution Rate (Service)",
+    "slaIn":              "Tickets Within SLA",
+    "slaOut":             "Tickets Outside SLA",
+    "slaConform":         "SLA Compliant",
+    "slaExceeded":        "SLA Exceeded",
+    "techPerf":           "Technician Performance",
+    "reportFile":         "Report",
+    "resolvedTickets":    "Resolved Tickets"
+  },
+
+  "excel": {
+    "statuses":     "Statuses",
+    "technicians":  "Technicians",
+    "priorities":   "Priorities",
+    "trends":       "Trends",
+    "statsFile":    "Stats",
+    "services":     "Services"
+  },
+
+  "global": {
+    "header": {
+      "subtitle": "Chef View · All services"
+    },
+    "section": {
+      "flowDistributionAll": "Flow Distribution — All Services",
+      "techPerfAll":         "Technician Performance — All Services",
+      "categoryAll":         "Distribution by Category — All Services",
+      "timeTrendsAll":       "Time Trends — All Services"
+    },
+    "pdf": {
+      "reportTitle":          "Chef Performance Report — All Services",
+      "totalAllServices":     "Total Tickets (All services)",
+      "resolutionAllServices":"Resolution Rate (All services)",
+      "reportFile":           "Performance_Chef"
+    },
+    "excel": {
+      "statsFile": "Stats_Chef"
+    }
+  }
+}

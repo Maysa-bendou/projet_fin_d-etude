@@ -8,7 +8,7 @@ import {
 // --- COMPOSANT LOGO DJEZZY RÉALISTE (REACT/SVG) ---
 const DjezzyLogo = ({ isOpen }) => (
   // Taille adaptée pour accueillir les deux textes
-  <div className={`relative transition-all duration-500 flex items-center justify-center ${isOpen ? "w-36 h-20" : "w-16 h-12"}`}>
+  <div className={`relative transition-all duration-500 flex items-center justify-center ${isOpen ? "w-30 h-20" : "w-10 h-12"}`}>
     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
       
       {/* ── LE TRIANGLE ROUGE AUX BORDS ARRONDIS (Point de la photo) ── */}
@@ -67,8 +67,8 @@ export default function Sidebar() {
     <div className={`
       relative flex flex-col h-[96vh] my-[2vh] ml-[2vh]
       transition-all duration-500 ease-in-out rounded-[2.5rem] py-6 shrink-0 z-50
-      bg-white text-gray-800 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)]
-      ${isOpen ? "w-64" : "w-20"}
+      bg-white text-gray-800 shadow-[0_10px_20px_-15px_rgba(0,0,0,0.1)]
+      ${isOpen ? "w-64" : "w-17"}
     `}>
       
       {/* ── LOGO CONSTRUIT EN REACT (RÉALISTE) ── */}

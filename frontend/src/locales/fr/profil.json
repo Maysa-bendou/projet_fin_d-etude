@@ -1,0 +1,34 @@
+{
+  "loading": "Chargement…",
+  "pageTitle": "Mon Profil",
+  "pageSubtitle": "Informations personnelles et professionnelles",
+  "collaboratorLabel": "Collaborateur Djezzy",
+  "active": "Actif",
+  "errors": {
+    "notAuthenticated": "Non authentifié",
+    "loadError": "Erreur chargement",
+    "cannotLoad": "Impossible de charger le profil."
+  },
+  "roles": {
+    "employee": "Employé",
+    "technician": "Technicien",
+    "chef_service": "Chef de service",
+    "manager": "Manager",
+    "admin": "Administrateur"
+  },
+  "cards": {
+    "contact": "Contact",
+    "location": "Localisation",
+    "position": "Poste"
+  },
+  "fields": {
+    "email": "Email",
+    "phone": "Téléphone",
+    "block": "Bloc",
+    "blockPrefix": "Bloc",
+    "office": "Bureau",
+    "jobTitle": "Intitulé",
+    "department": "Département",
+    "service": "Service"
+  }
+}

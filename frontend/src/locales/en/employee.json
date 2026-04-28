@@ -34,7 +34,7 @@
 
   "accueil": {
     "title": "My Support Space",
-    "subtitle":"Tracking your recent tickets and their status",
+     "subtitle":"Tracking your recent tickets and their status",
     "recentTickets": "My Recent Tickets",
     "viewAll": "View all my tickets",
     "stats": {
@@ -62,6 +62,7 @@
     },
     "types": {
       "incident": "Incident",
+       "problem": "Problem",
       "service_request": "Service Request"
     },
     "categories": {

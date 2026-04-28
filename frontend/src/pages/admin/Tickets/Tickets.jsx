@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import RefreshButton from '../../../components/common/RefreshButton';
 
 const mockTickets = [
@@ -62,7 +63,7 @@ const mockTickets = [
   {
     id: 452,
     title: 'Formation sécurité informatique',
-    description: 'Demande de session formation pour l\'équipe comptabilité.',
+    description: "Demande de session formation pour l'équipe comptabilité.",
     status: 'closed',
     priority: 'low',
     category: 'training',
@@ -73,76 +74,71 @@ const mockTickets = [
     createdAt: '2024-10-10T11:00:00Z',
     updatedAt: '2024-10-11T15:45:00Z'
   }
-  // Mock 100+ tickets in real app
 ];
 
 const statusColors = {
-  open: 'bg-yellow-100 text-yellow-800',
-  'in_progress': 'bg-blue-100 text-blue-800',
-  resolved: 'bg-green-100 text-green-800',
-  pending: 'bg-orange-100 text-orange-800',
-  closed: 'bg-gray-100 text-gray-800'
+  open:        'bg-yellow-100 text-yellow-800',
+  in_progress: 'bg-blue-100 text-blue-800',
+  resolved:    'bg-green-100 text-green-800',
+  pending:     'bg-orange-100 text-orange-800',
+  closed:      'bg-gray-100 text-gray-800'
 };
 
 const priorityColors = {
-  low: 'bg-green-100 text-green-800',
-  medium: 'bg-yellow-100 text-yellow-800',
-  high: 'bg-red-100 text-red-800',
+  low:      'bg-green-100 text-green-800',
+  medium:   'bg-yellow-100 text-yellow-800',
+  high:     'bg-red-100 text-red-800',
   critical: 'bg-purple-100 text-purple-800'
 };
 
 export default function TicketsAdmin() {
-  const navigate = useNavigate();
+  const navigate     = useNavigate();
+  const { t, i18n } = useTranslation();
+
   const [tickets, setTickets] = useState(mockTickets);
-  const [filters, setFilters] = useState({
-    status: '',
-    priority: '',
-    service: '',
-    search: ''
-  });
+  const [filters, setFilters] = useState({ status: '', priority: '', service: '', search: '' });
   const [loading, setLoading] = useState(false);
+
+  const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-GB';
 
   const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
-      const matchesStatus = !filters.status || ticket.status === filters.status;
+      const matchesStatus   = !filters.status   || ticket.status === filters.status;
       const matchesPriority = !filters.priority || ticket.priority === filters.priority;
-      const matchesService = !filters.service || ticket.service.name.toLowerCase().includes(filters.service.toLowerCase());
-      const matchesSearch = !filters.search || 
+      const matchesService  = !filters.service  || ticket.service.name.toLowerCase().includes(filters.service.toLowerCase());
+      const matchesSearch   = !filters.search   ||
         ticket.title.toLowerCase().includes(filters.search.toLowerCase()) ||
         ticket.description.toLowerCase().includes(filters.search.toLowerCase()) ||
         ticket.createdBy.name.toLowerCase().includes(filters.search.toLowerCase());
-
       return matchesStatus && matchesPriority && matchesService && matchesSearch;
     });
   }, [tickets, filters]);
 
   const refreshTickets = () => {
     setLoading(true);
-    // Mock API call
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    setTimeout(() => setLoading(false), 1000);
   };
 
   const getStatusBadge = (status) => (
     <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-      {status.replace('_', ' ').toUpperCase()}
+      {t(`adminTickets.statuses.${status}`, { defaultValue: status.replace('_', ' ').toUpperCase() })}
     </span>
   );
 
   const getPriorityBadge = (priority) => (
     <span className={`px-2 py-1 rounded text-xs font-medium ${priorityColors[priority] || 'bg-gray-100 text-gray-800'}`}>
-      {priority?.toUpperCase()}
+      {t(`adminTickets.priorities.${priority}`, { defaultValue: priority?.toUpperCase() })}
     </span>
   );
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestion des Tickets</h1>
-          <p className="text-gray-500 mt-1">Tous les tickets du système ({filteredTickets.length} affichés)</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('adminTickets.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('adminTickets.subtitle', { count: filteredTickets.length })}</p>
         </div>
         <RefreshButton onRefresh={refreshTickets} loading={loading} />
       </div>
@@ -150,53 +146,57 @@ export default function TicketsAdmin() {
       {/* Filters */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Recherche</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('adminTickets.filters.search')}</label>
             <input
               type="text"
-              placeholder="Titre, description, créateur..."
+              placeholder={t('adminTickets.filters.searchPlaceholder')}
               value={filters.search}
-              onChange={(e) => setFilters({...filters, search: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('table.status')}</label>
             <select
               value={filters.status}
-              onChange={(e) => setFilters({...filters, status: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Tous</option>
-              <option value="open">Ouvert</option>
-              <option value="in_progress">En cours</option>
-              <option value="pending">En attente</option>
-              <option value="resolved">Résolu</option>
-              <option value="closed">Fermé</option>
+              <option value="">{t('adminTickets.filters.all')}</option>
+              <option value="open">{t('adminTickets.statuses.open')}</option>
+              <option value="in_progress">{t('adminTickets.statuses.in_progress')}</option>
+              <option value="pending">{t('adminTickets.statuses.pending')}</option>
+              <option value="resolved">{t('adminTickets.statuses.resolved')}</option>
+              <option value="closed">{t('adminTickets.statuses.closed')}</option>
             </select>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Priorité</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('table.priority')}</label>
             <select
               value={filters.priority}
-              onChange={(e) => setFilters({...filters, priority: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Toutes</option>
-              <option value="low">Basse</option>
-              <option value="medium">Moyenne</option>
-              <option value="high">Haute</option>
-              <option value="critical">Critique</option>
+              <option value="">{t('adminTickets.filters.allPriorities')}</option>
+              <option value="low">{t('adminTickets.priorities.low')}</option>
+              <option value="medium">{t('adminTickets.priorities.medium')}</option>
+              <option value="high">{t('adminTickets.priorities.high')}</option>
+              <option value="critical">{t('adminTickets.priorities.critical')}</option>
             </select>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Service</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('table.service')}</label>
             <select
               value={filters.service}
-              onChange={(e) => setFilters({...filters, service: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, service: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Tous</option>
+              <option value="">{t('adminTickets.filters.all')}</option>
               <option value="Réseau">Réseau</option>
               <option value="Informatique">Informatique</option>
               <option value="Matériel">Matériel</option>
@@ -204,6 +204,7 @@ export default function TicketsAdmin() {
               <option value="Formation">Formation</option>
             </select>
           </div>
+
         </div>
       </div>
 
@@ -213,14 +214,14 @@ export default function TicketsAdmin() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Titre</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priorité</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Créé par</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date création</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mis à jour</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.id')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.title')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.status')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.priority')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.service')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('adminTickets.table.createdBy')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.createdAt')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('table.updatedAt')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -241,20 +242,23 @@ export default function TicketsAdmin() {
                     {ticket.service.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {ticket.createdBy.name} <span className="text-xs text-gray-500">({ticket.createdBy.role})</span>
+                    {ticket.createdBy.name}{' '}
+                    <span className="text-xs text-gray-500">
+                      ({t(`adminTickets.roles.${ticket.createdBy.role}`, { defaultValue: ticket.createdBy.role })})
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(ticket.createdAt).toLocaleDateString('fr-FR')}
+                    {new Date(ticket.createdAt).toLocaleDateString(locale)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(ticket.updatedAt).toLocaleDateString('fr-FR')}
+                    {new Date(ticket.updatedAt).toLocaleDateString(locale)}
                   </td>
                 </tr>
               ))}
               {filteredTickets.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    Aucun ticket ne correspond aux filtres sélectionnés
+                    {t('common.noTicketsFilter')}
                   </td>
                 </tr>
               )}
@@ -262,6 +266,7 @@ export default function TicketsAdmin() {
           </table>
         </div>
       </div>
+
     </div>
   );
 }

@@ -1,0 +1,20 @@
+{
+  "title": "Connexion",
+  "subtitle": "Accédez à votre espace professionnel",
+  "errors": {
+    "default": "Erreur de connexion"
+  },
+  "fields": {
+    "email": "Email professionnel",
+    "emailPlaceholder": "prenom.nom@djezzy.dz",
+    "password": "Mot de passe"
+  },
+  "btn": {
+    "submit": "Se connecter",
+    "loading": "Connexion..."
+  },
+  "footer": {
+    "help": "Besoin d'aide ?",
+    "contact": "Contacter le support"
+  }
+}

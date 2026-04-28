@@ -16,7 +16,7 @@ export default function TechnicianLayout() {
         <TopNavbar />
         
         {/* Zone de contenu principale */}
-        <main className="flex-1 overflow-y-auto px-8 pb-8">
+        <main className="flex-1 overflow-y-auto  pb-8">
           <Outlet />
         </main>
 

@@ -277,13 +277,11 @@ export default function RepartitionPage() {
   // ── VIEW 1: SERVICE SELECTION GRID ────────────────────────────────────────
   if (!selectedServiceId) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '40px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-        <style>{globalStyles}</style>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
+      <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '40px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>  <style>{globalStyles}</style>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>
           {t('repartition.title')}
         </h1>
-        <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 32px', fontWeight: 500 }}>
-          {t('repartition.subtitle')}
+       <p style={{ fontSize: 14, color: '#535c68', margin: '0 px', fontWeight: 530 }}>  {t('repartition.subtitle')}
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
           {services.map((s) => (
@@ -330,7 +328,7 @@ export default function RepartitionPage() {
 
   // ── VIEW 2: FULL STATS DASHBOARD ─────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
       <style>{globalStyles}</style>
 
       {/* ── Header ── */}

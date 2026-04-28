@@ -224,7 +224,7 @@ export default function ChefPerformancesPage() {
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (!stats && loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#faf9f7' }}>
       <div style={{ textAlign: 'center', color: '#64748b' }}>
         <div style={{ width: 44, height: 44, border: '3px solid #6366f1', borderTop: '3px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
         <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 600 }}>{t('loading.dashboard')}</p>
@@ -265,7 +265,7 @@ export default function ChefPerformancesPage() {
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
             {t('dashboard.title')}
           </h1>
-          <p style={{ fontSize: 13, color: '#64748b', margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 14, color: '#51555e', margin: 0, fontWeight: 530 }}>
             {t('global.header.subtitle')} · {stats.serviceNames || ''}
           </p>
         </div>

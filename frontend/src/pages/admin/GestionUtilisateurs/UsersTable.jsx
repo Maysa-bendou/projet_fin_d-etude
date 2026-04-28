@@ -6,7 +6,7 @@ function UsersTable({ users = [], onRowClick }) {
   if (!users.length) {
     return (
       <div className="text-center py-24 bg-white">
-        <div className="w-16 h-16 bg-[#f9f6f2] rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 bg-[#faf9f7] rounded-2xl flex items-center justify-center mx-auto mb-4">
           <svg className="h-8 w-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
@@ -20,7 +20,7 @@ function UsersTable({ users = [], onRowClick }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
-        <thead className="bg-[#f9f6f2] border-b border-[#eeebe7]">
+        <thead className="bg-[#faf9f7] border-b border-[#eeebe7]">
           <tr>
             <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">ID</th>
             <th className="px-8 py-4 text-left text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">Collaborator</th>

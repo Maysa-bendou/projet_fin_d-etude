@@ -149,7 +149,7 @@ export default function AccueilTechnicien() {
   }, []);
 
   if (load) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#f8fafc", color:"#94a3b8", fontFamily:"Plus Jakarta Sans,sans-serif", gap:10 }}>
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#faf9f7", color:"#94a3b8", fontFamily:"Plus Jakarta Sans,sans-serif", gap:10 }}>
       <style>{css}</style>
       <Loader size={16} style={{ animation:"spin 1s linear infinite" }}/> {t('accueilTech.loading')}
     </div>
@@ -233,12 +233,12 @@ export default function AccueilTechnicien() {
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28 }}>
         <div>
-          <p style={{ margin:0, fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:"2px", textTransform:"uppercase" }}>
-            {t('accueilTech.header.subtitle')}
-          </p>
-          <h1 style={{ margin:"3px 0 0", fontSize:22, fontWeight:800, color:"#0f172a", letterSpacing:"-0.5px" }}>
-            {t('accueilTech.header.title')}
+          
+          <h1 style={{margin:"0",fontSize:22,fontWeight:700,color:"#0f172a"}}>
+              {t('accueilTech.header.title')}
           </h1>
+          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>  {t('accueilTech.header.subtitle')}
+          </p>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6, background:"#fff", border:"1.5px solid #e2e8f0", borderRadius:10, padding:"7px 14px", fontSize:11, fontWeight:600, color:"#64748b", boxShadow:"0 1px 3px #0001" }}>
           {new Date().toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"long" })}
@@ -368,7 +368,7 @@ export default function AccueilTechnicien() {
         </div>
 
         {/* Table headers */}
-        <div style={{ display:"grid", gridTemplateColumns:"40px 1fr 90px 100px 1fr", padding:"8px 20px", background:"#fafafa", borderBottom:"1px solid #f1f5f9" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"40px 1fr 90px 100px 1fr", padding:"8px 20px", background:"#faf9f7", borderBottom:"1px solid #f1f5f9" }}>
           {tableHeaders.map(h => (
             <span key={h} style={{ fontSize:9, fontWeight:700, color:"#cbd5e1", textTransform:"uppercase", letterSpacing:"1px" }}>{h}</span>
           ))}

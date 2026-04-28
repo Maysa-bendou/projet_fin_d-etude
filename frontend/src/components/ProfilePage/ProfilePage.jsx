@@ -55,10 +55,9 @@ export default function ProfilePage() {
     <div style={{ minHeight: "100vh", background: "#faf9f7", padding: "22px" }}>
 
       {/* Page title */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 0 3px" }}>{t("pageTitle")}</h1>
-        <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>{t("pageSubtitle")}</p>
-      </div>
+        <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", margin: "0 px" }}>Mon Profil</h1>
+        <p style={{ fontSize: 14, color: "#4d545e", margin: 0,fontWeight: 530 }}>Informations personnelles et professionnelles</p> </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 960 }}>
 

@@ -79,7 +79,7 @@ export default function ParametresAdmin() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f9f6f2] p-8 md:p-10 font-sans">
+    <div className="min-h-screen bg-[#faf9f7] p-8 md:p-10 font-sans">
 
       {/* HEADER */}
       <div className="max-w-7xl mx-auto mb-8">
@@ -125,7 +125,7 @@ export default function ParametresAdmin() {
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#f9f6f2] border-b border-gray-300">
+                <tr className="bg-[#faf9f7] border-b border-gray-300">
                   {['Priority', 'Duration (hours)', 'Indicative Deadline', 'Status'].map((col, i) => (
                     <th key={i} className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-left">
                       {col}

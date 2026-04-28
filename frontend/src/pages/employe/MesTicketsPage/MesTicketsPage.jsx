@@ -250,12 +250,13 @@ export default function MesTicketsPage() {
       {/* ── Header ── */}
       <div style={{ background: "#faf9f7", borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 2px" }}>
-            {t("mesTickets.subtitle")}
-          </p>
-          <h1 style={{ fontSize: 19, fontWeight: 900, color: "#0f172a", margin: 0 }}>
-            {t("mesTickets.title")}
+         
+         <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 0px 0" }}>
+           {t("mesTickets.title")}
           </h1>
+           <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530 }}>
+           {t("mesTickets.subtitle")}
+          </p>
         </div>
         <RefreshButton onRefresh={fetchData} />
       </div>

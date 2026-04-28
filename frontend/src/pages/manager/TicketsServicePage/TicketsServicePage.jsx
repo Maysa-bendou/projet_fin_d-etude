@@ -306,7 +306,7 @@ const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <colgroup>{COLS.map((c, i) => <col key={i} style={{ width: c.w }} />)}</colgroup>
             <thead>
-              <tr style={{ background: "#f9f6f2", borderBottom: "1.5px solid #e8e2d9" }}>
+              <tr style={{ background: "#faf9f7", borderBottom: "1.5px solid #e8e2d9" }}>
                 {COLS.map((c, i) => (
                   <th key={i} style={{ padding: "9px 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", textAlign: "left" }}>
                     {c.label != null
@@ -443,7 +443,7 @@ const TicketsServicePage = () => {
   // ── Loading ────────────────────────────────────────────────────────────
 
   if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#f9f6f2" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#faf9f7" }}>
       <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div style={{ width: 28, height: 28, border: "2px solid #d9d4cc", borderTopColor: "#374151", borderRadius: "50%", animation: "_spin 0.8s linear infinite" }} />

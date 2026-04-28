@@ -25,7 +25,7 @@ function DepartmentsTable({ departments = [], onRowClick }) {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
 
         <thead>
-          <tr style={{ background: '#f9f6f2', borderBottom: '1px solid #e8e4de' }}>
+          <tr style={{ background: '#faf9f7', borderBottom: '1px solid #e8e4de' }}>
             {[
               t('departments.table.id'),
               t('departments.table.name'),

@@ -215,10 +215,9 @@ export default function CreateTicketPage() {
     <div style={{  background: "#faf9f7", minHeight: "100vh" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 4px 0" }}>{t('createTicket.pageTitle')}</h1>
-          <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>{t('createTicket.pageSubtitle')}</p>
-        </div>
+        <div style={{ marginBottom: 29 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 0px 0" }}> {t('createTicket.pageTitle')}</h1>
+          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>{t('createTicket.pageSubtitle')}</p>  </div>
 
         <form onSubmit={handleSubmit} noValidate>
           <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #d9d4cc", padding: "32px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>

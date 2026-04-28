@@ -115,15 +115,15 @@ const Avatar = ({ name, surname, color="#dbeafe", textColor="#1d4ed8" }) => (
 );
 
 // ── TabSwitch ──────────────────────────────────────────────────────────────
-const TabSwitch = memo(({ activeTab, setActiveTab }) => {
+const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
   const { t } = useTranslation("technicien");
   const tabs = [
-    { key:"actuels",  label: t("ticketsService.tabs.current"),                       Icon:HiOutlineTicket     },
-    { key:"archives", label: t("ticketsService.tabs.archives", { year: THIS_YEAR }), Icon:HiOutlineArchiveBox },
-  ];
+  { key:"actuels",  label: t("ticketsService.tabs.current"), Icon:HiOutlineTicket, count: actuelCount },
+  { key:"archives", label: t("ticketsService.tabs.archives", { year: THIS_YEAR }), Icon:HiOutlineArchiveBox, count: archiveCount },
+]; 
   return (
     <div style={{ display:"flex", borderBottom:"1.5px solid #e8e2d9", marginBottom:16 }}>
-      {tabs.map(({ key, label, Icon }) => {
+      {tabs.map(({ key, label, Icon , count }) => {
         const on = activeTab === key;
         return (
           <button key={key} onClick={() => setActiveTab(key)} style={{
@@ -136,6 +136,16 @@ const TabSwitch = memo(({ activeTab, setActiveTab }) => {
           }}>
             <Icon size={14} style={{ color: on ? "#1d4ed8" : "#c4bfb8" }} />
             {label}
+             <span style={{
+        background: on ? "#eff6ff" : "#f3f4f6",
+        color: on ? "#1d4ed8" : "#94a3b8",
+        borderRadius: 20,
+        padding: "0 7px",
+        fontSize: 11,
+        fontWeight: 700
+      }}>
+        {count}
+      </span>
           </button>
         );
       })}
@@ -382,19 +392,20 @@ const TicketsServicePage = () => {
   );
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f9f6f2", fontFamily:"sans-serif" }}>
+    <div style={{ minHeight:"100vh",  fontFamily:"sans-serif" }}>
 
       {/* Header */}
-      <div style={{ background:"#f9f6f2", borderBottom:"1px solid #e8e2d9", padding:"14px 28px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+      <div style={{ borderBottom:"1px solid #e8e2d9", padding:"14px 28px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div>
-          <p style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"1px", margin:"0 0 2px" }}>
-            {role==="manager" ? t("ticketsService.header.subtitleManager") : t("ticketsService.header.subtitle")}
-          </p>
+          
           <h1 style={{ fontSize:19, fontWeight:900, color:"#0f172a", margin:0 }}>
             {serviceName
               ? <>{t("ticketsService.header.titlePrefix")} <span style={{ color:"#1d4ed8" }}>{serviceName}</span></>
               : t("ticketsService.header.titleFallback")}
           </h1>
+          <p style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"1px", margin:"0 0 2px" }}>
+            {role==="manager" ? t("ticketsService.header.subtitleManager") : t("ticketsService.header.subtitle")}
+          </p>
         </div>
         <RefreshButton onRefresh={fetchData} />
       </div>
@@ -405,6 +416,8 @@ const TicketsServicePage = () => {
         <TabSwitch
           activeTab={activeTab}
           setActiveTab={tab => { setActiveTab(tab); if(tab!=="archives") setFilterYear(""); }}
+           actuelCount={actuelsList.length}
+  archiveCount={archivesList.length}
         />
 
         {/* Filters — single row */}

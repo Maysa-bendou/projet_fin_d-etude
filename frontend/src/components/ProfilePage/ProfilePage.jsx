@@ -52,7 +52,7 @@ export default function ProfilePage() {
   const initials = `${user.name?.[0] ?? ""}${user.surname?.[0] ?? ""}`.toUpperCase();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#faf9f7", padding: "32px" }}>
+    <div style={{ minHeight: "100vh", background: "#faf9f7", padding: "22px" }}>
 
       {/* Page title */}
       <div style={{ marginBottom: 24 }}>

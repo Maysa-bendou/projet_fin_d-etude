@@ -212,7 +212,7 @@ export default function CreateTicketPage() {
 
   /* ── FORM ── */
   return (
-    <div style={{ padding: 25, background: "#faf9f7", minHeight: "100vh" }}>
+    <div style={{  background: "#faf9f7", minHeight: "100vh" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
         <div style={{ marginBottom: 28 }}>

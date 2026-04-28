@@ -74,10 +74,10 @@ const AccueilPage = () => {
   );
 
   return (
-    <div style={{ padding: '25px', background: '#faf9f7', minHeight: '100vh' }}>
+    <div style={{ padding: '15px', background: '#faf9f7', minHeight: '100vh' }}>
 
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t('accueil.title')}</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>{t('accueil.title')}</h1>
       </div>
 
       {/* Stats */}

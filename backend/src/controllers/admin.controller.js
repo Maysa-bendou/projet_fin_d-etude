@@ -18,13 +18,13 @@ exports.getStats = async (req, res) => {
 exports.getConfig = async (req, res) => {
   try {
     // Enums from Prisma (hardcoded but match schema - could introspect if needed)
-    const priorities = ["low", "medium", "high", "critical"];
+    const priorities = ["low", "medium", "high"];  // critical not in priority_enum
+const categories = ["hardware", "software", "network", "access", "security", "messagerie"];  // account → messagerie
     const statuses = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
     const impacts = ["low", "medium", "high"];
     const urgencies = ["low", "medium", "high"];
     const roles = ["employee", "technician", "chef_service", "manager", "admin"];
-    const categories = ["hardware", "software", "network", "access", "security", "account"];
-
+   
     // Dynamic data
     const departments = await prisma.departments.findMany({ select: { id: true, name: true } });
     const services = await prisma.services.findMany({ select: { id: true, name: true } });

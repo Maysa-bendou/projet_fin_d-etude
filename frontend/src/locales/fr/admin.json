@@ -69,6 +69,7 @@
         "closed":           "Fermé",
         "rejected":         "Rejeté"
       },
+    
       "impacts": {
         "low":    "Faible",
         "medium": "Moyen",
@@ -93,8 +94,23 @@
         "admin":       "Administrateur"
       },
       "categories": {
-        "account": "Compte"
-      }
+       "hardware":   "Matériel",
+      "software":   "Logiciels",
+      "network":    "Réseau",
+      "access":     "Accès",
+      "security":   "Sécurité",
+      "messagerie": "Messagerie"
+      },
+      "impactDesc": {
+  "high":   "Entreprise",
+  "medium": "Un service",
+  "low":    "Une personne"
+},
+"urgencyDesc": {
+  "high":   "Complètement bloqué",
+  "medium": "Partiellement bloqué",
+  "low":    "Peut travailler"
+}
     }
   },
 

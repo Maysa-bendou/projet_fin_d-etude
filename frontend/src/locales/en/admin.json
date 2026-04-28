@@ -93,8 +93,23 @@
         "admin":       "Administrator"
       },
       "categories": {
-        "account": "Account"
-      }
+      "hardware":   "Hardware",
+      "software":   "Software",
+      "network":    "Network",
+      "access":     "Access",
+      "security":   "Security",
+      "messagerie": "Messaging"
+      },
+      "impactDesc": {
+  "high":   "Enterprise",
+  "medium": "One service",
+  "low":    "One person"
+},
+"urgencyDesc": {
+  "high":   "Completely blocked",
+  "medium": "Partially blocked",
+  "low":    "Can work"
+}
     }
   },
 

@@ -53,7 +53,7 @@ export default function DepartementsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] p-8 md:p-10 font-sans">
+    <div className="min-h-screen bg-[#faf9f7] p-8 font-sans">
 
       {/* HEADER PAGE */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 37, flexWrap: 'wrap', gap: 16 }}>

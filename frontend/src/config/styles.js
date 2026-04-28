@@ -27,9 +27,9 @@ export const CATEGORY_CONFIG = {
 };
 
 export const IMPACT_CONFIG = {
-  high:   { label: "Entreprise",        color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
-  medium: { label: "Un service",        color: "#ca8a04", bg: "#fefce8", border: "#fde68a" },
-  low:    { label: "Une personne",      color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
+  high:   { label: "Entreprise",      color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+  medium: { label: "Un service",     color: "#ca8a04", bg: "#fefce8", border: "#fde68a" },
+  low:    { label: "Une personne",     color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0" },
 };
 
 export const URGENCY_CONFIG = {

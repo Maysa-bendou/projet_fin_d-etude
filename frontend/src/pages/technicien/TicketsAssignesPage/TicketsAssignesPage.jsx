@@ -448,17 +448,18 @@ export default function TicketsAssignesPage() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9f6f2", fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#faf9f7", fontFamily: "sans-serif" }}>
 
       {/* ── Header ── */}
-      <div style={{ background: "#f9f6f2", borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
+          
+          <h1 style={{ fontSize:22, fontWeight:700, color:"#0f172a", margin:0 }}>
+            {t("ticketsService.header.subtitle")}
+          </h1>
           <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 2px" }}>
             {t("ticketsService.header.subtitleManager")}
           </p>
-          <h1 style={{ fontSize: 19, fontWeight: 900, color: "#0f172a", margin: 0 }}>
-            {t("ticketsService.header.subtitle")}
-          </h1>
         </div>
         <RefreshButton onRefresh={fetchTickets} />
       </div>

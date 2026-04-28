@@ -1,0 +1,20 @@
+{
+  "title": "Sign In",
+  "subtitle": "Access your professional workspace",
+  "errors": {
+    "default": "Login error"
+  },
+  "fields": {
+    "email": "Professional email",
+    "emailPlaceholder": "firstname.lastname@djezzy.dz",
+    "password": "Password"
+  },
+  "btn": {
+    "submit": "Sign in",
+    "loading": "Signing in..."
+  },
+  "footer": {
+    "help": "Need help?",
+    "contact": "Contact support"
+  }
+}

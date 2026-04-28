@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import djezzyLogoImg from "../../assets/images/Logo_Djezzy.png";
 
 export default function LoginPage() {
+  const { t } = useTranslation("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +25,7 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Erreur de connexion");
+      if (!res.ok) throw new Error(data.message || t("errors.default"));
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -55,10 +57,10 @@ export default function LoginPage() {
 
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900">
-              Connexion
+              {t("title")}
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Accédez à votre espace professionnel
+              {t("subtitle")}
             </p>
           </div>
         </div>
@@ -77,7 +79,7 @@ export default function LoginPage() {
           {/* EMAIL */}
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Email professionnel
+              {t("fields.email")}
             </label>
 
             <div className="mt-1 flex items-center gap-3 px-4 py-2.5 bg-[#f9f6f2] border border-[#e8e4df] rounded-lg focus-within:ring-2 focus-within:ring-red-200">
@@ -87,7 +89,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="prenom.nom@djezzy.dz"
+                placeholder={t("fields.emailPlaceholder")}
                 className="flex-1 bg-transparent text-sm outline-none text-slate-700 placeholder:text-slate-400"
               />
             </div>
@@ -96,7 +98,7 @@ export default function LoginPage() {
           {/* PASSWORD */}
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Mot de passe
+              {t("fields.password")}
             </label>
 
             <div className="mt-1 flex items-center gap-3 px-4 py-2.5 bg-[#f9f6f2] border border-[#e8e4df] rounded-lg focus-within:ring-2 focus-within:ring-red-200">
@@ -119,18 +121,18 @@ export default function LoginPage() {
             className="w-full mt-3 flex items-center justify-center gap-2 bg-[#b20000] hover:bg-[#bf3d3d] text-white text-sm font-bold uppercase tracking-widest py-3 rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-60"
           >
             <LogIn size={16} />
-            {loading ? "Connexion..." : "Se connecter"}
+            {loading ? t("btn.loading") : t("btn.submit")}
           </button>
         </form>
 
         {/* FOOTER */}
         <div className="mt-6 text-center text-xs text-slate-400">
-          Besoin d’aide ?{" "}
+          {t("footer.help")}{" "}
           <a
             href="mailto:serviceIT_Help@djezzy.dz"
             className="text-[#e53935] font-semibold hover:underline"
           >
-            Contacter le support
+            {t("footer.contact")}
           </a>
         </div>
 

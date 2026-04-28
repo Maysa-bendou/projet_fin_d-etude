@@ -6,6 +6,10 @@ import managerEN  from './locales/en/manager.json';
 import chefEN  from './locales/en/chef.json';
 import adminEN  from './locales/en/admin.json';
 import technicienEN  from './locales/en/technicien.json';
+import profilEN  from './locales/en/profil.json';
+import loginEN  from './locales/en/login.json';
+import loginFR from './locales/fr/login.json';
+import profilFR from './locales/fr/profil.json';
 import technicienFR from './locales/fr/technicien.json';
 import adminFR from './locales/fr/admin.json';
 import chefFR from './locales/fr/chef.json';
@@ -24,6 +28,8 @@ i18n
         chef:  chefEN,
         admin:  adminEN,
         technicien: technicienEN,
+        profil: profilEN,
+        login: loginEN,
       },
       fr: {
         employee: employeeFR,
@@ -31,12 +37,14 @@ i18n
         chef:  chefFR,
         admin:  adminFR,
         technicien: technicienFR,
+        profil: profilFR,
+        login: loginFR,
       },
     },
     lng:         savedLang,
     fallbackLng: 'en',
     defaultNS:   'employee',
-    ns:          ['employee', 'manager' , 'chef', 'admin' , 'technicien'],
+    ns:          ['employee', 'manager' , 'chef', 'admin' , 'technicien' , 'profil' , 'login'],
     interpolation: { escapeValue: false },
   });
 

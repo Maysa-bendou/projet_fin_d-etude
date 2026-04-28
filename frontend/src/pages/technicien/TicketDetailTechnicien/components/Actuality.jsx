@@ -2,6 +2,7 @@ import {
   Activity, CheckCircle, XCircle, AlertCircle, Clock,
   UserCheck, TrendingUp, CornerUpRight, Calendar, AlignLeft, Star
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { ACT_META } from "./constants";
 
 const ICON_MAP = {
@@ -18,17 +19,21 @@ const ICON_MAP = {
 };
 
 export default function Actuality({ actuality }) {
+  const { t } = useTranslation("technicien");
+
   return (
     <div className="bg-white rounded-xl border border-gray-200">
       <div className="px-4 py-3 border-b border-gray-100 shrink-0">
         <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-          <Activity size={12}/> Actualité
+          <Activity size={12}/> {t("components.actuality.title")}
         </h2>
       </div>
 
       <div className="h-[200px] overflow-hidden p-4">
         {actuality.length === 0 ? (
-          <p className="text-[11px] text-gray-300 text-center mt-8">Aucune activité</p>
+          <p className="text-[11px] text-gray-300 text-center mt-8">
+            {t("components.actuality.empty")}
+          </p>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 h-full">
             {actuality.map(item => {
@@ -40,7 +45,7 @@ export default function Actuality({ actuality }) {
                     <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${meta.dot}`}/>
                     <Icon size={11} className="text-gray-400 shrink-0"/>
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide truncate">
-                      {meta.label}
+                      {t(meta.labelKey)}
                     </p>
                   </div>
                   <p className="text-[10px] text-gray-400 font-mono mb-1.5">{item.date}</p>

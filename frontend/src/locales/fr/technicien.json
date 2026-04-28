@@ -71,6 +71,7 @@
       "alertBanner": "{{count}} ticket(s) ont dépassé le délai SLA"
     }
   },
+
   "ticketDetail": {
     "back": "Retour aux tickets",
     "reference": "Référence Ticket",
@@ -128,17 +129,7 @@
       "taking": "Traitement..."
     }
   },
-  "ticketDetailTech": {
-    "loading": "Chargement du ticket...",
-    "notFound": "Ticket introuvable.",
-    "error": "Erreur",
-    "errorClose": "Erreur lors de la fermeture.",
-    "errorRedirect": "Erreur lors de la redirection.",
-    "actuality": {
-      "assigned": "Ticket assigné",
-      "reopened": "🔄 Ticket réouvert"
-    }
-  },
+
   "accueilTech": {
     "loading": "Chargement…",
     "timeAgo": {
@@ -173,6 +164,224 @@
       "priority": "Priorité",
       "status": "Statut",
       "lastActivity": "Dernière activité"
+    }
+  },
+
+  "ticketDetailTech": {
+    "loading": "Chargement du ticket...",
+    "notFound": "Ticket introuvable.",
+    "error": "Erreur serveur",
+    "errorClose": "Erreur lors de la fermeture.",
+    "errorRedirect": "Erreur lors de la redirection.",
+    "actuality": {
+      "assigned": "Ticket assigné",
+      "reopened": "🔄 Ticket réouvert"
+    }
+  },
+
+  "components": {
+    "actuality": {
+      "title": "Actualité",
+      "empty": "Aucune activité"
+    },
+    "header": {
+      "assignedTickets": "Tickets Assignés",
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "ticketInfo": {
+      "employeeCard": "Informations Employé",
+      "fields": {
+        "department": "Département",
+        "jobTitle": "Titre du poste",
+        "phone": "Numéro",
+        "office": "Bureau",
+        "assignedBy": "Assigné par",
+        "createdOn": "Créé le",
+        "assignedOn": "Assigné le",
+        "closedOn": "Clôturé le"
+      },
+      "noDescription": "Aucune description.",
+      "directAssignment": "Prise en charge directe",
+      "redirect": {
+        "title": "Ticket redirigé",
+        "by": "Par :",
+        "previousTech": "Ancien tech :"
+      },
+      "sla": {
+        "onHold": "En pause",
+        "closed": "Clôturé",
+        "exceededBy": "Dépassé de {{h}}h {{m}}m",
+        "respected": "Respecté ✓",
+        "frozen": "⏸ {{h}}h {{m}}m figé",
+        "alertExceeded": "⚠ Dépassé de {{h}}h {{m}}m",
+        "remaining": "{{h}}h {{m}}m restants",
+        "deadline": "Limite :",
+        "at": "à"
+      },
+      "status": {
+        "label": "Statut :",
+        "locked": "Ticket fermé — statut verrouillé",
+        "saving": "Sauvegarde..."
+      }
+    }
+  },
+
+  "conv": {
+    "conversation": "Conversation",
+    "msg": "msg",
+    "noMessages": "Aucun message",
+    "messagesWillAppear": "Les échanges apparaîtront ici.",
+    "tabs": {
+      "respond": "Répondre",
+      "redirect": "Rediriger",
+      "close": "Fermer"
+    },
+    "ticketClosedNoAction": "Ticket fermé — aucune action disponible",
+    "finalSolution": "Solution finale",
+    "attachments": "Pièces jointes",
+    "closingNote": "Note de fermeture",
+    "solution": "Solution",
+    "comment": "Commentaire",
+    "previousSolutionReopened": "Solution précédente (ticket réouvert)",
+    "delete": "Supprimer",
+    "orSendNewSolution": "ou envoyez une nouvelle solution ci-dessous pour la remplacer.",
+    "solutionSentAwaitingConfirm": "Solution envoyée — en attente de la confirmation de l'employé.",
+    "resolutionConfirmedByEmployee": "Résolution confirmée par l'employé.",
+    "describeSolution": "Décrivez la solution...",
+    "addComment": "Ajoutez un commentaire...",
+    "sending": "Envoi...",
+    "sendSolution": "Envoyer solution",
+    "sendComment": "Envoyer commentaire",
+    "confirmationWillBeSent": "Une demande de confirmation sera envoyée à l'employé.",
+    "redirectHint": "Choisissez un service (obligatoire), puis un technicien de ce service (optionnel).",
+    "service": "Service",
+    "chooseService": "Choisir un service...",
+    "technician": "Technicien",
+    "optional": "optionnel",
+    "noTechnicianServiceOnly": "Aucun (service seulement)",
+    "category": "Catégorie",
+    "chooseCategory": "Choisir une catégorie...",
+    "reason": "Raison",
+    "whyRedirect": "Pourquoi rediriger ?",
+    "redirect": "Rediriger",
+    "closed": "Fermé",
+    "note": "Note",
+    "awaitingEmployeeConfirmation": "En attente de confirmation de l'employé.",
+    "manualClose": "Fermeture manuelle",
+    "manualCloseDescription": "Résolu hors système (téléphone, sur site...) ? Documentez la solution avant de fermer.",
+    "closeManually": "Fermer manuellement",
+    "employeeConfirmedResolution": "L'employé a confirmé la résolution — vous pouvez fermer le ticket.",
+    "recordedSolution": "Solution enregistrée",
+    "editable": "modifiable",
+    "solutionAttachments": "Pièces jointes de la solution",
+    "closingNotePlaceholder": "Ex : Confirmé par l'employé le 25/04...",
+    "closing": "Fermeture...",
+    "closeAndSaveSolution": "Fermer & enregistrer la solution",
+    "errorDeleteFile": "Erreur suppression fichier",
+    "tags": {
+  "solution":         "Solution",
+  "info":             "Commentaire",
+  "redirect":         "Redirigé",
+  "confirm":          "Confirmation envoyée",
+  "emp_reply":        "Réponse employé",
+  "confirmed":        "Résolution confirmée",
+  "rejected_confirm": "Solution refusée"
+},
+"confirmQuestion":    "Le problème est-il résolu ?",
+"confirmYes":         "Oui, résolu",
+"confirmNo":          "Non, toujours un problème",
+"youLabel":           "Vous"
+  },
+
+  "categories": {
+    "hardware": "Matériel",
+    "software": "Logiciels",
+    "network": "Réseau",
+    "access": "Accès",
+    "security": "Sécurité",
+    "account": "Compte"
+  },
+
+  "fileAttachment": {
+    "attach": "Joindre"
+  },
+  "manualClose": {
+  "title":                "Fermer le ticket manuellement",
+  "subtitle":             "Utilisez cette option si vous avez résolu le problème par téléphone ou en personne.",
+  "solutionLabel":        "Solution",
+  "solutionPlaceholder":  "Décrivez la solution apportée...",
+  "noteLabel":            "Note de fermeture",
+  "optional":             "optionnelle",
+  "notePlaceholder":      "Ex : Résolu par téléphone à 11h30 — problème confirmé résolu par l'employé.",
+  "attachmentsLabel":     "Pièces jointes (optionnel)",
+  "attachBtn":            "Joindre un fichier",
+  "cancel":               "Annuler",
+  "closing":              "Fermeture...",
+  "confirm":              "Fermer le ticket"
+},
+  "constants": {
+    "priority": {
+      "high":     "Haute",
+      "critical": "Critique",
+      "medium":   "Normale",
+      "low":      "Basse"
+    },
+    "impact": {
+      "high":   "Haute",
+      "medium": "Moyen",
+      "low":    "Faible"
+    },
+    "urgency": {
+      "high":   "Urgente",
+      "medium": "Normale",
+      "low":    "Faible"
+    },
+    "category": {
+      "hardware": "Matériel",
+      "software": "Logiciels",
+      "network":  "Réseau",
+      "access":   "Accès",
+      "security": "Sécurité",
+      "account":  "Compte"
+    },
+    "type": {
+      "incident":        "Incident",
+      "service_request": "Demande de service",
+      "change":          "Changement",
+      "problem":         "Problème"
+    },
+    "status": {
+      "open":             "Ouvert",
+      "in_progress":      "En cours",
+      "pending":          "En attente",
+      "pending_supplier": "Att. fournisseur",
+      "resolved":         "Résolu",
+      "closed":           "Fermé",
+      "rejected":         "Rejeté"
+    },
+    "actLabel": {
+      "assigned":         "Ticket assigné",
+      "solution":         "Solution envoyée, confirmation en attente",
+      "info":             "Demande d'info envoyée à l'employé",
+      "redirect":         "Ticket redirigé",
+      "confirm":          "Demande de confirmation envoyée",
+      "emp_reply":        "Réponse de l'employé",
+      "confirmed":        "Résolution confirmée par l'employé",
+      "rejected_confirm": "L'employé a refusé la solution",
+      "comment":          "Note ajoutée"
+    },
+    "actMeta": {
+      "assigned":         "Ticket assigné",
+      "solution":         "Solution",
+      "info":             "Demande d'info",
+      "confirm":          "Confirmation",
+      "emp_reply":        "Réponse employé",
+      "confirmed":        "Résolution confirmée",
+      "rejected_confirm": "Solution refusée",
+      "redirect":         "Redirection",
+      "status":           "Changement statut",
+      "comment":          "Note interne"
     }
   }
 }

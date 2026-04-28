@@ -1,0 +1,34 @@
+{
+  "loading": "Loading…",
+  "pageTitle": "My Profile",
+  "pageSubtitle": "Personal and professional information",
+  "collaboratorLabel": "Djezzy Collaborator",
+  "active": "Active",
+  "errors": {
+    "notAuthenticated": "Not authenticated",
+    "loadError": "Loading error",
+    "cannotLoad": "Unable to load profile."
+  },
+  "roles": {
+    "employee": "Employee",
+    "technician": "Technician",
+    "chef_service": "Service Manager",
+    "manager": "Manager",
+    "admin": "Administrator"
+  },
+  "cards": {
+    "contact": "Contact",
+    "location": "Location",
+    "position": "Position"
+  },
+  "fields": {
+    "email": "Email",
+    "phone": "Phone",
+    "block": "Block",
+    "blockPrefix": "Block",
+    "office": "Office",
+    "jobTitle": "Job Title",
+    "department": "Department",
+    "service": "Service"
+  }
+}

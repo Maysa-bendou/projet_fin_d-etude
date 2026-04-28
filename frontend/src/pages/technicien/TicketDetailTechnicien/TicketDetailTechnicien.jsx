@@ -108,9 +108,9 @@ data.comments.forEach((c) => {
   if (type === "status") {
     actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
   } else if (type === "update") {
-    actItems.push({ id: `act-${c.id}`, type: "update", message: `✏️ ${c.message}`, date: dateStr, rawDate: dateObj });
+    actItems.push({ id: `act-${c.id}`, type: "update", message: ` ${c.message}`, date: dateStr, rawDate: dateObj });
   } else if (type === "reopen") {
-    actItems.push({ id: `act-${c.id}`, type: "reopen", message: "🔄 Ticket réouvert", date: dateStr, rawDate: dateObj });
+    actItems.push({ id: `act-${c.id}`, type: "reopen", message: " Ticket réouvert", date: dateStr, rawDate: dateObj });
   } else if (ACT_LABEL[type]) {
     actItems.push({ id: `act-${c.id}`, type, message: ACT_LABEL[type], date: dateStr, rawDate: dateObj });
   }

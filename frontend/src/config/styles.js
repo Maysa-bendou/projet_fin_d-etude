@@ -23,7 +23,7 @@ export const CATEGORY_CONFIG = {
   network:    { label: "Réseau",                    color: "#0f766e", bg: "#f0fdfa", border: "#99f6e4" },
   security:   { label: "Sécurité",                  color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
   access:     { label: "Accès",                     color: "#4338ca", bg: "#eef2ff", border: "#c7d2fe" },
-  messagerie: { label: "Collaboration & Messagerie", color: "#db2777", bg: "#fdf2f8", border: "#fbcfe8" },
+  messagerie: { label: "Messagerie", color: "#db2777", bg: "#fdf2f8", border: "#fbcfe8" },
 };
 
 export const IMPACT_CONFIG = {

@@ -9,7 +9,7 @@ const ROLE_LABELS = {
 
 const InfoRow = ({ icon: Icon, label, value, iconColor = "#94a3b8" }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f1ede8" }}>
-    <div style={{ width: 34, height: 34, borderRadius: 9, background: "#f9f6f2", border: "1px solid #e8e2d9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ width: 34, height: 34, borderRadius: 9, background: "#faf9f7", border: "1px solid #e8e2d9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       <Icon size={16} color={iconColor} />
     </div>
     <div>
@@ -55,7 +55,7 @@ export default function ProfilePage() {
   const initials = `${user.name?.[0] ?? ""}${user.surname?.[0] ?? ""}`.toUpperCase();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9f6f2", padding: "32px" }}>
+    <div style={{ minHeight: "100vh", background: "#faf9f7", padding: "32px" }}>
 
       {/* Page title */}
       <div style={{ marginBottom: 24 }}>
@@ -79,7 +79,7 @@ export default function ProfilePage() {
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#b20000", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>Collaborateur Djezzy</p>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", margin: "0 0 6px" }}>{user.name} {user.surname}</h2>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#f9f6f2", border: "1px solid #e2ddd8", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600, color: "#64748b" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#faf9f7", border: "1px solid #e2ddd8", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600, color: "#64748b" }}>
               <HiOutlineIdentification size={13} />
               {ROLE_LABELS[user.role] ?? user.role}
             </span>

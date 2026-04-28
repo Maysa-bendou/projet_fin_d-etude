@@ -70,11 +70,11 @@ const AccueilPage = () => {
     .slice(0, 5);
 
   if (loading) return (
-    <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>{t('common.loading')}</div>
+    <div style={{ padding: 40, textAlign: 'center', color: '#faf9f7' }}>{t('common.loading')}</div>
   );
 
   return (
-    <div style={{ padding: '25px', background: '#f9f6f2', minHeight: '100vh' }}>
+    <div style={{ padding: '25px', background: '#faf9f7', minHeight: '100vh' }}>
 
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t('accueil.title')}</h1>
@@ -104,7 +104,7 @@ const AccueilPage = () => {
         <div style={{ borderRadius: 12, border: '1.5px solid #d9d4cc', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ background: '#fcfaf8', borderBottom: '1.5px solid #d9d4cc' }}>
+              <tr style={{ background: '#faf9f7', borderBottom: '1.5px solid #d9d4cc' }}>
                 {[
                   t('table.id'),
                   t('table.title'),
@@ -136,7 +136,7 @@ const AccueilPage = () => {
                     key={ticket.id}
                     onClick={() => navigate(`/employee/ticket/${ticket.id}`)}
                     style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f9f6f2'}
+                    onMouseEnter={e => e.currentTarget.style.background = '#faf9f7'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <td style={{ padding: '13px 14px', fontSize: 12, color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>

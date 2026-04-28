@@ -93,19 +93,15 @@ model tickets {
   sla_due_date                     DateTime?                    @db.Timestamp(6)
   created_at                       DateTime?                    @default(now()) @db.Timestamp(6)
   updated_at                       DateTime?                    @default(now()) @db.Timestamp(6)
-  type                             request_type_enum?
+  type                             request_type_enum?           @default(incident)
   employee_confirm_note            String?
   sla_duree                        sla_duree?
   sla_date_debut                   DateTime?                    @default(now()) @db.Timestamptz(6)
   sla_date_limite                  DateTime?                    @db.Timestamptz(6)
   sla_statut                       String?                      @default("en_cours")
   solution_date_resolved           DateTime?                    @db.Timestamptz(6)
-  confirmation_requested           Boolean?                     @default(false)
   closing_note                     String?
-  closed_at                        DateTime?                    @db.Timestamp(6)
-  assigned_at                      DateTime?                    @db.Timestamp(6)
-  sla_pause_elapsed_ms             BigInt?
-  redirect_note                    String?
+  confirmation_requested           Boolean?                     @default(false)
   notifications                    notifications[]
   ticket_assignments_history       ticket_assignments_history[]
   ticket_attachments               ticket_attachments[]
@@ -164,7 +160,7 @@ enum category_enum {
   network
   access
   security
-  messagerie
+  account
 }
 
 enum impact_enum {
@@ -177,10 +173,13 @@ enum priority_enum {
   low
   medium
   high
+  critical
 }
 
 enum request_type_enum {
+  incident
   service_request
+  change
   problem
 }
 

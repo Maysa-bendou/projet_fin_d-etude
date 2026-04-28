@@ -234,13 +234,13 @@ export default function TicketDetailsPage() {
 
   /* loading / error */
   if (loading) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:280, gap:10, background:"#f9f6f2" }}>
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:280, gap:10, background:"#faf9f7" }}>
       <div style={{ width:18, height:18, border:"2px solid #534ab7", borderTopColor:"transparent", borderRadius:"50%", animation:"spin 0.7s linear infinite" }} />
       <span style={{ fontSize:13, color:"#94a3b8", fontWeight:500 }}>{t('ticketDetails.loading')}</span>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
-  if (error) return <div style={{ color:"#dc2626", textAlign:"center", padding:48, background:"#f9f6f2", minHeight:"100vh" }}>{error}</div>;
+  if (error) return <div style={{ color:"#dc2626", textAlign:"center", padding:48, background: "#faf9f7", minHeight:"100vh" }}>{error}</div>;
   if (!ticket) return null;
 
   const isClosed   = ticket.status === "closed";
@@ -257,7 +257,7 @@ export default function TicketDetailsPage() {
   const inputStyle = { width:"100%", padding:"8px 12px", border:"1px solid #d9d4cc", borderRadius:8, fontSize:13, color:"#1e293b", outline:"none", fontFamily:"inherit", background:"#fff" };
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f9f6f2", padding:"28px 24px" }}>
+    <div style={{ minHeight:"100vh", background:"#faf9f7", padding:"28px 24px" }}>
       <div style={{ maxWidth:1020, margin:"0 auto", display:"flex", flexDirection:"column", gap:20 }}>
 
         {/* ── breadcrumb ── */}
@@ -501,7 +501,7 @@ export default function TicketDetailsPage() {
                     .map(c => {
                       if (c.comment_type === "attachment") {
                         return (
-                          <div key={c.id} style={{ marginBottom:10, padding:"8px 12px", background:"#f0f9ff", border:"1px solid #bae6fd", borderRadius:8 }}>
+                          <div key={c.id} style={{ marginBottom:10, padding:"8px 12px", background:"#faf9f7", border:"1px solid #bae6fd", borderRadius:8 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:6 }}>
                               <HiOutlinePaperClip size={12} color="#0369a1" />
                               <span style={{ fontSize:11, fontWeight:600, color:"#0369a1" }}>{t('ticketDetails.initialAttachments')}</span>

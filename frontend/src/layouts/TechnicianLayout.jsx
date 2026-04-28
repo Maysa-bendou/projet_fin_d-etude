@@ -5,7 +5,7 @@ import TopNavbar from "../components/TopNavbar/TopNavbar";
 export default function TechnicianLayout() {
   return (
     // On applique le beige sur le conteneur parent de TOUTE la page
-    <div className="flex h-screen bg-[#f9f6f2]">
+    <div className="flex h-screen bg-[#faf9f7]">
       
       {/* Sidebar - assure-toi qu'elle n'a pas de bordure blanche inutile */}
       <SidebarTechnicien />

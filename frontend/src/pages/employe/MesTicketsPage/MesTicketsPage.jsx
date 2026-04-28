@@ -139,7 +139,7 @@ const TabSwitch = ({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
               padding: "8px 22px",
               borderRadius: 10,
               border: isActive ? `1.5px solid ${activeBorder}` : "1.5px solid transparent",
-              background: isActive ? "#ffffff" : "transparent",
+              background: isActive ? "#fbfbfb" : "transparent",
               cursor: "pointer",
               fontSize: 13,
               fontWeight: isActive ? 700 : 500,
@@ -216,7 +216,7 @@ const TicketTable = ({ tickets, navigate, hoveredTicketId, setHoveredTicketId, a
         <div style={{ margin: 16, border: "1px solid #e8e2d9", borderRadius: 10, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "#f9f6f2" }}>
+              <tr style={{ background: "#faf9f7" }}>
                 {columns.map(col => (
                   <th key={col} style={{
                     padding: "11px 14px",
@@ -382,12 +382,12 @@ export default function MesTicketsPage() {
   };
 
   if (loading) return (
-    <div style={{ padding: 40, textAlign: "center", color: "#1d4ed8", fontWeight: 600, background: "#f9f6f2", minHeight: "100vh" }}>
+    <div style={{ padding: 40, textAlign: "center", color: "#1d4ed8", fontWeight: 600, background: "#faf9f7", minHeight: "100vh" }}>
       {t("common.loading")}
     </div>
   );
   if (error) return (
-    <div style={{ padding: 40, textAlign: "center", color: "#dc2626", background: "#f9f6f2", minHeight: "100vh" }}>
+    <div style={{ padding: 40, textAlign: "center", color: "#dc2626", background: "#faf9f7", minHeight: "100vh" }}>
       {t("common.error")} : {error}
     </div>
   );
@@ -396,7 +396,7 @@ export default function MesTicketsPage() {
 
   return (
     <div
-      style={{ padding: "32px", background: "#f9f6f2", minHeight: "100vh" }}
+      style={{ padding: "32px", background: "#faf9f7", minHeight: "100vh" }}
       onMouseMove={e => setMousePos({ x: e.clientX, y: e.clientY })}
     >
       {/* Tooltip */}

@@ -74,7 +74,7 @@ const AccueilPage = () => {
   );
 
   return (
-    <div style={{ padding: '25px', background: '#f9f6f2', minHeight: '100vh' }}>
+    <div style={{ padding: '25px', background: '#faf9f7', minHeight: '100vh' }}>
 
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t('accueil.title')}</h1>
@@ -136,7 +136,7 @@ const AccueilPage = () => {
                     key={ticket.id}
                     onClick={() => navigate(`/employee/ticket/${ticket.id}`)}
                     style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f9f6f2'}
+                    onMouseEnter={e => e.currentTarget.style.background = '#eeedeb'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <td style={{ padding: '13px 14px', fontSize: 12, color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>

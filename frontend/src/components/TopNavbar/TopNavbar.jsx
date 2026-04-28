@@ -131,7 +131,7 @@ const [activeLang, setActiveLang] = useState(
   const closeAll = () => { setNotifOpen(false); setProfileOpen(false); setLangOpen(false); };
 
   return (
-    <header className="w-full px-6 py-4" style={{ backgroundColor: "#f9f6f2" }}>
+    <header className="w-full px-6 py-4" style={{ backgroundColor: "#faf9f7" }}>
       <div className="flex items-center justify-between bg-white px-8 h-16 rounded-[40px] border border-[#e2e8f0] shadow-sm">
 
         {/* ── GAUCHE ── */}

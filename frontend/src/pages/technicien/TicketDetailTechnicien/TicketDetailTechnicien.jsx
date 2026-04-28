@@ -87,6 +87,7 @@ export default function TicketDetailTechnicien() {
         rawDate: new Date(data.createdAt),
       });
 
+
       const CONV_EXCLUDED = new Set(["status", "update", "reopen", "redirect"]);
 
       data.comments.forEach((c) => {
@@ -111,13 +112,14 @@ export default function TicketDetailTechnicien() {
         if (type === "status") {
           actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
         } else if (type === "update") {
-          actItems.push({ id: `act-${c.id}`, type: "update", message: `✏️ ${c.message}`, date: dateStr, rawDate: dateObj });
+          actItems.push({ id: `act-${c.id}`, type: "update", message: `✏ ${c.message}`, date: dateStr, rawDate: dateObj });
         } else if (type === "reopen") {
           actItems.push({ id: `act-${c.id}`, type: "reopen", message: t("ticketDetailTech.actuality.reopened"), date: dateStr, rawDate: dateObj });
 } else if (ACT_LABEL_KEYS[type]) {
   actItems.push({ id: `act-${c.id}`, type, message: t(ACT_LABEL_KEYS[type]), date: dateStr, rawDate: dateObj });
 }
       });
+
 
       actItems.sort((a, b) => a.rawDate - b.rawDate);
       setConversation(convItems);

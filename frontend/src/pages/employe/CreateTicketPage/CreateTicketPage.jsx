@@ -11,7 +11,7 @@ const PRIORITY_MATRIX = {
   low:    { high: "medium",   medium: "low",     low: "low" },
 };
 
-const EMPTY_FORM = { type: "incident", title: "", description: "", category: "", impact: "", urgency: "" };
+const EMPTY_FORM = { type: "problem", title: "", description: "", category: "", impact: "", urgency: "" };
 
 const selectStyle = {
   width: "100%", border: "1.5px solid #d9d4cc", borderRadius: 10,
@@ -76,7 +76,7 @@ export default function CreateTicketPage() {
 
   // Options built inside component so t() is available
   const TYPE_OPTIONS = [
-    { value: "incident",        label: t('createTicket.types.incident') },
+    { value: "problem", label: t('createTicket.types.problem') },
     { value: "service_request", label: t('createTicket.types.service_request') },
   ];
   const CATEGORY_OPTIONS = [
@@ -212,7 +212,7 @@ export default function CreateTicketPage() {
 
   /* ── FORM ── */
   return (
-    <div style={{ padding: 25, background: "#f9f6f2", minHeight: "100vh" }}>
+    <div style={{ padding: 25, background: "#faf9f7", minHeight: "100vh" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
         <div style={{ marginBottom: 28 }}>

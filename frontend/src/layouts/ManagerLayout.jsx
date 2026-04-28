@@ -5,7 +5,7 @@ import TopNavbar from "../components/TopNavbar/TopNavbar";
 export default function ManagerLayout() {
   return (
     // On remplace bg-gray-50 par le beige global (#f9f6f2)
-    <div className="flex h-screen bg-[#f9f6f2]">
+    <div className="flex h-screen bg-[#faf9f7]">
 
       {/* Sidebar à gauche */}
       <SidebarManager />

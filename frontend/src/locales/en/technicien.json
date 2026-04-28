@@ -1,0 +1,388 @@
+{
+  "ticketsService": {
+    "header": {
+      "subtitle": "Service Tickets",
+      "subtitleManager": "Ticket Management",
+      "titlePrefix": "Service",
+      "titleFallback": "All Tickets",
+      "ticketCount_one": "{{count}} ticket",
+      "ticketCount_other": "{{count}} tickets"
+    },
+    "tabs": {
+      "current": "Current Tickets",
+      "archives": "Archives (before {{year}})"
+    },
+    "stats": {
+      "total": "Total",
+      "open": "Open",
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "pendingSupplier": "Pend. Supplier",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "rejected": "Rejected"
+    },
+    "filters": {
+      "label": "Filters",
+      "search": "Search",
+      "searchPlaceholder": "ID or title…",
+      "status": "Status",
+      "statusAll": "All statuses",
+      "priority": "Priority",
+      "priorityAll": "All priorities",
+      "category": "Category",
+      "categoryAll": "All categories",
+      "assignment": "Assignment",
+      "assignmentAll": "All",
+      "assigned": "Assigned",
+      "unassigned": "Unassigned",
+      "closeYear": "Closing Year",
+      "closeYearAll": "All",
+      "reset": "Reset",
+      "countSuffix_one": "ticket",
+      "countSuffix_other": "tickets",
+      "outOf": "of {{total}} total"
+    },
+    "table": {
+      "id": "ID",
+      "title": "Title",
+      "category": "Category",
+      "priority": "Priority",
+      "status": "Status",
+      "sla": "SLA",
+      "employee": "Employee",
+      "technician": "Technician",
+      "createdAt": "Created On",
+      "assignedAt": "Assigned On",
+      "closedAt": "Closed On"
+    },
+    "row": {
+      "unassigned": "Unassigned"
+    },
+    "empty": "No tickets for the selected filters.",
+    "loading": "Loading…",
+    "sla": {
+      "na": "N/A",
+      "exceeded": "exceeded +{{h}}h {{m}}m",
+      "closed": "closed ✓",
+      "frozen": "{{h}}h {{m}}m frozen",
+      "remaining": "{{h}}h {{m}}m",
+      "alert": "⚠ +{{h}}h {{m}}m exceeded",
+      "alertBanner": "{{count}} ticket(s) have exceeded the SLA deadline"
+    }
+  },
+
+  "ticketDetail": {
+    "back": "Back to tickets",
+    "reference": "Ticket Reference",
+    "description": "Incident Description",
+    "info": "Ticket Information",
+    "assignedTech": "Assigned Technician",
+    "managedByYou": "You are managing this ticket",
+    "waitingExpert": "Waiting for expert",
+    "assignedOn": "Assigned on",
+    "closedOn": "Closed on",
+    "profile": {
+      "employee": "Employee",
+      "email": "Email",
+      "department": "Department",
+      "position": "Position",
+      "contact": "Contact",
+      "office": "Office"
+    },
+    "cols": {
+      "priority": "Priority",
+      "category": "Category",
+      "service": "Service",
+      "impact": "Impact",
+      "urgency": "Urgency",
+      "createdAt": "Created On"
+    },
+    "sla": {
+      "title": "Resolution Time (SLA)",
+      "paused": "On hold",
+      "closed": "Closed",
+      "breachDetected": "Breach detected",
+      "limit": "Deadline",
+      "exceeded": "+{{h}}h {{m}}m exceeded",
+      "closedOk": "Closed — respected ✓",
+      "frozen": "⏸ {{h}}h {{m}}m frozen",
+      "remaining": "{{h}}h {{m}}m remaining"
+    },
+    "redirect": {
+      "title": "Redirected Ticket",
+      "service": "Service",
+      "technician": "Technician",
+      "redirectedAt": "Redirected on",
+      "reason": "Reason"
+    },
+    "modal": {
+      "title": "Ticket taken over",
+      "status": "In Progress",
+      "body": "You are now responsible for this ticket. What would you like to do?",
+      "stayHere": "Stay on this ticket",
+      "backToList": "Back to ticket list"
+    },
+    "btn": {
+      "takeCharge": "Take charge",
+      "alreadyAssigned": "Already Assigned",
+      "taking": "Processing..."
+    }
+  },
+
+  "accueilTech": {
+    "loading": "Loading…",
+    "timeAgo": {
+      "justNow": "just now",
+      "days": "d"
+    },
+    "header": {
+      "subtitle": "Dashboard · Technician",
+      "title": "My Interventions"
+    },
+    "stats": {
+      "overdue": "Overdue",
+      "inProgress": "In Progress",
+      "pending": "Pending",
+      "activeTotal": "Active Total"
+    },
+    "charts": {
+      "priority": "Priority · active",
+      "categories": "Categories · service",
+      "volumeTitle": "Monthly Activity Volume",
+      "volumeSubtitle": "Assigned vs resolved/closed · {{year}}"
+    },
+    "spark": {
+      "assigned": "Assigned",
+      "resolved": "Resolved/Closed",
+      "remaining": "Remaining"
+    },
+    "table": {
+      "title": "Recently Assigned Tickets",
+      "id": "ID",
+      "title_col": "Title",
+      "priority": "Priority",
+      "status": "Status",
+      "lastActivity": "Last Activity"
+    }
+  },
+
+  "ticketDetailTech": {
+    "loading": "Loading ticket...",
+    "notFound": "Ticket not found.",
+    "error": "Server error",
+    "errorClose": "Error while closing.",
+    "errorRedirect": "Error while redirecting.",
+    "actuality": {
+      "assigned": "Ticket assigned",
+      "reopened": "🔄 Ticket reopened"
+    }
+  },
+
+  "components": {
+    "actuality": {
+      "title": "Activity",
+      "empty": "No activity"
+    },
+    "header": {
+      "assignedTickets": "Assigned Tickets",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "ticketInfo": {
+      "employeeCard": "Employee Information",
+      "fields": {
+        "department": "Department",
+        "jobTitle": "Job Title",
+        "phone": "Phone",
+        "office": "Office",
+        "assignedBy": "Assigned by",
+        "createdOn": "Created on",
+        "assignedOn": "Assigned on",
+        "closedOn": "Closed on"
+      },
+      "noDescription": "No description.",
+      "directAssignment": "Direct assignment",
+      "redirect": {
+        "title": "Ticket redirected",
+        "by": "By:",
+        "previousTech": "Previous tech:"
+      },
+      "sla": {
+        "onHold": "On hold",
+        "closed": "Closed",
+        "exceededBy": "Exceeded by {{h}}h {{m}}m",
+        "respected": "Respected ✓",
+        "frozen": "⏸ {{h}}h {{m}}m frozen",
+        "alertExceeded": "⚠ Exceeded by {{h}}h {{m}}m",
+        "remaining": "{{h}}h {{m}}m remaining",
+        "deadline": "Deadline:",
+        "at": "at"
+      },
+      "status": {
+        "label": "Status:",
+        "locked": "Ticket closed — status locked",
+        "saving": "Saving..."
+      }
+    }
+  },
+
+  "conv": {
+    "conversation": "Conversation",
+    "msg": "msg",
+    "noMessages": "No messages",
+    "messagesWillAppear": "Exchanges will appear here.",
+    "tabs": {
+      "respond": "Reply",
+      "redirect": "Redirect",
+      "close": "Close"
+    },
+    "ticketClosedNoAction": "Ticket closed — no actions available",
+    "finalSolution": "Final solution",
+    "attachments": "Attachments",
+    "closingNote": "Closing note",
+    "solution": "Solution",
+    "comment": "Comment",
+    "previousSolutionReopened": "Previous solution (ticket reopened)",
+    "delete": "Delete",
+    "orSendNewSolution": "or send a new solution below to replace it.",
+    "solutionSentAwaitingConfirm": "Solution sent — awaiting employee confirmation.",
+    "resolutionConfirmedByEmployee": "Resolution confirmed by the employee.",
+    "describeSolution": "Describe the solution...",
+    "addComment": "Add a comment...",
+    "sending": "Sending...",
+    "sendSolution": "Send solution",
+    "sendComment": "Send comment",
+    "confirmationWillBeSent": "A confirmation request will be sent to the employee.",
+    "redirectHint": "Choose a service (required), then a technician from that service (optional).",
+    "service": "Service",
+    "chooseService": "Choose a service...",
+    "technician": "Technician",
+    "optional": "optional",
+    "noTechnicianServiceOnly": "None (service only)",
+    "category": "Category",
+    "chooseCategory": "Choose a category...",
+    "reason": "Reason",
+    "whyRedirect": "Why redirect?",
+    "redirect": "Redirect",
+    "closed": "Closed",
+    "note": "Note",
+    "awaitingEmployeeConfirmation": "Awaiting employee confirmation.",
+    "manualClose": "Manual close",
+    "manualCloseDescription": "Resolved outside the system (phone, on-site...)? Document the solution before closing.",
+    "closeManually": "Close manually",
+    "employeeConfirmedResolution": "The employee has confirmed the resolution — you can close the ticket.",
+    "recordedSolution": "Recorded solution",
+    "editable": "editable",
+    "solutionAttachments": "Solution attachments",
+    "closingNotePlaceholder": "e.g. Confirmed by employee on 25/04...",
+    "closing": "Closing...",
+    "closeAndSaveSolution": "Close & save solution",
+    "errorDeleteFile": "File deletion error",
+    "tags": {
+  "solution":         "Solution",
+  "info":             "Comment",
+  "redirect":         "Redirected",
+  "confirm":          "Confirmation sent",
+  "emp_reply":        "Employee reply",
+  "confirmed":        "Resolution confirmed",
+  "rejected_confirm": "Solution rejected"
+},
+"confirmQuestion":    "Has the issue been resolved?",
+"confirmYes":         "Yes, resolved",
+"confirmNo":          "No, still a problem",
+"youLabel":           "You"
+  },
+
+  "categories": {
+    "hardware": "Hardware",
+    "software": "Software",
+    "network": "Network",
+    "access": "Access",
+    "security": "Security",
+    "account": "Account"
+  },
+
+  "fileAttachment": {
+    "attach": "Attach"
+  },
+
+  "manualClose": {
+  "title":                "Close ticket manually",
+  "subtitle":             "Use this option if you resolved the issue by phone or in person.",
+  "solutionLabel":        "Solution",
+  "solutionPlaceholder":  "Describe the solution provided...",
+  "noteLabel":            "Closing note",
+  "optional":             "optional",
+  "notePlaceholder":      "e.g. Resolved by phone at 11:30 — issue confirmed resolved by employee.",
+  "attachmentsLabel":     "Attachments (optional)",
+  "attachBtn":            "Attach a file",
+  "cancel":               "Cancel",
+  "closing":              "Closing...",
+  "confirm":              "Close ticket"
+},
+  "constants": {
+    "priority": {
+      "high":     "High",
+      "critical": "Critical",
+      "medium":   "Normal",
+      "low":      "Low"
+    },
+    "impact": {
+      "high":   "High",
+      "medium": "Medium",
+      "low":    "Low"
+    },
+    "urgency": {
+      "high":   "Urgent",
+      "medium": "Normal",
+      "low":    "Low"
+    },
+    "category": {
+      "hardware": "Hardware",
+      "software": "Software",
+      "network":  "Network",
+      "access":   "Access",
+      "security": "Security",
+      "account":  "Account"
+    },
+    "type": {
+      "incident":        "Incident",
+      "service_request": "Service Request",
+      "change":          "Change",
+      "problem":         "Problem"
+    },
+    "status": {
+      "open":             "Open",
+      "in_progress":      "In Progress",
+      "pending":          "Pending",
+      "pending_supplier": "Pend. Supplier",
+      "resolved":         "Resolved",
+      "closed":           "Closed",
+      "rejected":         "Rejected"
+    },
+    "actLabel": {
+      "assigned":         "Ticket assigned",
+      "solution":         "Solution sent, awaiting confirmation",
+      "info":             "Info request sent to employee",
+      "redirect":         "Ticket redirected",
+      "confirm":          "Confirmation request sent",
+      "emp_reply":        "Employee reply",
+      "confirmed":        "Resolution confirmed by employee",
+      "rejected_confirm": "Employee rejected the solution",
+      "comment":          "Note added"
+    },
+    "actMeta": {
+      "assigned":         "Assigned",
+      "solution":         "Solution",
+      "info":             "Info Request",
+      "confirm":          "Confirmation",
+      "emp_reply":        "Employee Reply",
+      "confirmed":        "Resolution Confirmed",
+      "rejected_confirm": "Solution Rejected",
+      "redirect":         "Redirect",
+      "status":           "Status Change",
+      "comment":          "Internal Note"
+    }
+  }
+}

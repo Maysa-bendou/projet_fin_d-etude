@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Header from "./components/Header";
 import TicketInfo from "./components/TicketInfo";
 import Actuality from "./components/Actuality";
 import ConversationActions from "./components/ConversationActions";
 import ManualCloseModal from "./components/utils/ManualCloseModal";
-import { ACT_LABEL } from "./components/constants";
+import { ACT_LABEL_KEYS } from "./components/constants";
 
 const API = "http://localhost:3001/api/tech";
 
 export default function TicketDetailTechnicien() {
+  const { t }       = useTranslation("technicien");
   const navigate    = useNavigate();
   const { id }      = useParams();
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -54,67 +56,70 @@ export default function TicketDetailTechnicien() {
     rawDate: new Date(date),
   });
 
-  // ── Fetch ticket — fonction réutilisable ──────────────────────────────────
+  // ── Fetch ticket — réutilisable ───────────────────────────────────────────
   const fetchTicket = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API}/tickets/${id}`);
-      if (!res.ok) throw new Error("Ticket introuvable");
+      if (!res.ok) throw new Error(t("ticketDetailTech.notFound"));
       const data = await res.json();
 
       setTicket(data);
       setStatus(data.status);
-     const lastConfirmReq = [...data.comments].reverse().find(c => c.comment_type === "confirm");
-const responsesAfterLastConfirm = lastConfirmReq
-  ? data.comments.filter(c =>
-      new Date(c.date) > new Date(lastConfirmReq.date) &&
-      (c.comment_type === "confirmed" || c.comment_type === "rejected_confirm")
-    )
-  : [];
-setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0);   const convItems = [];
+
+      const lastConfirmReq = [...data.comments].reverse().find(c => c.comment_type === "confirm");
+      const responsesAfterLastConfirm = lastConfirmReq
+        ? data.comments.filter(c =>
+            new Date(c.date) > new Date(lastConfirmReq.date) &&
+            (c.comment_type === "confirmed" || c.comment_type === "rejected_confirm")
+          )
+        : [];
+      setAwaitingConfirm(!!lastConfirmReq && responsesAfterLastConfirm.length === 0);
+
+      const convItems = [];
       const actItems = [];
 
       actItems.push({
         id: "act-assigned", type: "assigned",
-        message: "Ticket assigné",
+        message: t("ticketDetailTech.actuality.assigned"),
         date: fmt(data.createdAt),
         rawDate: new Date(data.createdAt),
       });
 
-      const CONV_EXCLUDED = new Set(["status", "update", "reopen" ,"redirect"]);
 
-data.comments.forEach((c) => {
-  const type = c.comment_type ?? "comment";
-  const dateObj = new Date(c.date);
-  const dateStr = fmt(c.date);
-  const authorId = c.authorId;
+      const CONV_EXCLUDED = new Set(["status", "update", "reopen", "redirect"]);
 
-  // Only show in conversation if NOT a status/update/reopen (those go to Actualité)
-  if (!CONV_EXCLUDED.has(type)) {
-    convItems.push({
-      id: c.id,
-      type,
-      authorId,
-      author: c.author,
-      isMe: authorId === currentUser?.id,
-      message: c.message.replace(/^\[REDIRECTION\]\s*/, ""),
-      files: c.files ?? [],
-      date: dateStr,
-    });
-  }
+      data.comments.forEach((c) => {
+        const type = c.comment_type ?? "comment";
+        const dateObj = new Date(c.date);
+        const dateStr = fmt(c.date);
+        const authorId = c.authorId;
 
-  // Actualité
-  if (type === "status") {
-    actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
-  } else if (type === "update") {
-    actItems.push({ id: `act-${c.id}`, type: "update", message: ` ${c.message}`, date: dateStr, rawDate: dateObj });
-  } else if (type === "reopen") {
-    actItems.push({ id: `act-${c.id}`, type: "reopen", message: " Ticket réouvert", date: dateStr, rawDate: dateObj });
-  } else if (ACT_LABEL[type]) {
-    actItems.push({ id: `act-${c.id}`, type, message: ACT_LABEL[type], date: dateStr, rawDate: dateObj });
-  }
-});
+        if (!CONV_EXCLUDED.has(type)) {
+          convItems.push({
+            id: c.id,
+            type,
+            authorId,
+            author: c.author,
+            isMe: authorId === currentUser?.id,
+            message: c.message.replace(/^\[REDIRECTION\]\s*/, ""),
+            files: c.files ?? [],
+            date: dateStr,
+          });
+        }
+
+        if (type === "status") {
+          actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
+        } else if (type === "update") {
+          actItems.push({ id: `act-${c.id}`, type: "update", message: `✏ ${c.message}`, date: dateStr, rawDate: dateObj });
+        } else if (type === "reopen") {
+          actItems.push({ id: `act-${c.id}`, type: "reopen", message: t("ticketDetailTech.actuality.reopened"), date: dateStr, rawDate: dateObj });
+} else if (ACT_LABEL_KEYS[type]) {
+  actItems.push({ id: `act-${c.id}`, type, message: t(ACT_LABEL_KEYS[type]), date: dateStr, rawDate: dateObj });
+}
+      });
+
 
       actItems.sort((a, b) => a.rawDate - b.rawDate);
       setConversation(convItems);
@@ -124,11 +129,10 @@ data.comments.forEach((c) => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   // Chargement initial
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
-
 
   // Fetch allIds
   useEffect(() => {
@@ -176,13 +180,13 @@ data.comments.forEach((c) => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-  status: newStatus,
-  technicianId: currentUser?.id,
-  ...(newStatus === "closed" && { closedAt: new Date().toISOString() }),
-}),
+          status: newStatus,
+          technicianId: currentUser?.id,
+          ...(newStatus === "closed" && { closedAt: new Date().toISOString() }),
+        }),
       });
       if (!res.ok) throw new Error();
-      await fetchTicket(true); // ← rafraîchit sans spinner
+      await fetchTicket(true);
     } catch {
       setStatus(old);
     } finally {
@@ -206,7 +210,7 @@ data.comments.forEach((c) => {
       files.forEach(f => fd.append("files", f));
 
       const res = await fetch(`${API}/tickets/${id}/send`, { method: "POST", body: fd });
-      if (!res.ok) throw new Error("Erreur serveur");
+      if (!res.ok) throw new Error(t("ticketDetailTech.error"));
 
       if (respondMode === "solution") {
         await doRequestConfirm();
@@ -218,7 +222,7 @@ data.comments.forEach((c) => {
       }
 
       setClearSignal(s => s + 1);
-      await fetchTicket(true); // ← rafraîchit la conversation et l'historique
+      await fetchTicket(true);
     } catch (e) {
       setSentError(e.message);
     } finally {
@@ -240,72 +244,70 @@ data.comments.forEach((c) => {
   };
 
   // ── Fermeture manuelle ────────────────────────────────────────────────────
- const handleManualClose = async (closingNote, files = [], solution = null) => {
-  setClosingManually(true);
-  try {
-    const fd = new FormData();
-    fd.append("technicianId", currentUser?.id);
-    fd.append("closingNote", closingNote ?? "");
-    if (solution) fd.append("solution", solution);
-    files.forEach(f => fd.append("files", f));
+  const handleManualClose = async (closingNote, files = [], solution = null) => {
+    setClosingManually(true);
+    try {
+      const fd = new FormData();
+      fd.append("technicianId", currentUser?.id);
+      fd.append("closingNote", closingNote ?? "");
+      if (solution) fd.append("solution", solution);
+      files.forEach(f => fd.append("files", f));
 
-    const res = await fetch(`${API}/tickets/${id}/close-manual`, {
-      method: "PUT",
-      body: fd, // ⚠️ pas de Content-Type header ici
-    });
-    if (!res.ok) throw new Error();
-    setShowManualClose(false);
-    await fetchTicket(true);
-  } catch {
-    alert("Erreur lors de la fermeture.");
-  } finally {
-    setClosingManually(false);
-  }
-};
+      const res = await fetch(`${API}/tickets/${id}/close-manual`, {
+        method: "PUT",
+        body: fd,
+      });
+      if (!res.ok) throw new Error();
+      setShowManualClose(false);
+      await fetchTicket(true);
+    } catch {
+      alert(t("ticketDetailTech.errorClose"));
+    } finally {
+      setClosingManually(false);
+    }
+  };
 
   // ── Redirection ───────────────────────────────────────────────────────────
   const handleRedirect = async () => {
-  if (!redirectServiceId) return;
-  setRedirecting(true);
-  try {
-    const res = await fetch(`${API}/tickets/${id}/redirect`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        newTechId: redirectTechId || null,
-        newServiceId: redirectServiceId || null,
-        newCategory: redirectCategory || null,
-        note: redirectNote,
-        assignedById: currentUser?.id,
-      }),
-    });
-    if (!res.ok) throw new Error();
-    
-    // ← naviguer vers la liste, le ticket n'apparaîtra plus
-    navigate(`/${currentUser.role}/tickets-service`);
-    
-  } catch (_) {
-    alert("Erreur lors de la redirection.");
-  } finally {
-    setRedirecting(false);
-  }
-};
+    if (!redirectServiceId) return;
+    setRedirecting(true);
+    try {
+      const res = await fetch(`${API}/tickets/${id}/redirect`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newTechId: redirectTechId || null,
+          newServiceId: redirectServiceId || null,
+          newCategory: redirectCategory || null,
+          note: redirectNote,
+          assignedById: currentUser?.id,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      navigate(`/${currentUser.role}/tickets-service`);
+    } catch (_) {
+      alert(t("ticketDetailTech.errorRedirect"));
+    } finally {
+      setRedirecting(false);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"/>
-        <p className="text-sm text-gray-500">Chargement du ticket...</p>
+        <p className="text-sm text-gray-500">{t("ticketDetailTech.loading")}</p>
       </div>
     </div>
   );
 
   if (error) return (
     <div className="p-6 text-red-500 flex items-center gap-2">
-      <AlertTriangle size={16}/> Erreur : {error}
+      <AlertTriangle size={16}/> {t("ticketDetailTech.error")} : {error}
     </div>
   );
 
-  if (!ticket) return <div className="p-6 text-gray-400">Ticket introuvable.</div>;
+  if (!ticket) return <div className="p-6 text-gray-400">{t("ticketDetailTech.notFound")}</div>;
 
   const emp = ticket.employee ?? {};
   const ini = `${emp.name?.[0] ?? "?"}${emp.surname?.[0] ?? ""}`;

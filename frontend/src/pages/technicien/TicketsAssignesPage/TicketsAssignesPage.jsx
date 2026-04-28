@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import RefreshButton from "../../../components/common/RefreshButton";
 import {
   HiOutlineTicket, HiOutlineArchiveBox,
@@ -30,14 +31,15 @@ const prioriteStyle = {
 };
 
 const categorieStyle = {
-  "Hardware":                  "bg-blue-100 text-blue-700",
-  "Logiciels":                 "bg-violet-100 text-violet-700",
-  "Réseau":                    "bg-teal-100 text-teal-700",
-  "Sécurité":                  "bg-orange-100 text-orange-700",
-  "Accès":                     "bg-indigo-100 text-indigo-700",
-  "Messagerie":"bg-pink-100 text-pink-700",
+  "Hardware":   "bg-blue-100 text-blue-700",
+  "Logiciels":  "bg-violet-100 text-violet-700",
+  "Réseau":     "bg-teal-100 text-teal-700",
+  "Sécurité":   "bg-orange-100 text-orange-700",
+  "Accès":      "bg-indigo-100 text-indigo-700",
+  "Messagerie": "bg-pink-100 text-pink-700",
 };
 
+// DB key ↔ French display label maps — used for API mapping only, NOT for display
 const statusFR = {
   open:             "Ouvert",
   in_progress:      "En cours",
@@ -61,15 +63,16 @@ const statusEN = {
 const priorityFR  = { low: "Basse", medium: "Normale", high: "Haute" };
 const categoryFR  = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", messagerie: "Messagerie" };
 
-const STAT_CARDS = [
-  { label: "Total",            key: null,                     cls: "#374151", Icon: HiOutlineTicket            },
-  { label: "Ouvert",           key: "Ouvert",                 cls: "#1d4ed8", Icon: HiOutlineShieldExclamation },
-  { label: "En cours",         key: "En cours",               cls: "#7c3aed", Icon: HiOutlineClock             },
-  { label: "En attente",       key: "En attente",             cls: "#a16207", Icon: HiOutlinePauseCircle       },
-  { label: "Att. fournisseur", key: "En attente fournisseur", cls: "#c2410c", Icon: HiOutlinePauseCircle       },
-  { label: "Résolu",           key: "Résolu",                 cls: "#15803d", Icon: HiOutlineCheckCircle       },
-  { label: "Fermé",            key: "Fermé",                  cls: "#6b7280", Icon: HiOutlineArchiveBoxArrowDown},
-  { label: "Rejeté",           key: "Rejeté",                 cls: "#dc2626", Icon: HiOutlineXCircle           },
+// STAT_CARDS icons stay the same; labels are translated in the component via useMemo
+const STAT_CARD_DEFS = [
+  { key: null,                     cls: "#374151", Icon: HiOutlineTicket             },
+  { key: "Ouvert",                 cls: "#1d4ed8", Icon: HiOutlineShieldExclamation  },
+  { key: "En cours",               cls: "#7c3aed", Icon: HiOutlineClock              },
+  { key: "En attente",             cls: "#a16207", Icon: HiOutlinePauseCircle        },
+  { key: "En attente fournisseur", cls: "#c2410c", Icon: HiOutlinePauseCircle        },
+  { key: "Résolu",                 cls: "#15803d", Icon: HiOutlineCheckCircle        },
+  { key: "Fermé",                  cls: "#6b7280", Icon: HiOutlineArchiveBoxArrowDown },
+  { key: "Rejeté",                 cls: "#dc2626", Icon: HiOutlineXCircle            },
 ];
 
 const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -96,9 +99,13 @@ const getArchiveYear = (t) => {
   return ref ? new Date(ref).getFullYear() : null;
 };
 
-// ── SLA Bar (même style que TicketsServicePage) ───
-function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
-  if (!slaDueDate) return <span style={{ color: "#94a3b8", fontSize: 11, fontStyle: "italic" }}>N/A</span>;
+// ── SLA Bar (design doc1) ─────────────────────────
+function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed, t }) {
+  if (!slaDueDate) return (
+    <span style={{ color: "#94a3b8", fontSize: 11, fontStyle: "italic" }}>
+      {t("ticketsService.sla.na")}
+    </span>
+  );
 
   const PAUSED   = ["En attente", "En attente fournisseur"];
   const TERMINAL = ["Résolu", "Fermé", "Rejeté"];
@@ -120,7 +127,9 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
           <div style={{ height: "100%", width: `${pct}%`, background: exceeded ? "#f87171" : "#34d399" }} />
         </div>
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#6b7280" }}>
-          {exceeded ? `+${h}h ${m}m` : "clôturé ✓"}
+          {exceeded
+            ? t("ticketsService.sla.exceeded", { h, m })
+            : t("ticketsService.sla.closed")}
         </span>
       </div>
     );
@@ -136,7 +145,7 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
           <div style={{ height: "100%", width: `${pct}%`, background: "#a78bfa" }} />
         </div>
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: "#7c3aed" }}>
-          ⏸ {h}h {m}m figé
+          {t("ticketsService.sla.frozen", { h, m })}
         </span>
       </div>
     );
@@ -147,9 +156,12 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
   const pct      = Math.max(0, Math.min(100, ((win - Math.max(0, diffMs)) / win) * 100));
   const abs      = Math.abs(diffMs);
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
-  const barColor = exceeded ? "#ef4444" : pct > 75 ? "#f87171" : pct > 40 ? "#fbbf24" : "#34d399";
+  const barColor   = exceeded ? "#ef4444" : pct > 75 ? "#f87171" : pct > 40 ? "#fbbf24" : "#34d399";
   const labelColor = exceeded ? "#ef4444" : pct > 75 ? "#c2410c" : pct > 40 ? "#a16207" : "#15803d";
-  const labelText  = exceeded ? `⚠ +${h}h dépassé` : `${h}h ${m}m`;
+  const labelText  = exceeded
+    ? t("ticketsService.sla.alert", { h, m })
+    : t("ticketsService.sla.remaining", { h, m });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ height: 3, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
@@ -162,7 +174,7 @@ function SlaBar({ slaDueDate, statut, closedAt, slaPauseElapsed }) {
   );
 }
 
-// ── Avatar (même que TicketsServicePage) ─────────
+// ── Avatar (design doc1) ──────────────────────────
 const Avatar = ({ name, color = "#dbeafe", textColor = "#1d4ed8" }) => (
   <div style={{ width: 22, height: 22, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
     <span style={{ fontSize: 8, fontWeight: 900, color: textColor }}>
@@ -171,11 +183,11 @@ const Avatar = ({ name, color = "#dbeafe", textColor = "#1d4ed8" }) => (
   </div>
 );
 
-// ── TabSwitch (style TicketsServicePage) ──────────
-const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) => {
+// ── TabSwitch (design doc1 + i18n labels) ─────────
+const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount, t }) => {
   const tabs = [
-    { key: "actuels",  label: "Tickets actuels",               Icon: HiOutlineTicket,     count: actuelCount  },
-    { key: "archives", label: `Archives (avant ${THIS_YEAR})`, Icon: HiOutlineArchiveBox, count: archiveCount },
+    { key: "actuels",  label: t("ticketsService.tabs.current"),                       Icon: HiOutlineTicket,     count: actuelCount  },
+    { key: "archives", label: t("ticketsService.tabs.archives", { year: THIS_YEAR }), Icon: HiOutlineArchiveBox, count: archiveCount },
   ];
   return (
     <div style={{ display: "flex", borderBottom: "1.5px solid #e8e2d9", marginBottom: 16 }}>
@@ -210,7 +222,7 @@ const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) 
   );
 });
 
-// ── Filter primitives (style TicketsServicePage) ──
+// ── Filter primitives (design doc1) ──────────────
 const FilterInput = ({ placeholder, value, onChange }) => (
   <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
     <HiOutlineMagnifyingGlass size={13} color="#94a3b8" style={{ position: "absolute", left: 9, pointerEvents: "none" }} />
@@ -248,6 +260,7 @@ const Sep = () => <div style={{ width: 1, height: 20, background: "#e8e2d9", fle
 // ── Main ──────────────────────────────────────────
 export default function TicketsAssignesPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation("technicien");
   const user = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
   const [ticketsData,     setTicketsData]     = useState([]);
@@ -267,6 +280,19 @@ export default function TicketsAssignesPage() {
   const [enumPriorites,   setEnumPriorites]   = useState([]);
   const [enumCategories,  setEnumCategories]  = useState([]);
 
+  // STAT_CARDS: icons/colors from doc1 + translated labels from doc2
+  const STAT_CARDS = useMemo(() => [
+    { label: t("ticketsService.stats.total"),           ...STAT_CARD_DEFS[0] },
+    { label: t("ticketsService.stats.open"),            ...STAT_CARD_DEFS[1] },
+    { label: t("ticketsService.stats.inProgress"),      ...STAT_CARD_DEFS[2] },
+    { label: t("ticketsService.stats.pending"),         ...STAT_CARD_DEFS[3] },
+    { label: t("ticketsService.stats.pendingSupplier"), ...STAT_CARD_DEFS[4] },
+    { label: t("ticketsService.stats.resolved"),        ...STAT_CARD_DEFS[5] },
+    { label: t("ticketsService.stats.closed"),          ...STAT_CARD_DEFS[6] },
+    { label: t("ticketsService.stats.rejected"),        ...STAT_CARD_DEFS[7] },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [t]);
+
   useEffect(() => {
     fetch("http://localhost:3001/api/tech/enums")
       .then(r => r.json())
@@ -285,28 +311,28 @@ export default function TicketsAssignesPage() {
       const res = await fetch(`http://localhost:3001/api/tech/assigned/${user.id}`);
       if (!res.ok) throw new Error("Erreur fetch");
       const data = await res.json();
-      const mapped = data.map(t => ({
-        id:               t.id,
-        titre:            t.title,
-        employe:          t.employee_name,
-        priorite:         priorityFR[t.priority]  ?? t.priority,
-        categorie:        categoryFR[t.category]  ?? t.category,
-        statut:           statusFR[t.status]       ?? t.status,
-        createdAt:        t.created_at,
-        assignedAt:       t.assigned_at,
-        closedAt:         t.closed_at,
-        slaDueDate:       t.sla_date_limite,
-        slaStatut:        t.sla_statut,
-        slaPauseElapsed:  t.sla_pause_elapsed_ms ?? null,
+      const mapped = data.map(tk => ({
+        id:               tk.id,
+        titre:            tk.title,
+        employe:          tk.employee_name,
+        priorite:         priorityFR[tk.priority]  ?? tk.priority,
+        categorie:        categoryFR[tk.category]  ?? tk.category,
+        statut:           statusFR[tk.status]       ?? tk.status,
+        createdAt:        tk.created_at,
+        assignedAt:       tk.assigned_at,
+        closedAt:         tk.closed_at,
+        slaDueDate:       tk.sla_date_limite,
+        slaStatut:        tk.sla_statut,
+        slaPauseElapsed:  tk.sla_pause_elapsed_ms ?? null,
       }));
       setTicketsData(mapped);
-      setStatuts(Object.fromEntries(mapped.map(t => [t.id, t.statut])));
-    } catch (err) {
-      setError("Impossible de récupérer les tickets.");
+      setStatuts(Object.fromEntries(mapped.map(tk => [tk.id, tk.statut])));
+    } catch {
+      setError(t("ticketsService.loading"));
     } finally {
       setLoading(false);
     }
-  }, [user.id]);
+  }, [user.id, t]);
 
   useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
@@ -314,16 +340,16 @@ export default function TicketsAssignesPage() {
     e.stopPropagation();
     setStatuts(prev => ({ ...prev, [id]: nouveauStatut }));
     setTicketsData(prev =>
-      prev.map(t =>
-        t.id === id
+      prev.map(tk =>
+        tk.id === id
           ? {
-              ...t,
+              ...tk,
               statut: nouveauStatut,
               closedAt: ["Fermé", "Résolu", "Rejeté"].includes(nouveauStatut)
                 ? new Date().toISOString()
                 : null,
             }
-          : t
+          : tk
       )
     );
     try {
@@ -341,13 +367,13 @@ export default function TicketsAssignesPage() {
   const { actuelsList, archivesList, archiveYears } = useMemo(() => {
     const actuels = [], archives = [];
     const yearsSet = new Set();
-    for (const t of ticketsData) {
-      if (isArchived(t)) {
-        archives.push(t);
-        const y = getArchiveYear(t);
+    for (const tk of ticketsData) {
+      if (isArchived(tk)) {
+        archives.push(tk);
+        const y = getArchiveYear(tk);
         if (y) yearsSet.add(y);
       } else {
-        actuels.push(t);
+        actuels.push(tk);
       }
     }
     return { actuelsList: actuels, archivesList: archives, archiveYears: [...yearsSet].sort((a, b) => b - a) };
@@ -355,20 +381,20 @@ export default function TicketsAssignesPage() {
 
   const filterList = useCallback((list, withYear = false) => {
     const q = search.toLowerCase();
-    return list.filter(t => {
+    return list.filter(tk => {
       const matchSearch =
         !search ||
-        String(t.id).includes(q) ||
-        t.titre?.toLowerCase().includes(q) ||
-        fmtDate(t.createdAt).includes(q);
-      const month = getCreatedMonth(t);
+        String(tk.id).includes(q) ||
+        tk.titre?.toLowerCase().includes(q) ||
+        fmtDate(tk.createdAt).includes(q);
+      const month = getCreatedMonth(tk);
       return (
         matchSearch &&
-        (!filterStatut    || statuts[t.id] === filterStatut) &&
-        (!filterPriorite  || t.priorite    === filterPriorite) &&
-        (!filterCategorie || t.categorie   === filterCategorie) &&
+        (!filterStatut    || statuts[tk.id] === filterStatut) &&
+        (!filterPriorite  || tk.priorite    === filterPriorite) &&
+        (!filterCategorie || tk.categorie   === filterCategorie) &&
         (!filterMonth     || month === parseInt(filterMonth)) &&
-        (!withYear || !filterYear || getArchiveYear(t) === parseInt(filterYear))
+        (!withYear || !filterYear || getArchiveYear(tk) === parseInt(filterYear))
       );
     });
   }, [search, filterStatut, filterPriorite, filterCategorie, filterYear, filterMonth, statuts]);
@@ -388,14 +414,14 @@ export default function TicketsAssignesPage() {
   const sourceList = activeTab === "actuels" ? actuelsList : archivesList;
 
   const counts = useMemo(() => Object.fromEntries(
-    STAT_CARDS.filter(c => c.key).map(c => [c.key, actuelsList.filter(t => statuts[t.id] === c.key).length])
-  ), [actuelsList, statuts]);
+    STAT_CARDS.filter(c => c.key).map(c => [c.key, actuelsList.filter(tk => statuts[tk.id] === c.key).length])
+  ), [STAT_CARDS, actuelsList, statuts]);
 
   const slaDepasses = useMemo(() =>
-    actuelsList.filter(t => {
+    actuelsList.filter(tk => {
       const TERMINAL = ["Résolu", "Fermé", "Rejeté"];
-      if (TERMINAL.includes(statuts[t.id] ?? t.statut)) return false;
-      return t.slaDueDate && new Date(t.slaDueDate) < new Date();
+      if (TERMINAL.includes(statuts[tk.id] ?? tk.statut)) return false;
+      return tk.slaDueDate && new Date(tk.slaDueDate) < new Date();
     }),
   [actuelsList, statuts]);
 
@@ -408,13 +434,17 @@ export default function TicketsAssignesPage() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div style={{ width: 28, height: 28, border: "2px solid #d9d4cc", borderTopColor: "#374151", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>Chargement…</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>
+          {t("ticketsService.loading")}
+        </span>
       </div>
     </div>
   );
 
   if (error) return (
-    <div style={{ margin: 24, padding: "12px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#dc2626", fontSize: 13 }}>{error}</div>
+    <div style={{ margin: 24, padding: "12px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#dc2626", fontSize: 13 }}>
+      {error}
+    </div>
   );
 
   return (
@@ -424,10 +454,10 @@ export default function TicketsAssignesPage() {
       <div style={{ background: "#f9f6f2", borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 2px" }}>
-            Technicien
+            {t("ticketsService.header.subtitleManager")}
           </p>
           <h1 style={{ fontSize: 19, fontWeight: 900, color: "#0f172a", margin: 0 }}>
-            Mes tickets <span style={{ color: "#1d4ed8" }}>assignés</span>
+            {t("ticketsService.header.subtitle")}
           </h1>
         </div>
         <RefreshButton onRefresh={fetchTickets} />
@@ -441,16 +471,16 @@ export default function TicketsAssignesPage() {
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", flexShrink: 0, animation: "pulse 1.5s ease-in-out infinite" }} />
             <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#b91c1c" }}>
-              {slaDepasses.length} ticket(s) ont dépassé le délai SLA
+              {t("ticketsService.sla.alertBanner", { count: slaDepasses.length })}
             </span>
             <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {slaDepasses.map(t => (
+              {slaDepasses.map(tk => (
                 <span
-                  key={t.id}
-                  onClick={() => navigate(`/technician/ticket-technicien/${t.id}`)}
+                  key={tk.id}
+                  onClick={() => navigate(`/technician/ticket-technicien/${tk.id}`)}
                   style={{ background: "#fee2e2", color: "#b91c1c", fontSize: 11, padding: "2px 8px", borderRadius: 99, fontWeight: 700, cursor: "pointer" }}
                 >
-                  #{t.id}
+                  #{tk.id}
                 </span>
               ))}
             </div>
@@ -480,27 +510,28 @@ export default function TicketsAssignesPage() {
           setActiveTab={(tab) => { setActiveTab(tab); if (tab !== "archives") setFilterYear(""); }}
           actuelCount={actuelsList.length}
           archiveCount={archivesList.length}
+          t={t}
         />
 
-        {/* ── Filtres (style TicketsServicePage) ── */}
+        {/* ── Filtres ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14, background: "#fff", border: "1px solid #e8e2d9", borderRadius: 10, padding: "7px 12px", overflowX: "auto" }}>
 
           <FilterInput
-            placeholder="Rechercher ID, titre…"
+            placeholder={t("ticketsService.filters.searchPlaceholder")}
             value={search}
             onChange={setSearch}
           />
           <Sep />
           <FilterSelect icon={HiOutlineTag} value={filterCategorie} onChange={setFilterCategorie} minW={120}>
-            <option value="">Catégorie</option>
+            <option value="">{t("ticketsService.filters.categoryAll")}</option>
             {enumCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </FilterSelect>
           <FilterSelect icon={HiOutlineExclamationCircle} value={filterStatut} onChange={setFilterStatut} minW={110}>
-            <option value="">Statut</option>
+            <option value="">{t("ticketsService.filters.statusAll")}</option>
             {enumStatuts.map(s => <option key={s} value={s}>{s}</option>)}
           </FilterSelect>
           <FilterSelect icon={HiOutlineFunnel} value={filterPriorite} onChange={setFilterPriorite} minW={110}>
-            <option value="">Priorité</option>
+            <option value="">{t("ticketsService.filters.priorityAll")}</option>
             {enumPriorites.map(p => <option key={p} value={p}>{p}</option>)}
           </FilterSelect>
 
@@ -512,7 +543,7 @@ export default function TicketsAssignesPage() {
           {/* Filtre année — archives seulement */}
           {activeTab === "archives" && archiveYears.length > 0 && (
             <FilterSelect icon={HiOutlineCalendarDays} value={filterYear} onChange={setFilterYear} minW={90}>
-              <option value="">Année</option>
+              <option value="">{t("ticketsService.filters.closeYearAll")}</option>
               {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
             </FilterSelect>
           )}
@@ -529,12 +560,13 @@ export default function TicketsAssignesPage() {
             }}
           >
             <HiOutlineArrowPath size={12} />
-            Réinitialiser
+            {t("ticketsService.filters.reset")}
           </button>
 
           <span style={{ marginLeft: "auto", fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>
             <span style={{ fontWeight: 700, color: "#0f172a" }}>{filtered.length}</span>
-            {filtered.length !== sourceList.length && <> / {sourceList.length}</>} ticket{filtered.length !== 1 ? "s" : ""}
+            {filtered.length !== sourceList.length && <> / {sourceList.length}</>}{" "}
+            {t("ticketsService.filters.countSuffix_other", { count: filtered.length })}
           </span>
         </div>
 
@@ -543,7 +575,9 @@ export default function TicketsAssignesPage() {
           {sortedTickets.length === 0 ? (
             <div style={{ padding: "48px 24px", textAlign: "center" }}>
               <HiOutlineTicket size={32} color="#d1d5db" style={{ marginBottom: 10 }} />
-              <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>Aucun ticket pour les filtres sélectionnés.</p>
+              <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>
+                {t("ticketsService.empty")}
+              </p>
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
@@ -562,9 +596,17 @@ export default function TicketsAssignesPage() {
                 <thead>
                   <tr style={{ background: "#f9f6f2", borderBottom: "1.5px solid #e8e2d9" }}>
                     {[
-                      "ID", "Titre", "Catégorie", "Priorité", "Statut", "SLA",
-                      "Employé", "Créé le",
-                      activeTab === "archives" ? "Date clôture" : "Assigné le",
+                      t("ticketsService.table.id"),
+                      t("ticketsService.table.title"),
+                      t("ticketsService.table.category"),
+                      t("ticketsService.table.priority"),
+                      t("ticketsService.table.status"),
+                      t("ticketsService.table.sla"),
+                      t("ticketsService.table.employee"),
+                      t("ticketsService.table.createdAt"),
+                      activeTab === "archives"
+                        ? t("ticketsService.table.closedAt")
+                        : t("ticketsService.table.assignedAt"),
                     ].map((h, i) => (
                       <th key={i} style={{ padding: "9px 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", textAlign: "left" }}>
                         {h}
@@ -573,47 +615,47 @@ export default function TicketsAssignesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedTickets.map((t, idx) => {
-                    const statutCurrent = statuts[t.id] ?? t.statut;
+                  {sortedTickets.map((tk, idx) => {
+                    const statutCurrent = statuts[tk.id] ?? tk.statut;
                     return (
                       <tr
-                        key={t.id}
-                        onClick={() => navigate(`/technician/ticket-technicien/${t.id}`)}
+                        key={tk.id}
+                        onClick={() => navigate(`/technician/ticket-technicien/${tk.id}`)}
                         style={{ background: "#fff", borderBottom: idx === sortedTickets.length - 1 ? "none" : "1px solid #f4f0ec", cursor: "pointer" }}
                         onMouseOver={e => e.currentTarget.style.background = "#faf8f5"}
                         onMouseOut={e  => e.currentTarget.style.background = "#fff"}
                       >
                         {/* ID */}
                         <td style={{ padding: "9px 10px", fontSize: 11, fontWeight: 700, color: "#c4bfb8" }}>
-                          #{t.id}
+                          #{tk.id}
                         </td>
 
                         {/* Titre */}
                         <td style={{ padding: "9px 10px", overflow: "hidden" }}>
                           <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, fontWeight: 600, color: "#0f172a" }}>
-                            {t.titre || "N/A"}
+                            {tk.titre || "N/A"}
                           </span>
                         </td>
 
                         {/* Catégorie */}
                         <td style={{ padding: "9px 10px" }}>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categorieStyle[t.categorie] ?? "bg-gray-100 text-gray-600"}`}>
-                            {t.categorie ?? "N/A"}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categorieStyle[tk.categorie] ?? "bg-gray-100 text-gray-600"}`}>
+                            {tk.categorie ?? "N/A"}
                           </span>
                         </td>
 
                         {/* Priorité */}
                         <td style={{ padding: "9px 10px" }}>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${prioriteStyle[t.priorite] ?? "bg-gray-100 text-gray-600"}`}>
-                            {t.priorite ?? "N/A"}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${prioriteStyle[tk.priorite] ?? "bg-gray-100 text-gray-600"}`}>
+                            {tk.priorite ?? "N/A"}
                           </span>
                         </td>
 
-                        {/* Statut — select inline, stop propagation */}
+                        {/* Statut — select inline */}
                         <td style={{ padding: "9px 10px" }} onClick={e => e.stopPropagation()}>
                           <select
                             value={statutCurrent}
-                            onChange={e => changerStatut(e, t.id, e.target.value)}
+                            onChange={e => changerStatut(e, tk.id, e.target.value)}
                             className={`border-none rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer focus:outline-none ${statutStyle[statutCurrent] ?? "bg-gray-100 text-gray-600"}`}
                           >
                             {Object.keys(statusEN).map(s => (
@@ -627,21 +669,22 @@ export default function TicketsAssignesPage() {
                           {activeTab === "archives"
                             ? <span style={{ color: "#d1d5db", fontSize: 11 }}>—</span>
                             : <SlaBar
-                                slaDueDate={t.slaDueDate}
+                                slaDueDate={tk.slaDueDate}
                                 statut={statutCurrent}
-                                closedAt={t.closedAt}
-                                slaPauseElapsed={t.slaPauseElapsed}
+                                closedAt={tk.closedAt}
+                                slaPauseElapsed={tk.slaPauseElapsed}
+                                t={t}
                               />
                           }
                         </td>
 
                         {/* Employé avec avatar */}
                         <td style={{ padding: "9px 10px" }}>
-                          {t.employe ? (
+                          {tk.employe ? (
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <Avatar name={t.employe} color="#fce7f3" textColor="#9d174d" />
+                              <Avatar name={tk.employe} color="#fce7f3" textColor="#9d174d" />
                               <span style={{ fontSize: 12, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {t.employe}
+                                {tk.employe}
                               </span>
                             </div>
                           ) : <span style={{ color: "#d1d5db", fontSize: 11 }}>—</span>}
@@ -649,12 +692,12 @@ export default function TicketsAssignesPage() {
 
                         {/* Créé le */}
                         <td style={{ padding: "9px 10px", fontSize: 11, color: "#94a3b8" }}>
-                          {fmtDate(t.createdAt)}
+                          {fmtDate(tk.createdAt)}
                         </td>
 
                         {/* Assigné le / Date clôture */}
                         <td style={{ padding: "9px 10px", fontSize: 11, color: "#94a3b8" }}>
-                          {activeTab === "archives" ? fmtDate(t.closedAt) : fmtDate(t.assignedAt)}
+                          {activeTab === "archives" ? fmtDate(tk.closedAt) : fmtDate(tk.assignedAt)}
                         </td>
                       </tr>
                     );

@@ -1,0 +1,218 @@
+{
+  "adminAccueil": {
+    "title": "Tableau de bord Admin",
+    "subtitle": "Vue globale du système de gestion des tickets",
+    "stats": {
+      "users":       "Utilisateurs",
+      "tickets":     "Tickets",
+      "openTickets": "Tickets ouverts",
+      "services":    "Services"
+    },
+    "recentTickets": {
+      "title":     "Tickets récents",
+      "createdBy": "Créé par",
+      "statuses": {
+        "open":        "OUVERT",
+        "in_progress": "EN COURS",
+        "resolved":    "RÉSOLU",
+        "pending":     "EN ATTENTE",
+        "closed":      "FERMÉ"
+      },
+      "priorities": {
+        "high":   "HAUTE",
+        "medium": "MOYENNE",
+        "low":    "BASSE"
+      }
+    }
+  },
+
+  "adminParams": {
+    "title":    "Paramètres administrateur",
+    "subtitle": "Configuration du système et des règles SLA",
+
+    "sla": {
+      "title":          "Configuration SLA",
+      "colPriority":    "Priorité",
+      "colDuration":    "Durée (heures)",
+      "colDeadline":    "Délai indicatif",
+      "colStatus":      "Statut",
+      "saving":         "Enregistrement...",
+      "saved":          "Enregistré",
+      "active":         "Actif",
+      "updateError":    "Erreur de mise à jour.",
+      "autoCalcLabel":  "Calcul automatique",
+      "autoCalcText":   "lors de la création du ticket, la date limite de résolution est calculée selon la loi suivante :",
+      "hours":          "{{count}} heure",
+      "hours_plural":   "{{count}} heures",
+      "days":           "{{count}} jour",
+      "days_plural":    "{{count}} jours",
+      "daysDecimal":    "{{count}} jours"
+    },
+
+    "systemValues": {
+      "title":      "Valeurs du système",
+      "priorities": "Priorités",
+      "statuses":   "Statuts",
+      "impacts":    "Impact",
+      "urgencies":  "Urgence",
+      "categories": "Catégories",
+      "roles":      "Rôles"
+    },
+
+    "enums": {
+      "statuses": {
+        "open":             "Ouvert",
+        "in_progress":      "En cours",
+        "pending":          "En attente",
+        "pending_supplier": "Attente fournisseur",
+        "resolved":         "Résolu",
+        "closed":           "Fermé",
+        "rejected":         "Rejeté"
+      },
+      "impacts": {
+        "low":    "Faible",
+        "medium": "Moyen",
+        "high":   "Élevé"
+      },
+      "urgencies": {
+        "low":    "Faible",
+        "medium": "Moyenne",
+        "high":   "Élevée"
+      },
+      "priorities": {
+        "low":      "Basse",
+        "medium":   "Moyenne",
+        "high":     "Haute",
+        "critical": "Critique"
+      },
+      "roles": {
+        "employee":    "Employé",
+        "technician":  "Technicien",
+        "chef_service":"Chef de service",
+        "manager":     "Manager",
+        "admin":       "Administrateur"
+      },
+      "categories": {
+        "account": "Compte"
+      }
+    }
+  },
+
+  "departments": {
+    "pageTitle":         "Gestion des départements",
+    "pageSubtitle":      "Structure organisationnelle de l'entreprise",
+    "addButton":         "Ajouter un département",
+    "searchPlaceholder": "Rechercher un département...",
+    "cardTitle":         "Mes départements",
+    "refresh":           "Actualiser",
+    "error":             "Erreur",
+    "table": {
+      "id":          "ID",
+      "name":        "Département",
+      "description": "Description",
+      "createdAt":   "Date de création"
+    },
+    "empty": {
+      "title":    "Aucun département trouvé",
+      "subtitle": "Ajustez vos filtres ou ajoutez une entité."
+    },
+    "modal": {
+      "titleAdd":           "Nouveau département",
+      "titleEdit":          "Modifier le département",
+      "nameLabel":          "Nom du département *",
+      "descriptionLabel":   "Description",
+      "cancel":             "Annuler",
+      "delete":             "Supprimer",
+      "confirmDelete":      "Confirmer la suppression ?",
+      "create":             "Créer",
+      "edit":               "Modifier",
+      "saving":             "...",
+      "notConnected":       "Non connecté. Veuillez vous reconnecter.",
+      "nameRequired":       "Le nom est obligatoire !",
+      "notConnectedDelete": "Non connecté."
+    }
+  },
+
+  "users": {
+    "pageTitle":         "Gestion des utilisateurs",
+    "pageSubtitle":      "Administration de l'annuaire et des rôles",
+    "addButton":         "Ajouter un utilisateur",
+    "searchPlaceholder": "Rechercher un utilisateur...",
+    "refresh":           "Actualiser",
+    "loadError":         "Erreur de chargement",
+    "listLabel":         "Liste des collaborateurs",
+    "accountsLabel":     "Comptes",
+    "roles": {
+      "employee":   "Employé",
+      "technician": "Technicien",
+      "manager":    "Manager",
+      "admin":      "Admin",
+      "chef":       "Chef"
+    },
+    "table": {
+      "id":            "ID",
+      "collaborator":  "Collaborateur",
+      "role":          "Rôle",
+      "department":    "Département",
+      "createdAt":     "Créé le",
+      "status":        "Statut",
+      "active":        "Actif",
+      "inactive":      "Inactif",
+      "verifiedMember":"Membre vérifié",
+      "emptyTitle":    "Aucun utilisateur trouvé",
+      "emptySubtitle": "Ajustez vos filtres ou ajoutez un nouveau membre."
+    },
+    "modal": {
+      "titleAdd":        "Ajouter un utilisateur",
+      "titleEdit":       "Détails de l'utilisateur",
+      "surname":         "Prénom",
+      "name":            "Nom",
+      "email":           "Email",
+      "phone":           "Téléphone",
+      "jobTitle":        "Poste",
+      "block":           "Bloquer",
+      "password":        "Mot de passe",
+      "selectDepartment":"Sélectionner un département",
+      "selectService":   "Sélectionner un service",
+      "serviceRequired": "Le service est requis pour ce rôle.",
+      "passwordRequired":"Le mot de passe est requis lors de l'ajout d'un utilisateur.",
+      "close":           "Fermer",
+      "save":            "Enregistrer",
+      "edit":            "Modifier",
+      "activate":        "Activer",
+      "deactivate":      "Désactiver"
+    }
+  },
+  "adminTickets": {
+    "title": "Gestion des Tickets",
+    "subtitle": "Tous les tickets du système ({{count}} affichés)",
+    "filters": {
+      "search":            "Recherche",
+      "searchPlaceholder": "Titre, description, créateur...",
+      "all":               "Tous",
+      "allPriorities":     "Toutes"
+    },
+    "statuses": {
+      "open":        "OUVERT",
+      "in_progress": "EN COURS",
+      "pending":     "EN ATTENTE",
+      "resolved":    "RÉSOLU",
+      "closed":      "FERMÉ"
+    },
+    "priorities": {
+      "low":      "BASSE",
+      "medium":   "MOYENNE",
+      "high":     "HAUTE",
+      "critical": "CRITIQUE"
+    },
+    "roles": {
+      "employee":   "employé",
+      "technician": "technicien",
+      "manager":    "manager",
+      "admin":      "admin"
+    },
+    "table": {
+      "createdBy": "Créé par"
+    }
+  }
+}

@@ -1,0 +1,219 @@
+{
+  "adminAccueil": {
+    "title": "Admin Dashboard",
+    "subtitle": "Global overview of the ticket management system",
+    "stats": {
+      "users":       "Users",
+      "tickets":     "Tickets",
+      "openTickets": "Open Tickets",
+      "services":    "Services"
+    },
+    "recentTickets": {
+      "title":     "Recent Tickets",
+      "createdBy": "Created by",
+      "statuses": {
+        "open":        "OPEN",
+        "in_progress": "IN PROGRESS",
+        "resolved":    "RESOLVED",
+        "pending":     "PENDING",
+        "closed":      "CLOSED"
+      },
+      "priorities": {
+        "high":   "HIGH",
+        "medium": "MEDIUM",
+        "low":    "LOW"
+      }
+    }
+  },
+
+  "adminParams": {
+    "title":    "Administrator Settings",
+    "subtitle": "System configuration and SLA rules",
+
+    "sla": {
+      "title":          "SLA Configuration",
+      "colPriority":    "Priority",
+      "colDuration":    "Duration (hours)",
+      "colDeadline":    "Indicative Deadline",
+      "colStatus":      "Status",
+      "saving":         "Saving...",
+      "saved":          "Saved",
+      "active":         "Active",
+      "updateError":    "Update error.",
+      "autoCalcLabel":  "Automatic calculation",
+      "autoCalcText":   "when a ticket is created, the resolution deadline is calculated using the following rule:",
+      "hours":          "{{count}} hour",
+      "hours_plural":   "{{count}} hours",
+      "days":           "{{count}} day",
+      "days_plural":    "{{count}} days",
+      "daysDecimal":    "{{count}} days"
+    },
+
+    "systemValues": {
+      "title":       "System Values",
+      "priorities":  "Priorities",
+      "statuses":    "Statuses",
+      "impacts":     "Impact",
+      "urgencies":   "Urgency",
+      "categories":  "Categories",
+      "roles":       "Roles"
+    },
+
+    "enums": {
+      "statuses": {
+        "open":             "Open",
+        "in_progress":      "In Progress",
+        "pending":          "Pending",
+        "pending_supplier": "Awaiting Supplier",
+        "resolved":         "Resolved",
+        "closed":           "Closed",
+        "rejected":         "Rejected"
+      },
+      "impacts": {
+        "low":    "Low",
+        "medium": "Medium",
+        "high":   "High"
+      },
+      "urgencies": {
+        "low":    "Low",
+        "medium": "Medium",
+        "high":   "High"
+      },
+      "priorities": {
+        "low":      "Low",
+        "medium":   "Medium",
+        "high":     "High",
+        "critical": "Critical"
+      },
+      "roles": {
+        "employee":    "Employee",
+        "technician":  "Technician",
+        "chef_service":"Head of Service",
+        "manager":     "Manager",
+        "admin":       "Administrator"
+      },
+      "categories": {
+        "account": "Account"
+      }
+    }
+  },
+
+  "departments": {
+    "pageTitle":         "Department Management",
+    "pageSubtitle":      "Organizational structure of the company",
+    "addButton":         "Add Department",
+    "searchPlaceholder": "Search a department...",
+    "cardTitle":         "My Departments",
+    "refresh":           "Refresh",
+    "error":             "Error",
+    "table": {
+      "id":          "ID",
+      "name":        "Department",
+      "description": "Description",
+      "createdAt":   "Creation Date"
+    },
+    "empty": {
+      "title":    "No department found",
+      "subtitle": "Adjust your filters or add an entity."
+    },
+    "modal": {
+      "titleAdd":           "New Department",
+      "titleEdit":          "Edit Department",
+      "nameLabel":          "Department name *",
+      "descriptionLabel":   "Description",
+      "cancel":             "Cancel",
+      "delete":             "Delete",
+      "confirmDelete":      "Confirm deletion?",
+      "create":             "Create",
+      "edit":               "Edit",
+      "saving":             "...",
+      "notConnected":       "Not connected. Please log in again.",
+      "nameRequired":       "Name is required!",
+      "notConnectedDelete": "Not connected."
+    }
+  },
+
+  "users": {
+    "pageTitle":         "User Management",
+    "pageSubtitle":      "Directory administration and roles",
+    "addButton":         "Add user",
+    "searchPlaceholder": "Search a user...",
+    "refresh":           "Refresh",
+    "loadError":         "Loading error",
+    "listLabel":         "List of collaborators",
+    "accountsLabel":     "Accounts",
+    "roles": {
+      "employee":   "Employee",
+      "technician": "Technician",
+      "manager":    "Manager",
+      "admin":      "Admin",
+      "chef":       "Chef"
+    },
+    "table": {
+      "id":            "ID",
+      "collaborator":  "Collaborator",
+      "role":          "Role",
+      "department":    "Department",
+      "createdAt":     "Created",
+      "status":        "Status",
+      "active":        "Active",
+      "inactive":      "Inactive",
+      "verifiedMember":"Verified member",
+      "emptyTitle":    "No user found",
+      "emptySubtitle": "Adjust your filters or add a new member."
+    },
+    "modal": {
+      "titleAdd":        "Add user",
+      "titleEdit":       "User details",
+      "surname":         "First name",
+      "name":            "Last name",
+      "email":           "Email",
+      "phone":           "Phone",
+      "jobTitle":        "Job title",
+      "block":           "Block",
+      "password":        "Password",
+      "selectDepartment":"Select a department",
+      "selectService":   "Select a service",
+      "serviceRequired": "Service is required for this role.",
+      "passwordRequired":"Password is required when adding a user.",
+      "close":           "Close",
+      "save":            "Save",
+      "edit":            "Edit",
+      "activate":        "Activate",
+      "deactivate":      "Deactivate"
+    }
+  },
+  "adminTickets": {
+    "title": "Ticket Management",
+    "subtitle": "All system tickets ({{count}} displayed)",
+    "filters": {
+      "search":            "Search",
+      "searchPlaceholder": "Title, description, creator...",
+      "all":               "All",
+      "allPriorities":     "All"
+    },
+    "statuses": {
+      "open":        "OPEN",
+      "in_progress": "IN PROGRESS",
+      "pending":     "PENDING",
+      "resolved":    "RESOLVED",
+      "closed":      "CLOSED"
+    },
+    "priorities": {
+      "low":      "LOW",
+      "medium":   "MEDIUM",
+      "high":     "HIGH",
+      "critical": "CRITICAL"
+    },
+    "roles": {
+      "employee":   "employee",
+      "technician": "technician",
+      "manager":    "manager",
+      "admin":      "admin"
+    },
+    "table": {
+      "createdBy": "Created by"
+    }
+  }
+
+}

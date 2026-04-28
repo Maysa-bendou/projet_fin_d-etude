@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -24,16 +25,6 @@ const getDynamicColor = (name, index) => {
   const palette = ['#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#f97316'];
   return map[name?.toLowerCase()] || palette[index % palette.length];
 };
-
-// ── Month names ───────────────────────────────────────────────────────────────
-const MONTHS = [
-  { value: 1, label: 'Janvier' }, { value: 2, label: 'Février' }, { value: 3, label: 'Mars' },
-  { value: 4, label: 'Avril' }, { value: 5, label: 'Mai' }, { value: 6, label: 'Juin' },
-  { value: 7, label: 'Juillet' }, { value: 8, label: 'Août' }, { value: 9, label: 'Septembre' },
-  { value: 10, label: 'Octobre' }, { value: 11, label: 'Novembre' }, { value: 12, label: 'Décembre' },
-];
-
-const MONTH_ORDER = MONTHS.map(m => m.label);
 
 // ── Custom chart sub-components ───────────────────────────────────────────────
 const BarTopLabel = ({ x, y, width, value }) => {
@@ -68,15 +59,6 @@ const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, v
   );
 };
 
-// ── KPI meta ──────────────────────────────────────────────────────────────────
-const KPI_META = {
-  total:        { motCle: 'Total Tickets',    desc: 'Tous les tickets du service' },
-  serviceRate:  { motCle: 'Taux Résolution',  desc: 'Tickets résolus ÷ total' },
-  resolvedCount:{ motCle: 'Tickets Résolus',  desc: 'Nbr tickets résolus' },
-  slaIn:        { motCle: 'Dans SLA',         desc: 'Tickets dans le délai SLA' },
-  slaOut:       { motCle: 'Hors SLA',         desc: 'Tickets hors délai SLA' },
-};
-
 // ── Shared sub-components ─────────────────────────────────────────────────────
 function Indicator({ color, label }) {
   return (
@@ -87,11 +69,11 @@ function Indicator({ color, label }) {
   );
 }
 
-function KpiCard({ meta, value, color }) {
+function KpiCard({ label, value, color }) {
   return (
     <div style={{ background: '#fff', padding: '16px 18px', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: `4px solid ${color}` }}>
       <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {meta.motCle}
+        {label}
       </p>
       <p style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1 }}>{value}</p>
     </div>
@@ -100,6 +82,20 @@ function KpiCard({ meta, value, color }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function RepartitionPage() {
+  const { t, i18n } = useTranslation('chef');
+
+  // Month list built from translation keys so it reacts to language switches
+  const MONTHS = useMemo(() => [
+    { value: 1,  label: t('months.jan') }, { value: 2,  label: t('months.feb') },
+    { value: 3,  label: t('months.mar') }, { value: 4,  label: t('months.apr') },
+    { value: 5,  label: t('months.may') }, { value: 6,  label: t('months.jun') },
+    { value: 7,  label: t('months.jul') }, { value: 8,  label: t('months.aug') },
+    { value: 9,  label: t('months.sep') }, { value: 10, label: t('months.oct') },
+    { value: 11, label: t('months.nov') }, { value: 12, label: t('months.dec') },
+  ], [i18n.language]);
+
+  const MONTH_ORDER = MONTHS.map(m => m.label);
+
   const [services, setServices]                   = useState([]);
   const [selectedServiceId, setSelectedServiceId] = useState(null);
   const [stats, setStats]                         = useState(null);
@@ -109,14 +105,12 @@ export default function RepartitionPage() {
   const [selectedYear, setSelectedYear]   = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
 
-  // ── Fetch service list (exactly what is in the database) ──────────────────
+  // ── Fetch service list ────────────────────────────────────────────────────
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const res = await axios.get('http://localhost:3001/api/services');
         const data = res.data;
-        // Support both { services: [...] } and plain array responses
-        // Filter out the synthetic "Non Assignés / Autres" entry (id: 0) added by the controller
         const raw = Array.isArray(data) ? data : (data.services || []);
         setServices(raw.filter(s => s.id !== 0));
       } catch (err) {
@@ -128,7 +122,7 @@ export default function RepartitionPage() {
     fetchServices();
   }, []);
 
-  // ── Fetch stats for the selected service only ─────────────────────────────
+  // ── Fetch stats for the selected service ─────────────────────────────────
   const fetchStats = useCallback(async (serviceId, year, month) => {
     if (!serviceId) return;
     setLoadingStats(true);
@@ -152,7 +146,7 @@ export default function RepartitionPage() {
     fetchStats(selectedServiceId, selectedYear, selectedMonth);
   }, [selectedServiceId, selectedYear, selectedMonth, fetchStats]);
 
-  // ── Filter handlers ────────────────────────────────────────────────────────
+  // ── Filter handlers ───────────────────────────────────────────────────────
   const handleYearChange  = (e) => { setSelectedYear(e.target.value); if (!e.target.value) setSelectedMonth(''); };
   const handleMonthChange = (e) => setSelectedMonth(e.target.value);
   const clearFilters      = () => { setSelectedYear(''); setSelectedMonth(''); };
@@ -171,86 +165,86 @@ export default function RepartitionPage() {
     setSelectedMonth('');
   };
 
-  // ── Derived data ───────────────────────────────────────────────────────────
+  // ── Derived data ──────────────────────────────────────────────────────────
   const sortedMonthlyStats = useMemo(() => {
     if (!stats?.monthlyStats) return [];
     if (selectedMonth) return stats.monthlyStats;
     return [...stats.monthlyStats].sort((a, b) => MONTH_ORDER.indexOf(a.month) - MONTH_ORDER.indexOf(b.month));
-  }, [stats, selectedMonth]);
+  }, [stats, selectedMonth, MONTH_ORDER]);
 
   const filterLabel = useMemo(() => {
-    if (!selectedYear && !selectedMonth) return 'Toutes les périodes';
+    if (!selectedYear && !selectedMonth) return t('filter.allPeriods');
     if (selectedYear && selectedMonth) {
       const mLabel = MONTHS.find(m => m.value === parseInt(selectedMonth))?.label;
       return `${mLabel} ${selectedYear}`;
     }
-    if (selectedYear) return `Année ${selectedYear}`;
+    if (selectedYear) return `${t('filter.year')} ${selectedYear}`;
     return '';
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, t, MONTHS]);
 
-  // ── Export PDF ─────────────────────────────────────────────────────────────
+  // ── Export PDF ────────────────────────────────────────────────────────────
   const exportPDF = () => {
     if (!stats) return;
     const doc = new jsPDF('p', 'pt', 'a4');
     doc.setFontSize(20);
-    doc.text(`Rapport de Performance : ${stats.serviceName}`, 40, 50);
+    doc.text(`${t('pdf.reportTitle')} : ${stats.serviceName}`, 40, 50);
     doc.setFontSize(11);
     doc.setTextColor(100);
-    doc.text(`Période : ${filterLabel}`, 40, 72);
+    doc.text(`${t('pdf.period')} : ${filterLabel}`, 40, 72);
     autoTable(doc, {
       startY: 90,
-      head: [['Indicateur', 'Valeur']],
+      head: [[t('pdf.indicator'), t('pdf.value')]],
       body: [
-        ['Total Tickets (Service)', stats.totalTickets],
-        ['Taux de Résolution (Service)', `${stats.resolutionRate}%`],
-        ['Tickets Dans SLA', stats.slaStats?.[0]?.value ?? 0],
-        ['Tickets Hors SLA', stats.slaStats?.[1]?.value ?? 0],
+        [t('pdf.totalTickets'),     stats.totalTickets],
+        [t('pdf.resolutionRate'),   `${stats.resolutionRate}%`],
+        [t('pdf.slaIn'),            stats.slaStats?.[0]?.value ?? 0],
+        [t('pdf.slaOut'),           stats.slaStats?.[1]?.value ?? 0],
       ],
       theme: 'striped'
     });
     if (stats.techPerformance?.length) {
-      doc.text('Performance Techniciens', 40, doc.lastAutoTable.finalY + 30);
+      doc.text(t('pdf.techPerf'), 40, doc.lastAutoTable.finalY + 30);
       autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 40,
-        head: [['Technicien', 'Assignés', 'Résolus', 'Rejetés', 'Taux Résolution (%)']],
-        body: stats.techPerformance.map(t => [t.name, t.totalAssigned, t.resolu, t.rejete, `${t.resolutionRate}%`]),
+        head: [[t('table.technician'), t('table.assigned'), t('table.resolved'), t('table.rejected'), t('table.resolutionRate')]],
+        body: stats.techPerformance.map(tech => [tech.name, tech.totalAssigned, tech.resolu, tech.rejete, `${tech.resolutionRate}%`]),
         headStyles: { fillColor: [99, 102, 241] }
       });
     }
-    doc.save(`Rapport_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.pdf`);
+    doc.save(`${t('pdf.reportFile')}_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.pdf`);
   };
 
-  // ── Export Excel ───────────────────────────────────────────────────────────
+  // ── Export Excel ──────────────────────────────────────────────────────────
   const exportExcel = () => {
     if (!stats) return;
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
-      { Indicateur: 'Total Tickets (Service)',    Valeur: stats.totalTickets },
-      { Indicateur: 'Taux Résolution (Service)',  Valeur: `${stats.resolutionRate}%` },
-      { Indicateur: 'SLA Conformes',              Valeur: stats.slaStats?.[0]?.value ?? 0 },
-      { Indicateur: 'SLA Dépassés',               Valeur: stats.slaStats?.[1]?.value ?? 0 },
-      { Indicateur: 'Période',                    Valeur: filterLabel },
+      { [t('pdf.indicator')]: t('pdf.totalTickets'),   [t('pdf.value')]: stats.totalTickets },
+      { [t('pdf.indicator')]: t('pdf.resolutionRate'), [t('pdf.value')]: `${stats.resolutionRate}%` },
+      { [t('pdf.indicator')]: t('pdf.slaConform'),     [t('pdf.value')]: stats.slaStats?.[0]?.value ?? 0 },
+      { [t('pdf.indicator')]: t('pdf.slaExceeded'),    [t('pdf.value')]: stats.slaStats?.[1]?.value ?? 0 },
+      { [t('pdf.indicator')]: t('pdf.period'),         [t('pdf.value')]: filterLabel },
     ]), "KPIs");
     if (stats.statusStats?.length)
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.statusStats), "Statuts");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.statusStats), t('excel.statuses'));
     if (stats.techPerformance?.length)
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-        stats.techPerformance.map(t => ({
-          Technicien: t.name,
-          'Total Assignés': t.totalAssigned,
-          Résolus: t.resolu,
-          Rejetés: t.rejete,
-          'Taux Résolution (%)': `${t.resolutionRate}%`
+        stats.techPerformance.map(tech => ({
+          [t('table.technician')]:     tech.name,
+          [t('table.assigned')]:       tech.totalAssigned,
+          [t('table.resolved')]:       tech.resolu,
+          [t('table.rejected')]:       tech.rejete,
+          [t('table.resolutionRate')]: `${tech.resolutionRate}%`
         }))
-      ), "Techniciens");
+      ), t('excel.technicians'));
     if (stats.priorityStats?.length)
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.priorityStats), "Priorités");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.priorityStats), t('excel.priorities'));
     if (sortedMonthlyStats.length)
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sortedMonthlyStats), "Tendances");
-    XLSX.writeFile(wb, `Stats_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sortedMonthlyStats), t('excel.trends'));
+    XLSX.writeFile(wb, `${t('excel.statsFile')}_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.xlsx`);
   };
 
-  // ── Global styles ──────────────────────────────────────────────────────────
+  // ── Global styles ─────────────────────────────────────────────────────────
   const globalStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     * { box-sizing: border-box; }
@@ -269,27 +263,27 @@ export default function RepartitionPage() {
     @keyframes spin { to { transform: rotate(360deg); } }
   `;
 
-  // ── RENDER: Loading services ───────────────────────────────────────────────
+  // ── RENDER: Loading services ──────────────────────────────────────────────
   if (loadingServices) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
       <div style={{ textAlign: 'center', color: '#64748b', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
         <div style={{ width: 44, height: 44, border: '3px solid #6366f1', borderTop: '3px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p style={{ fontWeight: 600 }}>Chargement des services...</p>
+        <p style={{ fontWeight: 600 }}>{t('loading.services')}</p>
       </div>
     </div>
   );
 
-  // ── VIEW 1: SERVICE SELECTION GRID ─────────────────────────────────────────
+  // ── VIEW 1: SERVICE SELECTION GRID ────────────────────────────────────────
   if (!selectedServiceId) {
     return (
       <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '40px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
         <style>{globalStyles}</style>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-          Répartition par Services
+          {t('repartition.title')}
         </h1>
         <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 32px', fontWeight: 500 }}>
-          Sélectionnez un service pour analyser ses performances en détail.
+          {t('repartition.subtitle')}
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
           {services.map((s) => (
@@ -297,11 +291,11 @@ export default function RepartitionPage() {
               <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 10px 0' }}>{s.name}</h3>
               {s.totalTickets !== undefined && (
                 <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 500 }}>
-                  {s.totalTickets} tickets · {s.resolutionRate ?? 0}% résolus
+                  {s.totalTickets} {t('repartition.tickets')} · {s.resolutionRate ?? 0}% {t('repartition.resolved')}
                 </p>
               )}
               <p style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Analyser →
+                {t('repartition.analyze')} →
               </p>
             </div>
           ))}
@@ -310,32 +304,31 @@ export default function RepartitionPage() {
     );
   }
 
-  // ── LOADING STATS ──────────────────────────────────────────────────────────
+  // ── LOADING STATS ─────────────────────────────────────────────────────────
   if (loadingStats && !stats) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
       <div style={{ textAlign: 'center', color: '#64748b', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
         <div style={{ width: 44, height: 44, border: '3px solid #6366f1', borderTop: '3px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p style={{ fontWeight: 600 }}>Chargement du tableau de bord...</p>
+        <p style={{ fontWeight: 600 }}>{t('loading.dashboard')}</p>
       </div>
     </div>
   );
 
   if (!stats) return null;
 
-  // ── Derived values for VIEW 2 ──────────────────────────────────────────────
+  // ── Derived values for VIEW 2 ─────────────────────────────────────────────
   const slaIn  = stats.slaStats?.[0]?.value ?? 0;
   const slaOut = stats.slaStats?.[1]?.value ?? 0;
-
   const resolvedCount  = stats.resolvedCount  ?? 0;
   const resolutionRate = stats.resolutionRate ?? 0;
 
-  const techTableData = (stats.techPerformance || []).map(t => ({
-    ...t,
-    tauxParService: stats.totalTickets > 0 ? Math.round((t.totalAssigned / stats.totalTickets) * 100) : 0,
+  const techTableData = (stats.techPerformance || []).map(tech => ({
+    ...tech,
+    tauxParService: stats.totalTickets > 0 ? Math.round((tech.totalAssigned / stats.totalTickets) * 100) : 0,
   }));
 
-  // ── VIEW 2: FULL STATS DASHBOARD ──────────────────────────────────────────
+  // ── VIEW 2: FULL STATS DASHBOARD ─────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
       <style>{globalStyles}</style>
@@ -352,21 +345,21 @@ export default function RepartitionPage() {
               fontFamily: 'inherit'
             }}
           >
-            <MdArrowBack style={{ fontSize: 14 }} /> Retour aux services
+            <MdArrowBack style={{ fontSize: 14 }} /> {t('repartition.backToServices')}
           </button>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
-            Analyses & Performances
+            {t('dashboard.title')}
           </h1>
           <p style={{ fontSize: 13, color: '#64748b', margin: 0, fontWeight: 500 }}>
-            {stats.serviceName} · Vue Détaillée
+            {stats.serviceName} · {t('dashboard.detailedView')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="pp-btn" onClick={exportExcel} style={{ background: '#f0fdf4', color: '#15803d', border: '1.5px solid #bbf7d0' }}>
-            <MdFileDownload size={17} /> Excel
+            <MdFileDownload size={17} /> {t('export.excel')}
           </button>
           <button className="pp-btn" onClick={exportPDF} style={{ background: '#0f172a', color: '#fff' }}>
-            <MdFileDownload size={17} /> Rapport PDF
+            <MdFileDownload size={17} /> {t('export.pdf')}
           </button>
         </div>
       </div>
@@ -375,27 +368,27 @@ export default function RepartitionPage() {
       <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: 13, fontWeight: 700 }}>
           <MdFilterList size={18} color="#6366f1" />
-          Filtrer par :
+          {t('filter.filterBy')}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Année</label>
+          <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('filter.year')}</label>
           <select className="pp-filter-select" value={selectedYear} onChange={handleYearChange}>
-            <option value="">Toutes</option>
+            <option value="">{t('filter.all')}</option>
             {(stats.availableYears || []).map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Mois</label>
+          <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('filter.month')}</label>
           <select className="pp-filter-select" value={selectedMonth} onChange={handleMonthChange} disabled={!selectedYear}>
-            <option value="">Tous</option>
+            <option value="">{t('filter.allMonths')}</option>
             {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
         </div>
 
         {(selectedYear || selectedMonth) && (
-          <button className="pp-clear-btn" onClick={clearFilters} style={{ marginTop: 18 }}>✕ Réinitialiser</button>
+          <button className="pp-clear-btn" onClick={clearFilters} style={{ marginTop: 18 }}>✕ {t('filter.reset')}</button>
         )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -408,36 +401,36 @@ export default function RepartitionPage() {
 
       {/* ── KPI Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
-        <KpiCard meta={KPI_META.total}         value={stats.totalTickets}   color="#6366f1" />
-        <KpiCard meta={KPI_META.serviceRate}   value={`${resolutionRate}%`} color="#8b5cf6" />
-        <KpiCard meta={KPI_META.resolvedCount} value={resolvedCount}         color="#0891b2" />
-        <KpiCard meta={KPI_META.slaIn}         value={slaIn}                color="#10b981" />
-        <KpiCard meta={KPI_META.slaOut}        value={slaOut}               color="#ef4444" />
+        <KpiCard label={t('kpi.total')}         value={stats.totalTickets}   color="#6366f1" />
+        <KpiCard label={t('kpi.resolutionRate')} value={`${resolutionRate}%`} color="#8b5cf6" />
+        <KpiCard label={t('kpi.resolved')}      value={resolvedCount}         color="#0891b2" />
+        <KpiCard label={t('kpi.slaIn')}         value={slaIn}                color="#10b981" />
+        <KpiCard label={t('kpi.slaOut')}        value={slaOut}               color="#ef4444" />
       </div>
 
       {/* ── Section: Efficacité Équipe ── */}
-      <p className="pp-section-title">Efficacité de l'Équipe</p>
+      <p className="pp-section-title">{t('section.teamEfficiency')}</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
 
         {/* Bar chart: Volume par Technicien */}
         <div className="pp-card">
-          <p className="pp-chart-title">Volume de Travail par Technicien</p>
+          <p className="pp-chart-title">{t('chart.workloadByTech')}</p>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={stats.techPerformance} barCategoryGap="30%" barGap={3}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }} interval={0} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <Bar dataKey="resolu" name="Résolus" fill="#10b981" radius={[5, 5, 0, 0]} maxBarSize={22}>
+              <Bar dataKey="resolu" name={t('table.resolved')} fill="#10b981" radius={[5, 5, 0, 0]} maxBarSize={22}>
                 <LabelList content={<BarTopLabel />} />
               </Bar>
-              <Bar dataKey="rejete" name="Rejetés" fill="#f43f5e" radius={[5, 5, 0, 0]} maxBarSize={22}>
+              <Bar dataKey="rejete" name={t('table.rejected')} fill="#f43f5e" radius={[5, 5, 0, 0]} maxBarSize={22}>
                 <LabelList content={<BarTopLabel />} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: 10 }}>
-            <Indicator color="#10b981" label="Résolus" />
-            <Indicator color="#f43f5e" label="Rejetés" />
+            <Indicator color="#10b981" label={t('table.resolved')} />
+            <Indicator color="#f43f5e" label={t('table.rejected')} />
           </div>
         </div>
 
@@ -445,66 +438,66 @@ export default function RepartitionPage() {
         <div className="pp-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <MdPeople color="#6366f1" size={17} /> Détail des Techniciens
+              <MdPeople color="#6366f1" size={17} /> {t('chart.techDetail')}
             </p>
             <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>
-              Taux = résolus ÷ assignés
+              {t('chart.rateFormula')}
             </span>
           </div>
           <div style={{ overflowY: 'auto', maxHeight: 280 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
-                  {['Technicien', 'Assignés', 'Résolus', 'Taux Résolution'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: h === 'Technicien' ? 'left' : 'center', color: '#64748b', fontWeight: 700, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                  {[t('table.technician'), t('table.assigned'), t('table.resolved'), t('table.resolutionRate')].map(h => (
+                    <th key={h} style={{ padding: '10px 14px', textAlign: h === t('table.technician') ? 'left' : 'center', color: '#64748b', fontWeight: 700, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {techTableData.map((t, i) => (
+                {techTableData.map((tech, i) => (
                   <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '11px 14px', fontWeight: 600, color: '#1e293b' }}>{t.name}</td>
-                    <td style={{ padding: '11px 14px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>{t.totalAssigned}</td>
+                    <td style={{ padding: '11px 14px', fontWeight: 600, color: '#1e293b' }}>{tech.name}</td>
+                    <td style={{ padding: '11px 14px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>{tech.totalAssigned}</td>
                     <td style={{ padding: '11px 14px', textAlign: 'center' }}>
-                      <span style={{ background: '#d1fae5', color: '#059669', borderRadius: 7, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>{t.resolu}</span>
+                      <span style={{ background: '#d1fae5', color: '#059669', borderRadius: 7, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>{tech.resolu}</span>
                     </td>
                     <td style={{ padding: '11px 14px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                         <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 3, maxWidth: 70 }}>
                           <div style={{
-                            width: `${t.resolutionRate}%`, height: '100%', borderRadius: 3,
-                            background: t.resolutionRate >= 70 ? '#10b981' : t.resolutionRate >= 40 ? '#f59e0b' : '#ef4444',
+                            width: `${tech.resolutionRate}%`, height: '100%', borderRadius: 3,
+                            background: tech.resolutionRate >= 70 ? '#10b981' : tech.resolutionRate >= 40 ? '#f59e0b' : '#ef4444',
                             transition: 'width 0.6s ease'
                           }} />
                         </div>
-                        <span style={{ fontWeight: 700, fontSize: 12, minWidth: 36, color: t.resolutionRate >= 70 ? '#059669' : t.resolutionRate >= 40 ? '#d97706' : '#dc2626' }}>
-                          {t.resolutionRate}%
+                        <span style={{ fontWeight: 700, fontSize: 12, minWidth: 36, color: tech.resolutionRate >= 70 ? '#059669' : tech.resolutionRate >= 40 ? '#d97706' : '#dc2626' }}>
+                          {tech.resolutionRate}%
                         </span>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {techTableData.length === 0 && (
-                  <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>Aucun technicien trouvé</td></tr>
+                  <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>{t('table.noTech')}</td></tr>
                 )}
               </tbody>
             </table>
           </div>
           <div style={{ padding: '10px 16px', borderTop: '1px solid #f1f5f9', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
-            <Indicator color="#10b981" label="≥ 70% Excellent" />
-            <Indicator color="#f59e0b" label="40–69% Moyen" />
-            <Indicator color="#ef4444" label="< 40% Faible" />
+            <Indicator color="#10b981" label={t('legend.excellent')} />
+            <Indicator color="#f59e0b" label={t('legend.average')} />
+            <Indicator color="#ef4444" label={t('legend.weak')} />
           </div>
         </div>
       </div>
 
       {/* ── Section: Répartition des flux ── */}
-      <p className="pp-section-title">Répartition des Flux</p>
+      <p className="pp-section-title">{t('section.flowDistribution')}</p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
 
         {/* État Actuel des Tickets — Bar Chart */}
         <div className="pp-card">
-          <p className="pp-chart-title">État Actuel des Tickets</p>
+          <p className="pp-chart-title">{t('chart.currentStatus')}</p>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={stats.statusStats} barCategoryGap="35%" margin={{ bottom: 50 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -530,7 +523,7 @@ export default function RepartitionPage() {
 
         {/* Distribution par Type — Pie Chart */}
         <div className="pp-card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <p className="pp-chart-title">Distribution par Type</p>
+          <p className="pp-chart-title">{t('chart.typeDistribution')}</p>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
@@ -554,8 +547,8 @@ export default function RepartitionPage() {
             </PieChart>
           </ResponsiveContainer>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px 12px', marginTop: 12 }}>
-            {(stats.typeStats ?? []).map((t, i) => (
-              <Indicator key={i} color={getDynamicColor(t.name, i)} label={`${t.name}: ${t.value} (${t.percentage}%)`} />
+            {(stats.typeStats ?? []).map((item, i) => (
+              <Indicator key={i} color={getDynamicColor(item.name, i)} label={`${item.name}: ${item.value} (${item.percentage}%)`} />
             ))}
           </div>
         </div>
@@ -564,9 +557,9 @@ export default function RepartitionPage() {
       {/* ── Section: Répartition par Catégorie ── */}
       {(stats.categoryStats?.length > 0) && (
         <>
-          <p className="pp-section-title">Répartition par Catégorie</p>
+          <p className="pp-section-title">{t('section.categoryDistribution')}</p>
           <div className="pp-card" style={{ marginBottom: 22 }}>
-            <p className="pp-chart-title">Tickets par Catégorie</p>
+            <p className="pp-chart-title">{t('chart.ticketsByCategory')}</p>
             <ResponsiveContainer width="100%" height={230}>
               <BarChart data={stats.categoryStats} barCategoryGap="35%">
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -590,7 +583,7 @@ export default function RepartitionPage() {
       )}
 
       {/* ── Section: Tendances Temporelles ── */}
-      <p className="pp-section-title">Tendances Temporelles</p>
+      <p className="pp-section-title">{t('section.timeTrends')}</p>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
 
         {/* Area chart — Monthly / Daily trend */}
@@ -599,14 +592,14 @@ export default function RepartitionPage() {
             <div>
               <p className="pp-chart-title" style={{ marginBottom: 2 }}>
                 {selectedMonth
-                  ? `Évolution Journalière — ${MONTHS.find(m => m.value === parseInt(selectedMonth))?.label} ${selectedYear}`
-                  : `Évolution Mensuelle ${selectedYear || new Date().getFullYear()}`}
+                  ? `${t('chart.dailyEvolution')} — ${MONTHS.find(m => m.value === parseInt(selectedMonth))?.label} ${selectedYear}`
+                  : `${t('chart.monthlyEvolution')} ${selectedYear || new Date().getFullYear()}`}
               </p>
               <span style={{ fontSize: 11, color: '#94a3b8' }}>📅 {filterLabel}</span>
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
-                Total: <strong style={{ color: '#1e293b' }}>{stats.totalTickets}</strong>
+                {t('chart.total')}: <strong style={{ color: '#1e293b' }}>{stats.totalTickets}</strong>
               </p>
             </div>
           </div>
@@ -633,7 +626,7 @@ export default function RepartitionPage() {
 
         {/* Priorités — Pie Chart */}
         <div className="pp-card">
-          <p className="pp-chart-title">Répartition par Priorité</p>
+          <p className="pp-chart-title">{t('chart.priorityDistribution')}</p>
           <ResponsiveContainer width="100%" height={230}>
             <PieChart>
               <Pie

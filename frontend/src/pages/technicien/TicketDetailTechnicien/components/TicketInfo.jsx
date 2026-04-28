@@ -3,9 +3,9 @@ import {
   Tag, Layers, AlertTriangle, FileText, Calendar, Clock,
   Lock, Circle, LogIn, XCircle, Forward
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import UserTooltip from "./utils/UserTooltip";
-import { PRIORITY_CLASS, PRIORITY_FR, IMPACT_FR, URGENCY_FR, CATEGORY_FR, TYPE_FR, STATUS_CLASS, STATUS_FR } from "./constants";
-
+import { PRIORITY_CLASS, PRIORITY_KEYS, IMPACT_KEYS, URGENCY_KEYS, CATEGORY_KEYS, TYPE_KEYS, STATUS_CLASS, STATUS_KEYS } from "./constants"
 function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElapsed) {
   if (!slaDateLimite) return null;
 
@@ -58,6 +58,7 @@ function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElaps
     deadline: new Date(slaDateLimite),
   };
 }
+
 export default function TicketInfo({ 
   ticket, 
   status, 
@@ -66,39 +67,47 @@ export default function TicketInfo({
   handleStatusChange,
   currentUser 
 }) {
+  const { t, i18n } = useTranslation("technicien");
+
   const emp = ticket.employee ?? {};
   const ini = `${emp.name?.[0] ?? "?"} ${emp.surname?.[0] ?? ""}`;
   const empName = `${emp.name ?? ""} ${emp.surname ?? ""}`.trim();
-const sla = getSLAInfo(
-  ticket.sla_date_limite,
-  ticket.sla_date_debut,
-  status,                        // ← statut local (déjà mis à jour)
-  ticket.closedAt,
-  ticket.sla_pause_elapsed_ms ?? null,
-);
+
+  const sla = getSLAInfo(
+    ticket.sla_date_limite,
+    ticket.sla_date_debut,
+    status,                        // ← statut local (déjà mis à jour)
+    ticket.closedAt,
+    ticket.sla_pause_elapsed_ms ?? null,
+  );
+
+  // Use locale from i18n for date formatting; fallback to fr-FR
+  const dateLocale = i18n.language?.startsWith("en") ? "en-GB" : "fr-FR";
+
   const fmtDate = (d) =>
-  d
-    ? new Date(d).toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "N/A";
-const fmtDateTime = (d) =>
-  d
-    ? new Date(d).toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "N/A";
+    d
+      ? new Date(d).toLocaleDateString(dateLocale, {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
+
+  const fmtDateTime = (d) =>
+    d
+      ? new Date(d).toLocaleDateString(dateLocale, {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch">
       {/* Employee card */}
       <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
         <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-          <User size={12}/> Informations Employé
+          <User size={12}/> {t("components.ticketInfo.employeeCard")}
         </h2>
         <UserTooltip user={emp}>
           <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 cursor-default">
@@ -115,13 +124,13 @@ const fmtDateTime = (d) =>
         </UserTooltip>
         <div className="flex flex-col gap-0.5">
           {[
-            { Icon:Hash, label:"ID", value:emp.id },
-            { Icon:Mail, label:"Email", value:emp.email },
-            { Icon:Building2, label:"Département", value:emp.department },
-            { Icon:Briefcase, label:"Titre du poste", value:emp.job_title },
-            { Icon:Phone, label:"Numéro", value:emp.phone },
-            { Icon:Building2, label:"Block", value:emp.block_number || emp.block || "N/A" },
-            { Icon:DoorOpen, label:"Bureau", value:emp.office },
+            { Icon: Hash,      label: "ID",                                          value: emp.id },
+            { Icon: Mail,      label: "Email",                                       value: emp.email },
+            { Icon: Building2, label: t("components.ticketInfo.fields.department"),  value: emp.department },
+            { Icon: Briefcase, label: t("components.ticketInfo.fields.jobTitle"),    value: emp.job_title },
+            { Icon: Phone,     label: t("components.ticketInfo.fields.phone"),       value: emp.phone },
+            { Icon: Building2, label: "Block",                                       value: emp.block_number || emp.block || "N/A" },
+            { Icon: DoorOpen,  label: t("components.ticketInfo.fields.office"),      value: emp.office },
           ].map(f => (
             <div key={f.label} className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
               <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
@@ -144,60 +153,74 @@ const fmtDateTime = (d) =>
             <h1 className="text-base font-bold text-gray-900 leading-snug">{ticket.title}</h1>
           </div>
           <span className={`text-[11px] font-semibold px-3 py-1 rounded-full shrink-0 ${STATUS_CLASS[status] ?? "bg-gray-100 text-gray-600"}`}>
-            {STATUS_FR[status] ?? status}
+            {t(STATUS_KEYS[status]) ?? status}
           </span>
         </div>
-    {ticket.redirect_note && (
-  <div className="flex flex-col gap-1 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2.5">
-    <div className="flex items-center gap-2 text-[11px] font-semibold text-purple-700">
-      <Forward size={13} className="shrink-0"/>
-      Ticket redirigé
-    </div>
-    <p className="text-[11px] text-purple-600 pl-5">
-      {ticket.redirectInfo?.reason ?? ticket.redirect_note}
-    </p>
-    {ticket.redirectInfo && (
-      <div className="flex items-center gap-3 pl-5 text-[10px] text-purple-400 font-medium">
-        {ticket.redirectInfo.by && (
-          <span>Par : <span className="text-purple-600 font-semibold">{ticket.redirectInfo.by}</span></span>
+
+        {ticket.redirect_note && (
+          <div className="flex flex-col gap-1 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2.5">
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-purple-700">
+              <Forward size={13} className="shrink-0"/>
+              {t("components.ticketInfo.redirect.title")}
+            </div>
+            <p className="text-[11px] text-purple-600 pl-5">
+              {ticket.redirectInfo?.reason ?? ticket.redirect_note}
+            </p>
+            {ticket.redirectInfo && (
+              <div className="flex items-center gap-3 pl-5 text-[10px] text-purple-400 font-medium">
+                {ticket.redirectInfo.by && (
+                  <span>
+                    {t("components.ticketInfo.redirect.by")}{" "}
+                    <span className="text-purple-600 font-semibold">{ticket.redirectInfo.by}</span>
+                  </span>
+                )}
+                {ticket.redirectInfo.from && (
+                  <span>
+                    {t("components.ticketInfo.redirect.previousTech")}{" "}
+                    <span className="text-purple-600 font-semibold">{ticket.redirectInfo.from}</span>
+                  </span>
+                )}
+                {ticket.redirectInfo.date && (
+                  <span>
+                    {new Date(ticket.redirectInfo.date).toLocaleDateString(dateLocale, { day: "2-digit", month: "short" })}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         )}
-        {ticket.redirectInfo.from && (
-          <span>Ancien tech : <span className="text-purple-600 font-semibold">{ticket.redirectInfo.from}</span></span>
-        )}
-        {ticket.redirectInfo.date && (
-          <span>{new Date(ticket.redirectInfo.date).toLocaleDateString("fr-FR", { day:"2-digit", month:"short" })}</span>
-        )}
-      </div>
-    )}
-  </div>
-)}
+
         <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Description</p>
-          <p className="text-[13px] text-gray-700 leading-relaxed">{ticket.description ?? "Aucune description."}</p>
+          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">
+            {t("ticketDetail.description")}
+          </p>
+          <p className="text-[13px] text-gray-700 leading-relaxed">
+            {ticket.description ?? t("components.ticketInfo.noDescription")}
+          </p>
         </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
-            { Icon:AlertTriangle, label:"Priorité", custom: ticket.priority
-                ? <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${PRIORITY_CLASS[ticket.priority] ?? "bg-gray-100"}`}>{PRIORITY_FR[ticket.priority] ?? ticket.priority}</span>
+            { Icon: AlertTriangle, label: t("ticketDetail.cols.priority"), custom: ticket.priority
+                ? <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${PRIORITY_CLASS[ticket.priority] ?? "bg-gray-100"}`}>{t(PRIORITY_KEYS[ticket.priority]) ?? ticket.priority}</span>
                 : null },
-            { Icon:Tag, label:"Catégorie", value: CATEGORY_FR[ticket.category] ?? ticket.category },
-            { Icon:Layers, label:"Service", value: ticket.service ?? "N/A" },
-            { Icon:AlertTriangle, label:"Impact", value: IMPACT_FR[ticket.impact] ?? ticket.impact ?? "N/A" },
-            { Icon:AlertTriangle, label:"Urgence", value: URGENCY_FR[ticket.urgency] ?? ticket.urgency ?? "N/A" },
-            { Icon:FileText, label:"Type", value: TYPE_FR[ticket.type] ?? ticket.type ?? "Incident" },
-          { Icon: User, label: "Assigné par", custom: ticket.assignedBy
-    ? ticket.assignedBy.type === "auto"
-      ? <span className="text-[12px] font-semibold text-indigo-600 italic">Prise en charge directe</span>
-      : <UserTooltip user={ticket.assignedBy}>
-          <span className="text-[12px] font-semibold text-blue-700 cursor-default underline decoration-dotted">{ticket.assignedBy.label}</span>
-        </UserTooltip>
-    : null },
-{ Icon: Calendar, label: "Créé le",    value: ticket.createdAt  ? fmtDate(ticket.createdAt)       : "N/A" },
-{ Icon: LogIn,    label: "Assigné le", value: ticket.assignedAt ? fmtDateTime(ticket.assignedAt)   : "N/A" },
-...(isClosed && ticket.closedAt ? [
-  { Icon: XCircle, label: "Clôturé le", value: fmtDateTime(ticket.closedAt) }
-] : []),
+            { Icon: Tag,           label: t("ticketDetail.cols.category"), value: t(CATEGORY_KEYS[ticket.category]) ?? ticket.category },
+            { Icon: Layers,        label: t("ticketDetail.cols.service"),  value: ticket.service ?? "N/A" },
+            { Icon: AlertTriangle, label: t("ticketDetail.cols.impact"),   value: t(IMPACT_KEYS[ticket.impact]) ?? ticket.impact ?? "N/A"},
+            { Icon: AlertTriangle, label: t("ticketDetail.cols.urgency"),  value: t(URGENCY_KEYS[ticket.urgency]) ?? ticket.urgency ?? "N/A" },
+            { Icon: FileText,      label: "Type",                          value: t(TYPE_KEYS[ticket.type]) ?? ticket.type ?? "Incident" },
+            { Icon: User,          label: t("components.ticketInfo.fields.assignedBy"), custom: ticket.assignedBy
+                ? ticket.assignedBy.type === "auto"
+                  ? <span className="text-[12px] font-semibold text-indigo-600 italic">{t("components.ticketInfo.directAssignment")}</span>
+                  : <UserTooltip user={ticket.assignedBy}>
+                      <span className="text-[12px] font-semibold text-blue-700 cursor-default underline decoration-dotted">{ticket.assignedBy.label}</span>
+                    </UserTooltip>
+                : null },
+            { Icon: Calendar, label: t("components.ticketInfo.fields.createdOn"),  value: ticket.createdAt  ? fmtDate(ticket.createdAt)      : "N/A" },
+            { Icon: LogIn,    label: t("components.ticketInfo.fields.assignedOn"), value: ticket.assignedAt ? fmtDateTime(ticket.assignedAt)  : "N/A" },
+            ...(isClosed && ticket.closedAt ? [
+              { Icon: XCircle, label: t("components.ticketInfo.fields.closedOn"), value: fmtDateTime(ticket.closedAt) }
+            ] : []),
           ].map(f => (
             <div key={f.label} className="bg-gray-50 rounded-xl p-2.5 border border-gray-100">
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -211,67 +234,74 @@ const fmtDateTime = (d) =>
 
         {/* SLA */}
         {sla && (
-  <div className="rounded-xl p-3 border bg-gray-50 border-gray-200">
-    <div className="flex justify-between items-center mb-2">
-      <div className="flex items-center gap-1.5">
-        <Clock size={12} className={sla.exceeded ? "text-red-500" : sla.mode === "paused" ? "text-purple-500" : "text-gray-500"}/>
-        <p className="text-[11px] font-bold text-gray-700">SLA</p>
-        {sla.mode === "paused" && (
-          <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">En pause</span>
+          <div className="rounded-xl p-3 border bg-gray-50 border-gray-200">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-1.5">
+                <Clock size={12} className={sla.exceeded ? "text-red-500" : sla.mode === "paused" ? "text-purple-500" : "text-gray-500"}/>
+                <p className="text-[11px] font-bold text-gray-700">SLA</p>
+                {sla.mode === "paused" && (
+                  <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">
+                    {t("components.ticketInfo.sla.onHold")}
+                  </span>
+                )}
+                {sla.mode === "terminal" && (
+                  <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
+                    {t("components.ticketInfo.sla.closed")}
+                  </span>
+                )}
+              </div>
+
+              {sla.mode === "terminal" && (
+                <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : "text-emerald-700"}`}>
+                  {sla.exceeded
+                    ? t("components.ticketInfo.sla.exceededBy", { h: sla.diffH, m: sla.diffM })
+                    : t("components.ticketInfo.sla.respected")}
+                </span>
+              )}
+              {sla.mode === "paused" && (
+                <span className="text-[11px] font-bold text-purple-600">
+                  {t("components.ticketInfo.sla.frozen", { h: sla.diffH, m: sla.diffM })}
+                </span>
+              )}
+              {sla.mode === "active" && (
+                <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : sla.pct > 50 ? "text-emerald-700" : sla.pct > 20 ? "text-amber-600" : "text-red-600"}`}>
+                  {sla.exceeded
+                    ? t("components.ticketInfo.sla.alertExceeded", { h: sla.diffH, m: sla.diffM })
+                    : t("components.ticketInfo.sla.remaining", { h: sla.diffH, m: sla.diffM })}
+                </span>
+              )}
+            </div>
+
+            <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
+              <div
+                className={`h-1.5 rounded-full transition-all ${
+                  sla.mode === "terminal"
+                    ? sla.exceeded ? "bg-red-400" : "bg-emerald-500"
+                    : sla.mode === "paused"
+                    ? "bg-purple-400"
+                    : sla.exceeded ? "bg-red-500" : sla.pct > 50 ? "bg-emerald-500" : sla.pct > 20 ? "bg-amber-500" : "bg-red-500"
+                }`}
+                style={{ width: `${Math.round(sla.pct)}%` }}
+              />
+            </div>
+
+            <p className="text-[10px] text-gray-400">
+              {t("components.ticketInfo.sla.deadline")}{" "}
+              {sla.deadline.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
+              {" "}{t("components.ticketInfo.sla.at")}{" "}
+              {sla.deadline.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
         )}
-        {sla.mode === "terminal" && (
-          <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">Clôturé</span>
-        )}
-      </div>
-
-      {/* Label selon mode */}
-      {sla.mode === "terminal" && (
-        <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : "text-emerald-700"}`}>
-          {sla.exceeded
-            ? `Dépassé de ${sla.diffH}h ${sla.diffM}m`
-            : `Respecté ✓`}
-        </span>
-      )}
-      {sla.mode === "paused" && (
-        <span className="text-[11px] font-bold text-purple-600">
-          ⏸ {sla.diffH}h {sla.diffM}m figé
-        </span>
-      )}
-      {sla.mode === "active" && (
-        <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : sla.pct > 50 ? "text-emerald-700" : sla.pct > 20 ? "text-amber-600" : "text-red-600"}`}>
-          {sla.exceeded ? `⚠ Dépassé de ${sla.diffH}h ${sla.diffM}m` : `${sla.diffH}h ${sla.diffM}m restants`}
-        </span>
-      )}
-    </div>
-
-    <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
-      <div
-        className={`h-1.5 rounded-full transition-all ${
-          sla.mode === "terminal"
-            ? sla.exceeded ? "bg-red-400" : "bg-emerald-500"
-            : sla.mode === "paused"
-            ? "bg-purple-400"
-            : sla.exceeded ? "bg-red-500" : sla.pct > 50 ? "bg-emerald-500" : sla.pct > 20 ? "bg-amber-500" : "bg-red-500"
-        }`}
-        style={{ width: `${Math.round(sla.pct)}%` }}
-      />
-    </div>
-
-    <p className="text-[10px] text-gray-400">
-      Limite : {sla.deadline.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
-      {" "}à {sla.deadline.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-    </p>
-  </div>
-)}
 
         {/* Status selector */}
         <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-gray-100">
           <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
-            <Clock size={11}/> Statut :
+            <Clock size={11}/> {t("components.ticketInfo.status.label")}
           </label>
           {isClosed ? (
             <span className="text-[12px] font-semibold text-gray-500 flex items-center gap-1.5">
-              <Lock size={12}/> Ticket fermé — statut verrouillé
+              <Lock size={12}/> {t("components.ticketInfo.status.locked")}
             </span>
           ) : (
             <select 
@@ -279,14 +309,15 @@ const fmtDateTime = (d) =>
               onChange={e => handleStatusChange(e.target.value)}
               className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 cursor-pointer focus:outline-none focus:border-blue-400"
             >
-              {Object.entries(STATUS_FR).map(([val, lbl]) => (
-                <option key={val} value={val}>{lbl}</option>
-              ))}
+
+              {Object.entries(STATUS_KEYS).map(([val, key]) => (
+  <option key={val} value={val}>{t(key)}</option>
+))}
             </select>
           )}
           {savingStatus && (
             <span className="text-[10px] text-gray-400 animate-pulse flex items-center gap-1">
-              <Circle size={8} className="animate-spin"/> Sauvegarde...
+              <Circle size={8} className="animate-spin"/> {t("components.ticketInfo.status.saving")}
             </span>
           )}
         </div>

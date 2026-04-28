@@ -227,14 +227,14 @@ export default function AccueilTechnicien() {
   ];
 
   return (
-    <div style={{ background:"#f8fafc", minHeight:"100vh", padding:"28px 32px", fontFamily:"'Plus Jakarta Sans',sans-serif", color:"#0f172a" }}>
+     <div style={{ background:"#faf9f7", minHeight:"100vh", padding:"28px 32px", fontFamily:"'Plus Jakarta Sans',sans-serif", color:"#0f172a" }}>
       <style>{css}</style>
 
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28 }}>
         <div>
           
-          <h1 style={{margin:"0",fontSize:22,fontWeight:700,color:"#0f172a"}}>
+          <h1 style={{margin:"0",fontSize:23,fontWeight:700,color:"#0f172a"}}>
               {t('accueilTech.header.title')}
           </h1>
           <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>  {t('accueilTech.header.subtitle')}

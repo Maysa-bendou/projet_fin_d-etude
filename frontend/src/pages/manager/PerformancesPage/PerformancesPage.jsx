@@ -261,10 +261,10 @@ export default function PerformancesPage() {
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 px' }}>
             {t("performances.title")}
           </h1>
-          <p style={{ fontSize: 13, color: '#64748b', margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 14, color: '#3c434d', margin:"0" , fontWeight: 530 }}>
             {stats.serviceName} · {t("performances.managerView")}
           </p>
         </div>
@@ -277,6 +277,7 @@ export default function PerformancesPage() {
           </button>
         </div>
       </div>
+      
 
       {/* ── Filter Bar ── */}
       <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>

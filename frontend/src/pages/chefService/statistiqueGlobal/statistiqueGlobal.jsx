@@ -242,7 +242,7 @@ export default function ChefPerformancesPage() {
   const techTableData = stats.techPerformance;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
@@ -262,10 +262,10 @@ export default function ChefPerformancesPage() {
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 px' }}>
             {t('dashboard.title')}
           </h1>
-          <p style={{ fontSize: 14, color: '#51555e', margin: 0, fontWeight: 530 }}>
+          <p style={{ fontSize: 14, color: '#43464c', margin: 0, fontWeight: 530 }}>
             {t('global.header.subtitle')} · {stats.serviceNames || ''}
           </p>
         </div>

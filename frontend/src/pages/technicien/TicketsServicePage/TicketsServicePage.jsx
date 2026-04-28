@@ -398,12 +398,12 @@ const TicketsServicePage = () => {
       <div style={{ borderBottom:"1px solid #e8e2d9", padding:"14px 28px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div>
           
-          <h1 style={{ fontSize:19, fontWeight:900, color:"#0f172a", margin:0 }}>
+          <h1 style={{ fontSize:22, fontWeight:700, color:"#0f172a", margin:0 }}>
             {serviceName
-              ? <>{t("ticketsService.header.titlePrefix")} <span style={{ color:"#1d4ed8" }}>{serviceName}</span></>
+              ? <>{t("ticketsService.header.titlePrefix")} <span style={{ color:"#0f172a" }}>{serviceName}</span></>
               : t("ticketsService.header.titleFallback")}
           </h1>
-          <p style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"1px", margin:"0 0 2px" }}>
+          <p style={{ fontSize:14, fontWeight:550, color:"#383c41", margin:"0 px" }}>
             {role==="manager" ? t("ticketsService.header.subtitleManager") : t("ticketsService.header.subtitle")}
           </p>
         </div>

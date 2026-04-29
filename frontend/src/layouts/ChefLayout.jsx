@@ -17,7 +17,7 @@ export default function ChefLayout() {
         <TopNavbar /> 
 
         {/* Espace de contenu avec padding de 8 pour l'effet d'aération */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>

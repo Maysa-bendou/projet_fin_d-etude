@@ -277,28 +277,35 @@ export default function RepartitionPage() {
   // ── VIEW 1: SERVICE SELECTION GRID ────────────────────────────────────────
   if (!selectedServiceId) {
     return (
-      <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '40px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>  <style>{globalStyles}</style>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>
-          {t('repartition.title')}
-        </h1>
-       <p style={{ fontSize: 14, color: '#535c68', margin: '0 px', fontWeight: 530 }}>  {t('repartition.subtitle')}
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-          {services.map((s) => (
-            <div key={s.id} className="service-card" onClick={() => handleSelectService(s.id)}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 10px 0' }}>{s.name}</h3>
-              {s.totalTickets !== undefined && (
-                <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 500 }}>
-                  {s.totalTickets} {t('repartition.tickets')} · {s.resolutionRate ?? 0}% {t('repartition.resolved')}
-                </p>
-              )}
-              <p style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {t('repartition.analyze')} →
-              </p>
-            </div>
-          ))}
+      <div style={{ minHeight: '100vh', background: '#faf9f7', fontFamily: "sans-serif" }}>
+  <style>{globalStyles}</style>
+  <div style={{ borderBottom: '1px solid #e8e2d9', padding: '14px 28px' }}>
+    <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 2px' }}>
+      {t('repartition.title')}
+    </h1>
+    <p style={{ fontSize: 14, color: '#53575c', margin: 0, fontWeight: 530 }}>
+      {t('repartition.subtitle')}
+    </p>
+  </div>
+  <div style={{ padding: '20px 28px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+      {services.map((s) => (
+        <div key={s.id} className="service-card" onClick={() => handleSelectService(s.id)}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 10px 0' }}>{s.name}</h3>
+          {s.totalTickets !== undefined && (
+            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 500 }}>
+              {s.totalTickets} {t('repartition.tickets')} · {s.resolutionRate ?? 0}% {t('repartition.resolved')}
+            </p>
+          )}
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {t('repartition.analyze')} →
+          </p>
         </div>
-      </div>
+      ))}
+    </div>   {/* closes grid */}
+  </div>     
+</div>       
+    
     );
   }
 
@@ -328,40 +335,40 @@ export default function RepartitionPage() {
 
   // ── VIEW 2: FULL STATS DASHBOARD ─────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-      <style>{globalStyles}</style>
+    <div style={{ minHeight: '100vh', background: '#faf9f7', fontFamily: "sans-serif" }}>
+  <style>{globalStyles}</style>
 
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <button
-            onClick={handleBack}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
-              cursor: 'pointer', color: '#94a3b8', fontSize: 12, fontWeight: 700,
-              textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, padding: 0,
-              fontFamily: 'inherit'
-            }}
-          >
-            <MdArrowBack style={{ fontSize: 14 }} /> {t('repartition.backToServices')}
-          </button>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
-            {t('dashboard.title')}
-          </h1>
-          <p style={{ fontSize: 13, color: '#64748b', margin: 0, fontWeight: 500 }}>
-            {stats.serviceName} · {t('dashboard.detailedView')}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="pp-btn" onClick={exportExcel} style={{ background: '#f0fdf4', color: '#15803d', border: '1.5px solid #bbf7d0' }}>
-            <MdFileDownload size={17} /> {t('export.excel')}
-          </button>
-          <button className="pp-btn" onClick={exportPDF} style={{ background: '#0f172a', color: '#fff' }}>
-            <MdFileDownload size={17} /> {t('export.pdf')}
-          </button>
-        </div>
-      </div>
-
+  {/* ── Header ── */}
+  <div style={{ borderBottom: '1px solid #e8e2d9', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div>
+      <button
+        onClick={handleBack}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none',
+          cursor: 'pointer', color: '#94a3b8', fontSize: 12, fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, padding: 0,
+          fontFamily: 'inherit'
+        }}
+      >
+        <MdArrowBack style={{ fontSize: 14 }} /> {t('repartition.backToServices')}
+      </button>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 0px' }}>
+        {t('dashboard.title')}
+      </h1>
+      <p style={{ fontSize: 14, color: '#53575c', margin: 0, fontWeight: 530 }}>
+        {stats.serviceName} · {t('dashboard.detailedView')}
+      </p>
+    </div>
+    <div style={{ display: 'flex', gap: 10 }}>
+      <button className="pp-btn" onClick={exportExcel} style={{ background: '#f0fdf4', color: '#15803d', border: '1.5px solid #bbf7d0' }}>
+        <MdFileDownload size={17} /> {t('export.excel')}
+      </button>
+      <button className="pp-btn" onClick={exportPDF} style={{ background: '#0f172a', color: '#fff' }}>
+        <MdFileDownload size={17} /> {t('export.pdf')}
+      </button>
+    </div>
+  </div>
+ <div style={{ padding: '20px 28px' }}>
       {/* ── Filter Bar ── */}
       <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: 13, fontWeight: 700 }}>
@@ -645,7 +652,7 @@ export default function RepartitionPage() {
           </div>
         </div>
       </div>
-
+</div>
     </div>
   );
 }

@@ -95,82 +95,78 @@ const AccueilPage = () => {
       </div>
 
       {/* Table card */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid #d9d4cc', padding: '24px' }}>
+      {/* Table card */}
+<div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e2d9', overflow: 'hidden' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', margin: 0 }}>{t('accueil.recentTickets')}</h2>
-          <button
-            onClick={() => navigate('/employee/mes-tickets')}
-            style={{ background: 'none', border: 'none', color: '#534ab7', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-          >
-            {t('accueil.viewAll')} →
-          </button>
-        </div>
+  <div style={{ padding: '14px 16px', borderBottom: '1px solid #e8e2d9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t('accueil.recentTickets')}</h2>
+    <button
+      onClick={() => navigate('/employee/mes-tickets')}
+      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#1e3a8a', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+    >
+      <MdHistory size={14} />
+      {t('accueil.viewAll')}
+    </button>
+  </div>
 
-        <div style={{ borderRadius: 12, border: '1.5px solid #d9d4cc', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ background: '#faf9f7', borderBottom: '1.5px solid #d9d4cc' }}>
-                {[
-                  t('table.id'),
-                  t('table.title'),
-                  t('table.service'),
-                  t('table.priority'),
-                  t('table.status'),
-                  t('table.createdAt'),
-                  t('table.updatedAt'),
-                ].map(col => (
-                  <th key={col} style={{
-                    padding: '10px 14px', fontSize: 11, fontWeight: 700,
-                    color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap',
-                  }}>
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentTickets.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
-                    {t('common.noTickets')}
-                  </td>
-                </tr>
-              ) : (
-                recentTickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    onClick={() => navigate(`/employee/ticket/${ticket.id}`)}
-                    style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#faf9f7'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={{ padding: '13px 14px', fontSize: 12, color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      #{ticket.id}
-                    </td>
-                    <td style={{ padding: '13px 14px', fontSize: 13, color: '#1e293b', fontWeight: 500, maxWidth: 220 }}>
-                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {ticket.title}
-                      </span>
-                    </td>
-                    <td style={{ padding: '13px 14px', fontSize: 13, color: '#64748b', whiteSpace: 'nowrap' }}>
-                      {ticket.services?.name ?? '—'}
-                    </td>
-                    <td style={{ padding: '13px 14px' }}><Pill config={PRIORITY_CONFIG} value={ticket.priority} /></td>
-                    <td style={{ padding: '13px 14px' }}><Pill config={STATUS_CONFIG}   value={ticket.status} /></td>
-                    <td style={{ padding: '13px 14px', fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                      {fmtDate(ticket.created_at)}
-                    </td>
-                    <td style={{ padding: '13px 14px', fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                      {fmtDate(ticket.updated_at || ticket.created_at)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div style={{ overflowX: 'auto' }}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+      <colgroup>
+        <col style={{ width: 55 }} />
+        <col style={{ width: 220 }} />
+        <col style={{ width: 150 }} />
+        <col style={{ width: 110 }} />
+        <col style={{ width: 110 }} />
+        <col style={{ width: 110 }} />
+        <col style={{ width: 110 }} />
+      </colgroup>
+      <thead>
+        <tr style={{ background: '#faf9f7', borderBottom: '1.5px solid #e8e2d9' }}>
+          {[
+            t('table.id'), t('table.title'), t('table.service'),
+            t('table.priority'), t('table.status'),
+            t('table.createdAt'), t('table.updatedAt'),
+          ].map(col => (
+            <th key={col} style={{ padding: '9px 10px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', textAlign: 'left' }}>
+              {col}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {recentTickets.length === 0 ? (
+          <tr>
+            <td colSpan={7} style={{ padding: '48px 24px', textAlign: 'center' }}>
+              <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>{t('common.noTickets')}</p>
+            </td>
+          </tr>
+        ) : (
+          recentTickets.map((ticket, idx) => (
+            <tr
+              key={ticket.id}
+              onClick={() => navigate(`/employee/ticket/${ticket.id}`)}
+              style={{ background: '#fff', borderBottom: idx === recentTickets.length - 1 ? 'none' : '1px solid #f4f0ec', cursor: 'pointer' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#faf8f5'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+            >
+              <td style={{ padding: '9px 10px', fontSize: 11, fontWeight: 700, color: '#c4bfb8' }}>#{ticket.id}</td>
+              <td style={{ padding: '9px 10px', fontSize: 12, color: '#1e293b', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {ticket.title}
+              </td>
+              <td style={{ padding: '9px 10px', fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {ticket.services?.name ?? '—'}
+              </td>
+              <td style={{ padding: '9px 10px' }}><Pill config={PRIORITY_CONFIG} value={ticket.priority} /></td>
+              <td style={{ padding: '9px 10px' }}><Pill config={STATUS_CONFIG} value={ticket.status} /></td>
+              <td style={{ padding: '9px 10px', fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDate(ticket.created_at)}</td>
+              <td style={{ padding: '9px 10px', fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDate(ticket.updated_at || ticket.created_at)}</td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
     </div>
   );
 };

@@ -17,7 +17,7 @@ export default function ManagerLayout() {
         <TopNavbar /> 
      
         {/* Zone de contenu principale avec un espacement large (p-8) */}
-        <main className="flex-1 overflow-y-auto pb-8">
+        <main className="flex-1 overflow-y-auto ">
           <Outlet />
         </main>
       </div>

@@ -13,7 +13,8 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
 import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
-
+import { MdCalendarMonth, MdOutlineInfo } from 'react-icons/md';
+import {  MdCalendarViewMonth } from 'react-icons/md';
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
   const map = {
@@ -242,7 +243,7 @@ export default function PerformancesPage() {
   }));
 
   return (
-    <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#faf9f7', fontFamily: "sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
@@ -260,51 +261,53 @@ export default function PerformancesPage() {
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 px' }}>
-            {t("performances.title")}
-          </h1>
-          <p style={{ fontSize: 14, color: '#3c434d', margin:"0" , fontWeight: 530 }}>
-            {stats.serviceName} · {t("performances.managerView")}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="pp-btn" onClick={exportExcel} style={{ background: '#f0fdf4', color: '#15803d', border: '1.5px solid #bbf7d0' }}>
-            <MdFileDownload size={17} /> {t("performances.export.excel")}
-          </button>
-          <button className="pp-btn" onClick={exportPDF} style={{ background: '#0f172a', color: '#fff' }}>
-            <MdFileDownload size={17} /> {t("performances.export.pdf")}
-          </button>
-        </div>
-      </div>
-
+        <div style={{ borderBottom: '1px solid #e8e2d9', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 0px' }}>{t("performances.title")}</h1>
+      <p style={{ fontSize: 14, color: '#53575c', margin: 0, fontWeight: 530 }}>{stats.serviceName} · {t("performances.managerView")}</p>
+    </div>
+    <div style={{ display: 'flex', gap: 10 }}>
+      <button className="pp-btn" onClick={exportExcel} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe' }}>
+        <MdFileDownload size={17} /> {t("performances.export.excel")}
+      </button>
+      <button className="pp-btn" onClick={exportPDF} style={{ background: '#1e3a8a', color: '#fff', border: 'none' }}>
+        <MdFileDownload size={17} /> {t("performances.export.pdf")}
+      </button>
+    </div>
+  </div>
+        <div style={{ padding: '20px 28px' }}>
       {/* ── Filter Bar ── */}
-      <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+     <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: 13, fontWeight: 700 }}>
-          <MdFilterList size={18} color="#6366f1" />
+          <MdFilterList size={18} color="#1e3a8a" />
           {t("performances.filter.filterBy")}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {t("performances.filter.year")}
-          </label>
-          <select className="pp-filter-select" value={selectedYear} onChange={handleYearChange}>
-            <option value="">{t("performances.filter.all")}</option>
-            {(stats.availableYears || []).map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
+  <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
+    <MdCalendarMonth size={12} color="#94a3b8" /> {t("performances.filter.year")}
+  </label>
+  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+    <MdCalendarMonth size={14} color="#94a3b8" style={{ position: 'absolute', left: 9, pointerEvents: 'none', zIndex: 1 }} />
+    <select className="pp-filter-select" value={selectedYear} onChange={handleYearChange} style={{ paddingLeft: 28 }}>
+      <option value="">{t("performances.filter.all")}</option>
+      {(stats.availableYears || []).map(y => <option key={y} value={y}>{y}</option>)}
+    </select>
+  </div>
+</div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {t("performances.filter.month")}
-          </label>
-          <select className="pp-filter-select" value={selectedMonth} onChange={handleMonthChange} disabled={!selectedYear}>
-            <option value="">{t("performances.filter.all")}</option>
-            {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-          </select>
-        </div>
+       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+  <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
+    <MdCalendarViewMonth size={12} color="#94a3b8" /> {t("performances.filter.month")}
+  </label>
+  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+    <MdCalendarViewMonth size={14} color="#94a3b8" style={{ position: 'absolute', left: 9, pointerEvents: 'none', zIndex: 1 }} />
+    <select className="pp-filter-select" value={selectedMonth} onChange={handleMonthChange} disabled={!selectedYear} style={{ paddingLeft: 28 }}>
+      <option value="">{t("performances.filter.all")}</option>
+      {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+    </select>
+  </div>
+</div>
 
         {(selectedYear || selectedMonth) && (
           <button className="pp-clear-btn" onClick={clearFilters} style={{ marginTop: 18 }}>
@@ -313,7 +316,9 @@ export default function PerformancesPage() {
         )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 12, color: '#64748b' }}>📅 {filterLabel}</span>
+          <span style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5 }}>
+  <MdCalendarMonth size={14} color="#94a3b8" /> {filterLabel}
+</span>
           {loading && (
             <span style={{ width: 18, height: 18, border: '2.5px solid #6366f1', borderTop: '2.5px solid transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
           )}
@@ -526,7 +531,9 @@ export default function PerformancesPage() {
                   ? `${t("performances.charts.dailyEvolution")} — ${MONTHS.find(m => m.value === parseInt(selectedMonth))?.label} ${selectedYear}`
                   : `${t("performances.charts.monthlyEvolution")} ${selectedYear || new Date().getFullYear()}`}
               </p>
-              <span style={{ fontSize: 11, color: '#94a3b8' }}>📅 {filterLabel}</span>
+              <span style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
+  <MdCalendarMonth size={12} color="#94a3b8" /> {filterLabel}
+</span>
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>
@@ -592,7 +599,7 @@ export default function PerformancesPage() {
           </div>
         </div>
       </div>
-
+     </div>
     </div>
   );
 }

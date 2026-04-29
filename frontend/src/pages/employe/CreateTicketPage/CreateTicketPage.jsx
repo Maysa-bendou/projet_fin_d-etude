@@ -2,9 +2,11 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaPaperclip } from "react-icons/fa";
-import { MdAdd, MdClose } from "react-icons/md";
+import { MdAdd, MdClose, MdOutlineFolder, MdOutlineBarChart, MdOutlineTag,
+  MdOutlineCategory, MdOutlineTitle, MdOutlineDescription, MdOutlinePublic,
+  MdOutlineBolt, MdOutlineConfirmationNumber, MdOutlineInfo, MdOutlineWarning,
+  MdOutlineAttachFile } from "react-icons/md";
 
-// Kept for backend — never rendered
 const PRIORITY_MATRIX = {
   high:   { high: "critical", medium: "high",   low: "medium" },
   medium: { high: "high",     medium: "medium",  low: "low" },
@@ -33,22 +35,25 @@ const ChevronDown = () => (
   </svg>
 );
 
-const Label = ({ children, required, missing }) => (
-  <label style={{ display: "block", fontSize: 12, fontWeight: 600, letterSpacing: "0.3px", textTransform: "uppercase", marginBottom: 7, color: missing ? "#dc2626" : "#64748b" }}>
-    {children}{required && <span style={{ color: "#ef4444", marginLeft: 3 }}>*</span>}
-    {missing && <span style={{ marginLeft: 6, fontWeight: 500, textTransform: "none", fontSize: 11 }}>— {missing}</span>}
-  </label>
-);
-
-const SectionTitle = ({ children }) => (
-  <div style={{ marginBottom: 22, paddingBottom: 14, borderBottom: "1.5px solid #e8e2d9" }}>
+const SectionTitle = ({ children, icon }) => (
+  <div style={{ marginBottom: 22, paddingBottom: 14, borderBottom: "1.5px solid #e8e2d9", display: "flex", alignItems: "center", gap: 8 }}>
+    {icon && <span style={{ display: "flex", color: "#64748b" }}>{icon}</span>}
     <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{children}</span>
   </div>
 );
 
+const Label = ({ children, required, missing, icon }) => (
+  <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, letterSpacing: "0.3px", textTransform: "uppercase", marginBottom: 7, color: missing ? "#dc2626" : "#64748b" }}>
+    {icon && <span style={{ display: "flex", flexShrink: 0 }}>{icon}</span>}
+    {children}
+    {required && <span style={{ color: "#ef4444", marginLeft: 2 }}>*</span>}
+    {missing && <span style={{ marginLeft: 6, fontWeight: 500, textTransform: "none", fontSize: 11 }}>— {missing}</span>}
+  </label>
+);
+
 const FileSelector = ({ files, setFiles, t }) => (
   <div>
-    <Label>{t('createTicket.attachments')}</Label>
+    <Label icon={<MdOutlineAttachFile size={13} />}>{t('createTicket.attachments')}</Label>
     <div style={{ border: "1.5px dashed #e2e8f0", borderRadius: 10, padding: "14px 16px", background: "#fff", display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", minHeight: 52 }}>
       {files.map((f, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 500, color: "#475569", background: "#fff", border: "1px solid #d9d4cc", borderRadius: 20, padding: "4px 10px 4px 8px" }}>
@@ -74,9 +79,8 @@ export default function CreateTicketPage() {
   const { t } = useTranslation('employee');
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // Options built inside component so t() is available
   const TYPE_OPTIONS = [
-    { value: "problem", label: t('createTicket.types.problem') },
+    { value: "problem",         label: t('createTicket.types.problem') },
     { value: "service_request", label: t('createTicket.types.service_request') },
   ];
   const CATEGORY_OPTIONS = [
@@ -98,7 +102,6 @@ export default function CreateTicketPage() {
     { value: "high",   label: t('createTicket.urgencies.high') },
   ];
 
-  // FIELDS used only for validation label lookup
   const FIELDS = [
     { key: "title",       label: t('createTicket.fields.title') },
     { key: "description", label: t('createTicket.fields.description') },
@@ -188,8 +191,8 @@ export default function CreateTicketPage() {
   /* ── SUCCESS ── */
   if (success) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#f5f0e8" }}>
-        <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #d9d4cc", padding: "40px 36px", maxWidth: 440, width: "100%", textAlign: "center" }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#faf9f7" }}>
+        <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", padding: "40px 36px", maxWidth: 440, width: "100%", textAlign: "center" }}>
           <div style={{ width: 56, height: 56, background: "#f0fdf4", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 22, color: "#16a34a", border: "2px solid #bbf7d0" }}>✓</div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>{t('createTicket.success.title')}</h2>
           <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 28 }}>
@@ -212,23 +215,26 @@ export default function CreateTicketPage() {
 
   /* ── FORM ── */
   return (
-    <div style={{  background: "#faf9f7", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <div style={{ minHeight: "100vh", background: "#faf9f7" }}>
 
-        <div style={{ marginBottom: 29 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 0px 0" }}> {t('createTicket.pageTitle')}</h1>
-          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>{t('createTicket.pageSubtitle')}</p>  </div>
-
+        {/* Header — matches AccueilPage exactly */}
+        <div style={{ borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 0px" }}>{t('createTicket.pageTitle')}</h1>
+      <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530 }}>{t('createTicket.pageSubtitle')}</p>
+    </div>
+  </div>
+      <div style={{ padding: "16px 24px" }}>
         <form onSubmit={handleSubmit} noValidate>
-          <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #d9d4cc", padding: "32px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
+          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", padding: "24px 28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
 
             {/* ── LEFT ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <SectionTitle>{t('createTicket.section.details')}</SectionTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <SectionTitle icon={<MdOutlineFolder size={16} />}>{t('createTicket.section.details')}</SectionTitle>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
-                  <Label required>{t('createTicket.fields.type')}</Label>
+                  <Label required icon={<MdOutlineTag size={13} />}>{t('createTicket.fields.type')}</Label>
                   <div style={{ position: "relative" }}>
                     <select name="type" value={form.type} onChange={handleChange} style={selectStyle}>
                       {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -238,7 +244,9 @@ export default function CreateTicketPage() {
                 </div>
 
                 <div ref={fieldRefs.category}>
-                  <Label required missing={isMissing("category") ? t('createTicket.required') : undefined}>{t('createTicket.fields.category')}</Label>
+                  <Label required missing={isMissing("category") ? t('createTicket.required') : undefined} icon={<MdOutlineCategory size={13} />}>
+                    {t('createTicket.fields.category')}
+                  </Label>
                   <div style={{ position: "relative" }}>
                     <select name="category" value={form.category} onChange={handleChange}
                       style={{ ...selectStyle, border: borderFor("category") }}>
@@ -251,27 +259,39 @@ export default function CreateTicketPage() {
               </div>
 
               <div ref={fieldRefs.title}>
-                <Label required missing={isMissing("title") ? t('createTicket.required') : undefined}>{t('createTicket.fields.title')}</Label>
+                <Label required missing={isMissing("title") ? t('createTicket.required') : undefined} icon={<MdOutlineTitle size={13} />}>
+                  {t('createTicket.fields.title')}
+                </Label>
                 <input name="title" value={form.title} onChange={handleChange}
                   placeholder={t('createTicket.titlePlaceholder')}
                   style={{ ...inputStyle, border: borderFor("title") }} />
+                <p style={{ fontSize: 11, color: "#94a3b8", margin: "5px 0 0", fontWeight: 500 }}>
+                  {t('createTicket.hints.title')}
+                </p>
               </div>
 
               <div ref={fieldRefs.description} style={{ flex: 1 }}>
-                <Label required missing={isMissing("description") ? t('createTicket.required') : undefined}>{t('createTicket.fields.description')}</Label>
+                <Label required missing={isMissing("description") ? t('createTicket.required') : undefined} icon={<MdOutlineDescription size={13} />}>
+                  {t('createTicket.fields.description')}
+                </Label>
                 <textarea name="description" value={form.description} onChange={handleChange} rows={8}
                   placeholder={t('createTicket.descriptionPlaceholder')}
-                  style={{ ...inputStyle, resize: "none", height: 190, border: borderFor("description") }} />
+                  style={{ ...inputStyle, resize: "none", height: 70, border: borderFor("description") }} />
+                <p style={{ fontSize: 11, color: "#94a3b8", margin: "5px 0 0", fontWeight: 500 }}>
+                  {t('createTicket.hints.description')}
+                </p>
               </div>
             </div>
 
             {/* ── RIGHT ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <SectionTitle>{t('createTicket.section.impact')}</SectionTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <SectionTitle icon={<MdOutlineBarChart size={16} />}>{t('createTicket.section.impact')}</SectionTitle>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div ref={fieldRefs.impact}>
-                  <Label required missing={isMissing("impact") ? t('createTicket.required') : undefined}>{t('createTicket.fields.impact')}</Label>
+                  <Label required missing={isMissing("impact") ? t('createTicket.required') : undefined} icon={<MdOutlinePublic size={13} />}>
+                    {t('createTicket.fields.impact')}
+                  </Label>
                   <div style={{ position: "relative" }}>
                     <select name="impact" value={form.impact} onChange={handleChange}
                       style={{ ...selectStyle, border: borderFor("impact") }}>
@@ -283,7 +303,9 @@ export default function CreateTicketPage() {
                 </div>
 
                 <div ref={fieldRefs.urgency}>
-                  <Label required missing={isMissing("urgency") ? t('createTicket.required') : undefined}>{t('createTicket.fields.urgency')}</Label>
+                  <Label required missing={isMissing("urgency") ? t('createTicket.required') : undefined} icon={<MdOutlineBolt size={13} />}>
+                    {t('createTicket.fields.urgency')}
+                  </Label>
                   <div style={{ position: "relative" }}>
                     <select name="urgency" value={form.urgency} onChange={handleChange}
                       style={{ ...selectStyle, border: borderFor("urgency") }}>
@@ -294,8 +316,6 @@ export default function CreateTicketPage() {
                   </div>
                 </div>
               </div>
-
-              {/* No priority preview here — computed silently on the backend */}
 
               <FileSelector files={files} setFiles={setFiles} t={t} />
             </div>
@@ -309,7 +329,7 @@ export default function CreateTicketPage() {
                   padding: "11px 16px", fontSize: 13, color: "#dc2626", fontWeight: 500,
                   marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 10,
                 }}>
-                  <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>⚠</span>
+                  <MdOutlineWarning size={16} style={{ flexShrink: 0, marginTop: 1 }} />
                   <div>
                     {serverError && <div>{serverError}</div>}
                     {missing.length > 0 && (
@@ -333,9 +353,7 @@ export default function CreateTicketPage() {
                   style={{ padding: "10px 32px", background: loading ? "#94a3b8" : "#1e3a8a", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8 }}>
                   {loading ? t('createTicket.submitting') : t('createTicket.submit')}
                   {!loading && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-                    </svg>
+                    <MdOutlineConfirmationNumber size={16} />
                   )}
                 </button>
               </div>
@@ -343,7 +361,8 @@ export default function CreateTicketPage() {
 
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    
   );
 }

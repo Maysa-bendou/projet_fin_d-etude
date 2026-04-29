@@ -97,7 +97,11 @@
       "subtitle": "Ticket",
       "viewTickets": "View my tickets",
       "createAnother": "Create another ticket"
-    }
+    },
+    "hints": {
+  "title": "Be concise one sentence summarizing the issue.",
+  "description": "Include context, steps taken, and any error messages."
+}
   },
 
   "mesTickets": {

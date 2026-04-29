@@ -97,7 +97,13 @@
       "subtitle": "Ticket",
       "viewTickets": "Voir mes tickets",
       "createAnother": "Créer un autre ticket"
-    }
+    },
+"hints": {
+  "title": "Soyez concis — une phrase résumant le problème.",
+  "description": "Précisez le contexte, les actions effectuées et les messages d'erreur.",
+  "priorityNote": "La priorité est calculée automatiquement",
+  "priorityDetail": "En fonction de l'impact et de l'urgence, le système attribue le niveau de priorité approprié."
+}
   },
 
   "mesTickets": {

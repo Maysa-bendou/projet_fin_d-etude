@@ -242,7 +242,7 @@ export default function ChefPerformancesPage() {
   const techTableData = stats.techPerformance;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#faf9f7', padding: '28px 32px', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>  <style>{`
+    <div style={{ minHeight: '100vh', background: '#faf9f7', fontFamily:"sans-serif" }}>  <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
         .pp-card { background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px 22px; }
@@ -259,25 +259,21 @@ export default function ChefPerformancesPage() {
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-           <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 px' }}>
-            {t('dashboard.title')}
-          </h1>
-          <p style={{ fontSize: 14, color: '#43464c', margin: 0, fontWeight: 530 }}>
-            {t('global.header.subtitle')} · {stats.serviceNames || ''}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="pp-btn" onClick={exportExcel} style={{ background: '#f0fdf4', color: '#15803d', border: '1.5px solid #bbf7d0' }}>
-            <MdFileDownload size={17} /> {t('export.excel')}
-          </button>
-          <button className="pp-btn" onClick={exportPDF} style={{ background: '#0f172a', color: '#fff' }}>
-            <MdFileDownload size={17} /> {t('export.pdf')}
-          </button>
-        </div>
-      </div>
-
+      <div style={{ borderBottom: '1px solid #e8e2d9', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+  <div>
+    <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 0px' }}>{t('dashboard.title')}</h1>
+    <p style={{ fontSize: 14, color: '#53575c', margin: 0, fontWeight: 530 }}>{t('global.header.subtitle')} · {stats.serviceNames || ''}</p>
+  </div>
+  <div style={{ display: 'flex', gap: 10 }}>
+    <button className="pp-btn" onClick={exportExcel} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe' }}>
+      <MdFileDownload size={17} /> {t('export.excel')}
+    </button>
+    <button className="pp-btn" onClick={exportPDF} style={{ background: '#1e3a8a', color: '#fff', border: 'none' }}>
+      <MdFileDownload size={17} /> {t('export.pdf')}
+    </button>
+  </div>
+</div>
+      <div style={{ padding: '20px 28px' }}>
       {/* ── Filter Bar ── */}
       <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: 13, fontWeight: 700 }}>
@@ -543,7 +539,7 @@ export default function ChefPerformancesPage() {
         </div>
 
       </div>
-
+   </div>
     </div>
   );
 }

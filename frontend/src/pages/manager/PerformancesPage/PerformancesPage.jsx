@@ -12,6 +12,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
+import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -321,12 +322,12 @@ export default function PerformancesPage() {
 
       {/* ── KPI Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
-        <KpiCard meta={KPI_META.total}         value={stats.totalTickets}          color="#6366f1" />
-        <KpiCard meta={KPI_META.serviceRate}   value={`${stats.resolutionRate}%`}  color="#8b5cf6" />
-        <KpiCard meta={KPI_META.resolvedCount} value={stats.resolvedCount}         color="#0891b2" />
-        <KpiCard meta={KPI_META.slaIn}         value={slaIn}                       color="#10b981" />
-        <KpiCard meta={KPI_META.slaOut}        value={slaOut}                      color="#ef4444" />
-      </div>
+  <KpiCard meta={KPI_META.total}         value={stats.totalTickets}         color="#6366f1" bg="#eff0ff" border="#c7d2fe" Icon={MdConfirmationNumber} />
+  <KpiCard meta={KPI_META.serviceRate}   value={`${stats.resolutionRate}%`} color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" Icon={MdPercent}            />
+  <KpiCard meta={KPI_META.resolvedCount} value={stats.resolvedCount}        color="#0891b2" bg="#ecfeff" border="#a5f3fc" Icon={MdCheckCircle}         />
+  <KpiCard meta={KPI_META.slaIn}         value={slaIn}                      color="#10b981" bg="#f0fdf4" border="#a7f3d0" Icon={MdTimer}              />
+  <KpiCard meta={KPI_META.slaOut}        value={slaOut}                     color="#ef4444" bg="#fef2f2" border="#fecaca" Icon={MdTimerOff}            />
+</div>
 
       {/* ── Section: Team Efficiency ── */}
       <p className="pp-section-title">{t("performances.sections.teamEfficiency")}</p>
@@ -607,11 +608,25 @@ function Indicator({ color, label }) {
   );
 }
 
-function KpiCard({ meta, value, color }) {
+function KpiCard({ meta, value, color, bg, border, Icon }) {
   return (
-    <div style={{ background: '#fff', padding: '16px 18px', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: `4px solid ${color}` }}>
-      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{meta.motCle}</p>
-      <p style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1 }}>{value}</p>
+    <div style={{
+      background: "#fff",
+      border: `1.5px solid ${border}`,
+      borderRadius: 16,
+      padding: "18px 20px",
+      boxShadow: `0 1px 3px #0001, inset 0 0 0 999px ${bg}30`,
+      display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+    }}>
+      <div>
+        <p style={{ margin: "0 0 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1.5px" }}>
+          {meta.motCle}
+        </p>
+        <p style={{ margin: 0, fontSize: 34, fontWeight: 800, color: color, lineHeight: 1 }}>{value}</p>
+      </div>
+      <div style={{ background: bg, border: `1.5px solid ${border}`, borderRadius: 10, padding: 8 }}>
+        <Icon size={18} color={color} />
+      </div>
     </div>
   );
 }

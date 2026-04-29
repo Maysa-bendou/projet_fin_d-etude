@@ -6,27 +6,9 @@ import { MdHistory, MdCheckCircle, MdHourglassEmpty, MdAutorenew } from 'react-i
 import { PRIORITY_CONFIG, STATUS_CONFIG } from "../../../config/styles";
 import Pill from "../../../components/common/Pill";
 
-const StatCard = ({ title, value, IconComponent, bgColor, iconColor }) => (
-  <div style={{
-    background: '#fff', borderRadius: 14, border: '1.5px solid #d9d4cc',
-    padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16,
-  }}>
-    <div style={{
-      width: 46, height: 46, borderRadius: 12, background: bgColor,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    }}>
-      <IconComponent size={21} style={{ color: iconColor }} />
-    </div>
-    <div>
-      <p style={{ fontSize: 13, color: '#56606d#94a3b8', margin: '0 0 3px 0', fontWeight: 400 }}>{title}</p>
-      <p style={{ fontSize: 28, fontWeight: 700, color: '#2e353f', margin: 0, lineHeight: 1 }}>{value}</p>
-    </div>
-  </div>
-);
-
 const AccueilPage = () => {
   const navigate = useNavigate();
- const { t } = useTranslation('employee');
+  const { t } = useTranslation('employee');
   const [stats, setStats]     = useState({ total: 0, resolved: 0, open: 0, in_progress: 0 });
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,20 +55,43 @@ const AccueilPage = () => {
     <div style={{ padding: 40, textAlign: 'center', color: '#faf9f7' }}>{t('common.loading')}</div>
   );
 
+  const STATS = [
+    { label: t('accueil.stats.total'),       val: stats.total,       Icon: MdHistory,        c: "#ef4444", bg: "#fef2f2", border: "#fecaca" },
+    { label: t('accueil.stats.open'),        val: stats.open,        Icon: MdHourglassEmpty, c: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
+    { label: t('accueil.stats.in_progress'), val: stats.in_progress, Icon: MdAutorenew,      c: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe" },
+    { label: t('accueil.stats.resolved'),    val: stats.resolved,    Icon: MdCheckCircle,    c: "#10b981", bg: "#f0fdf4", border: "#a7f3d0" },
+  ];
+
   return (
     <div style={{ padding: '15px', background: '#faf9f7', minHeight: '100vh' }}>
 
       <div style={{ marginBottom: 29 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>{t('accueil.title')}</h1>
-          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>{t('accueil.subtitle')}</p>
+        <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530 }}>{t('accueil.subtitle')}</p>
       </div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 28 }}>
-        <StatCard title={t('accueil.stats.total')}       value={stats.total}       IconComponent={MdHistory}        bgColor="#eff6ff" iconColor="#3b82f6" />
-        <StatCard title={t('accueil.stats.open')}        value={stats.open}        IconComponent={MdHourglassEmpty} bgColor="#fff7ed" iconColor="#ea580c" />
-        <StatCard title={t('accueil.stats.in_progress')} value={stats.in_progress} IconComponent={MdAutorenew}      bgColor="#faeeda" iconColor="#f59e0b" />
-        <StatCard title={t('accueil.stats.resolved')}    value={stats.resolved}    IconComponent={MdCheckCircle}    bgColor="#f0fdf4" iconColor="#22c55e" />
+        {STATS.map(({ label, val, Icon, c, bg, border }) => (
+          <div key={label} style={{
+            background: "#fff",
+            border: `1.5px solid ${border}`,
+            borderRadius: 16,
+            padding: "18px 20px",
+            boxShadow: `0 1px 3px #0001, inset 0 0 0 999px ${bg}30`,
+            display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+          }}>
+            <div>
+              <p style={{ margin: "0 0 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1.5px" }}>
+                {label}
+              </p>
+              <p style={{ margin: 0, fontSize: 34, fontWeight: 800, color: c, lineHeight: 1 }}>{val}</p>
+            </div>
+            <div style={{ background: bg, border: `1.5px solid ${border}`, borderRadius: 10, padding: 8 }}>
+              <Icon size={18} color={c} />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Table card */}

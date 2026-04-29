@@ -419,9 +419,15 @@ const TicketDetailPage = () => {
                     display: "flex", alignItems: "center", gap: 8,
                     padding: "10px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700,
                     cursor: isTerminal ? "not-allowed" : "pointer", border: "none",
-                    background: isTerminal ? "#e8e2d9" : showList ? "#e8e2d9" : isAssigned ? "#fff7ed" : "#1e3a8a",
-                    color: isTerminal ? "#94a3b8" : showList ? "#6b7280" : isAssigned ? "#ea580c" : "#fff",
-                    outline: isAssigned && !showList && !isTerminal ? "1.5px solid #ea580c" : "none",
+                    background: isTerminal ? "#e8e2d9"
+  : showList ? "#e8e2d9"
+  : isAssigned ? "#fff7ed"
+  : "#1e3a8a",
+
+color: isTerminal ? "#94a3b8"
+  : showList ? "#6b7280"
+  : isAssigned ? "#ea580c"
+  : "#fff", outline: isAssigned && !showList && !isTerminal ? "1.5px solid #ea580c" : "none",
                     opacity: isTerminal ? 0.6 : 1,
                   }}
                   onMouseEnter={e => { if (!isTerminal && !showList) e.currentTarget.style.background = isAssigned ? "#ffedd5" : "#1e40af"; }}

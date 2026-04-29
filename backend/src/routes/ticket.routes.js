@@ -305,6 +305,16 @@ router.get("/:id", async (req, res) => {
           select: { name: true, surname: true, id: true },
         },
         services: { select: { name: true } },
+       ticket_assignments_history: {
+  where: { action: { in: ["taken", "assigned", "updated"] } },
+  orderBy: { created_at: "desc" },
+  take: 5,
+  include: {
+    users_ticket_assignments_history_assigned_byTousers: {
+      select: { id: true, name: true, surname: true },
+    },
+  },
+},
         ticket_comments: {
           orderBy: { created_at: "asc" },
           include: {
@@ -315,6 +325,7 @@ router.get("/:id", async (req, res) => {
       },
     });
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    console.log("🔍 history:", JSON.stringify(ticket.ticket_assignments_history, null, 2));
     const redirectComment = ticket.ticket_comments
   .filter(c => c.comment_type === "redirect")
   .at(-1) ?? null;
@@ -343,6 +354,13 @@ router.get("/:id", async (req, res) => {
       sla_pause_elapsed_ms: ticket.sla_pause_elapsed_ms ? Number(ticket.sla_pause_elapsed_ms) : null,
       technician:             ticket.users_tickets_assigned_toTousers,
       assigned_at: ticket.assigned_at,
+      assigned_action:
+  ticket.ticket_assignments_history?.[0]?.action ||
+  (ticket.assigned_to ? "assigned" : null),
+assigned_by_manager:
+  ticket.ticket_assignments_history?.find(h =>
+    ["assigned", "updated"].includes(h.action)
+  )?.users_ticket_assignments_history_assigned_byTousers ?? null,
       service:                ticket.services?.name,
       comments: ticket.ticket_comments.map((c) => ({
         id:           c.id,
@@ -552,6 +570,7 @@ await prisma.ticket_comments.create({
         to_user_id:   techId,
         action:       action || "taken",
         reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
+        assigned_by:  assigned_by ? parseInt(assigned_by) : null,
       },
     });
 

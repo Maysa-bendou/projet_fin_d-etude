@@ -22,9 +22,11 @@ const TicketDetailPage = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const sId = user.service_id;
 
-  /* ── prev / next navigation (same pattern as technician) ── */
-  const ticketIds = location.state?.ticketIds || [];
-  const currentIndex = ticketIds.indexOf(Number(id) || id);
+  /* ── prev / next navigation — same pattern as technician ── */
+  const ticketIds =
+    location.state?.ticketIds ||
+    JSON.parse(localStorage.getItem("ticketIds") || "[]");
+  const currentIndex = ticketIds.findIndex(tid => String(tid) === String(id));
   const prevId = currentIndex > 0 ? ticketIds[currentIndex - 1] : null;
   const nextId = currentIndex < ticketIds.length - 1 ? ticketIds[currentIndex + 1] : null;
 
@@ -150,7 +152,6 @@ const TicketDetailPage = () => {
     : sla.pct > 20            ? "#d97706"
     : "#f97316";
 
-  /* ── LevelBadge (same as technician) ── */
   const LevelBadge = ({ config, value }) => {
     const cfg = config?.[value];
     if (!cfg) return <span style={{ fontSize: 13, color: "#6b7280" }}>{value || "—"}</span>;
@@ -169,7 +170,7 @@ const TicketDetailPage = () => {
         @keyframes fadeIn  { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
       `}</style>
 
-      {/* ── MODAL (technician style) ── */}
+      {/* ── MODAL ── */}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.25)", backdropFilter: "blur(2px)" }}>
           <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #d9d4cc", boxShadow: "0 24px 60px rgba(0,0,0,0.12)", maxWidth: 400, width: "100%", overflow: "hidden", animation: "scaleIn 0.22s ease" }}>
@@ -201,17 +202,17 @@ const TicketDetailPage = () => {
       {/* ── BODY ── */}
       <div style={{ padding: "20px 28px" }}>
 
-        {/* BACK + PREV / NEXT (technician pattern) */}
+        {/* BACK + PREV / NEXT — same as technician */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/manager/tickets-service")}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", padding: 0 }}
           >
             <MdArrowBack style={{ fontSize: 16 }} /> {t("ticketDetail.backToTickets")}
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
-              onClick={() => prevId && navigate(`../${prevId}`, { state: location.state })}
+              onClick={() => prevId && navigate(`/manager/tickets-service/${prevId}`, { state: { ticketIds } })}
               disabled={!prevId}
               style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 8, border: "1px solid #d9d4cc", background: "#fff", cursor: !prevId ? "not-allowed" : "pointer", color: !prevId ? "#c4bdb3" : "#374151", fontSize: 12, fontWeight: 700 }}
             >
@@ -219,7 +220,7 @@ const TicketDetailPage = () => {
             </button>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", padding: "0 4px" }}>#{id}</span>
             <button
-              onClick={() => nextId && navigate(`../${nextId}`, { state: location.state })}
+              onClick={() => nextId && navigate(`/manager/tickets-service/${nextId}`, { state: { ticketIds } })}
               disabled={!nextId}
               style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 8, border: "1px solid #d9d4cc", background: "#fff", cursor: !nextId ? "not-allowed" : "pointer", color: !nextId ? "#c4bdb3" : "#374151", fontSize: 12, fontWeight: 700 }}
             >
@@ -228,13 +229,18 @@ const TicketDetailPage = () => {
           </div>
         </div>
 
-        {/* TWO-COLUMN GRID — same dimensions as technician */}
-        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, alignItems: "start" }}>
-
-          {/* ── LEFT : EMPLOYEE ── */}
-          <div style={{ background: "#fff", border: "1px solid #d9d4cc", borderRadius: 16, overflow: "hidden", height: "100%" }}>
-
-            {/* Avatar header */}
+        {/* TWO-COLUMN GRID — left column fixed, right column scrolls independently */}
+        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, alignItems: "start" }}>   {/* ── LEFT : EMPLOYEE — fixed, never grows with right column ── */}
+         <div
+  style={{
+    background: "#fff",
+    border: "1px solid #d9d4cc",
+    borderRadius: 16,
+    overflow: "hidden",
+    alignSelf: "start",
+    minHeight: "520px"
+  }}
+> {/* Avatar header */}
             <div style={{ background: "#fff", padding: "20px 20px 16px", textAlign: "center", borderBottom: "1px solid #e8e2d9" }}>
               <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #fce7f3, #fecaca)", border: "2px solid #fecaca", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#9d174d", margin: "0 auto 10px" }}>
                 {(employee?.name?.[0] || "").toUpperCase()}{(employee?.surname?.[0] || "").toUpperCase()}
@@ -250,7 +256,7 @@ const TicketDetailPage = () => {
               {[
                 { icon: <MdEmail      style={{ fontSize: 14, color: "#94a3b8" }} />, label: t("ticketDetail.techFields.email"),   value: employee?.email },
                 { icon: <MdBusiness   style={{ fontSize: 14, color: "#94a3b8" }} />, label: t("ticketDetail.cols.service"),       value: employee?.department },
-                { icon: <MdWork       style={{ fontSize: 14, color: "#94a3b8" }} />, label: t("ticketDetail.techFields.office").replace("Office","").replace("Bureau","") || "Poste", value: employee?.job_title },
+                { icon: <MdWork       style={{ fontSize: 14, color: "#94a3b8" }} />, label: "Poste",                              value: employee?.job_title },
                 { icon: <MdPhone      style={{ fontSize: 14, color: "#94a3b8" }} />, label: t("ticketDetail.techFields.contact"), value: employee?.phone },
                 { icon: <MdLocationOn style={{ fontSize: 14, color: "#94a3b8" }} />, label: t("ticketDetail.techFields.office"),  value: employee?.office },
               ].map(({ icon, label, value }, i, arr) => (
@@ -265,10 +271,11 @@ const TicketDetailPage = () => {
             </div>
           </div>
 
-          {/* ── RIGHT COLUMN ── */}
+          {/* ── RIGHT COLUMN — ticket card + assignment panel stacked ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
             {/* MAIN TICKET CARD */}
+            
             <div style={{ background: "#fff", border: "1px solid #d9d4cc", borderRadius: 16, overflow: "hidden" }}>
 
               {/* Ticket header */}
@@ -288,7 +295,7 @@ const TicketDetailPage = () => {
                 </div>
               </div>
 
-              {/* SPECS — 3 per row (technician grid style) */}
+              {/* SPECS — 3 per row */}
               <div style={{ padding: "14px 22px", borderBottom: "1px solid #e8e2d9" }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 10px" }}>{t("ticketDetail.ticketInfo")}</p>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
@@ -311,7 +318,7 @@ const TicketDetailPage = () => {
                 </div>
               </div>
 
-              {/* SLA (technician inline strip) */}
+              {/* SLA */}
               {sla && (
                 <div style={{ padding: "12px 22px", borderBottom: "1px solid #e8e2d9" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -359,10 +366,11 @@ const TicketDetailPage = () => {
                 </div>
               )}
 
-              {/* Footer: assigned tech + assign button */}
+              {/* Footer: assigned tech info + assign button */}
               <div style={{ padding: "14px 22px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                 <div>
                   <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 5px" }}>{t("ticketDetail.assignedTech")}</p>
+
                   {isAssigned ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <MdPerson style={{ fontSize: 15, color: "#1d4ed8" }} />
@@ -371,6 +379,35 @@ const TicketDetailPage = () => {
                   ) : (
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#d97706", fontStyle: "italic" }}>{t("ticketDetail.notAssigned")}</span>
                   )}
+
+                  {/* ── WHO ASSIGNED — same as technician view ── */}
+                  {isAssigned && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, margin: "5px 0 0" }}>
+                      {tk.assigned_action === "taken" ? (
+                        <>
+                          <MdPerson style={{ fontSize: 13, color: "#3b82f6" }} />
+                          <span style={{ fontSize: 11, color: "#64748b" }}>
+                            Pris en charge par le technicien
+                          </span>
+                        </>
+                      ) : (
+                        ["assigned", "updated"].includes(tk.assigned_action) && (
+                          <>
+                            <MdSupportAgent style={{ fontSize: 13, color: "#7c3aed" }} />
+                            <span style={{ fontSize: 11, color: "#64748b" }}>
+                              Assigné par{" "}
+                              <strong style={{ color: "#0f172a" }}>
+                                {tk.assigned_by_manager
+                                  ? `${tk.assigned_by_manager.name} ${tk.assigned_by_manager.surname}`
+                                  : "un manager"}
+                              </strong>
+                            </span>
+                          </>
+                        )
+                      )}
+                    </div>
+                  )}
+
                   {tk.assigned_at && <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 0" }}>{t("ticketDetail.assignedOn")} : {new Date(tk.assigned_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</p>}
                   {tk.closed_at   && <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0" }}>{t("ticketDetail.closedOn")} : {new Date(tk.closed_at).toLocaleDateString(undefined,   { day: "numeric", month: "short", year: "numeric" })}</p>}
                 </div>
@@ -402,7 +439,7 @@ const TicketDetailPage = () => {
               </div>
             </div>
 
-            {/* ── ASSIGNMENT PANEL (manager-only, warm palette) ── */}
+            {/* ── ASSIGNMENT PANEL — only in right column, never affects left ── */}
             {showList && (
               <div style={{ background: "#fff", border: "1px solid #d9d4cc", borderRadius: 16, overflow: "hidden", animation: "fadeIn 0.2s ease" }}>
 
@@ -428,7 +465,6 @@ const TicketDetailPage = () => {
 
                     return (
                       <li key={tech.id} style={{ borderBottom: idx < technicians.length - 1 ? "1px solid #f0ebe3" : "none" }}>
-                        {/* Row */}
                         <div
                           onClick={() => setSelectedTech(isSelected ? null : tech)}
                           style={{
@@ -441,7 +477,6 @@ const TicketDetailPage = () => {
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            {/* Technician bubble: #eff6ff / #1d4ed8 / #bfdbfe as requested */}
                             <div style={{
                               width: 36, height: 36, borderRadius: "50%",
                               background: isSelected ? "#bfdbfe" : "#eff6ff",

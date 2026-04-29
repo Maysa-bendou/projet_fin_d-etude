@@ -6,7 +6,13 @@
     "service": "Service",
     "priority": "Priority",
     "status": "Status"
-  },
+  }, 
+  "components": {
+  "header": {
+    "previous": "Previous",
+    "next": "Next"
+  }
+},
 
   "status": {
     "in_progress": "In Progress",
@@ -32,7 +38,7 @@
     "byPriority": "Distribution by Priority",
     "techPerformance": "Technician Performance",
     "recentTickets": "Recent Tickets",
-    "resolvedCount": "{{count}} resolved",
+    "resolvedCount": "{{count}} resolved ticket(s)",
     "stats": {
       "total": "Total",
       "inProgress": "In Progress",
@@ -196,6 +202,11 @@
       "urgency": "Urgency",
       "createdAt": "Creation Date"
     },
+     "sla": {
+      "remaining": "Remaining {{h}}h {{m}}m",
+      "exceeded": "Exceeded by {{h}}h {{m}}m",
+      "frozen": "Paused {{h}}h {{m}}m"
+    },
     "slaSection": "Resolution Time (SLA)",
     "slaPaused": "On Hold",
     "slaClosed": "Closed",
@@ -238,5 +249,6 @@
       "employee": "Employee",
       "role": "Employee"
     }
+    
   }
 }

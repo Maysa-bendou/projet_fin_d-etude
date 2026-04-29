@@ -131,7 +131,7 @@ const css = `
   @keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
   @keyframes spin{to{transform:rotate(360deg)}}
   .c{animation:up .45s ease both}
-  .row:hover{background:#f8fafc!important}
+  .row:hover{background:#faf8f5!important}
 `;
 
 export default function AccueilTechnicien() {
@@ -227,24 +227,23 @@ export default function AccueilTechnicien() {
   ];
 
   return (
-    <div style={{ background:"#faf9f7", minHeight:"100vh", padding:"28px 32px", fontFamily:"sans-serif", color:"#0f172a" }}>
-      <style>{css}</style>
+    <div style={{ background:"#faf9f7", minHeight:"100vh", fontFamily:"sans-serif", color:"#0f172a" }}> <style>{css}</style>
 
       {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28 }}>
-        <div>
-          
-          <h1 style={{margin:"0",fontSize:23,fontWeight:700,color:"#0f172a"}}>
-              {t('accueilTech.header.title')}
-          </h1>
-          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530}}>  {t('accueilTech.header.subtitle')}
-          </p>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, background:"#fff", border:"1.5px solid #e2e8f0", borderRadius:10, padding:"7px 14px", fontSize:11, fontWeight:600, color:"#64748b", boxShadow:"0 1px 3px #0001" }}>
-          {new Date().toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"long" })}
-        </div>
-      </div>
-
+      <div style={{ borderBottom:"1px solid #e8e2d9", padding:"14px 28px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+  <div>
+    <h1 style={{ margin:"0", fontSize:22, fontWeight:700, color:"#0f172a" }}>
+      {t('accueilTech.header.title')}
+    </h1>
+    <p style={{ fontSize:14, color:"#53575c", margin:0, fontWeight:530 }}>
+      {t('accueilTech.header.subtitle')}
+    </p>
+  </div>
+  <div style={{ display:"flex", alignItems:"center", gap:6, background:"#fff", border:"1.5px solid #e2e8f0", borderRadius:10, padding:"7px 14px", fontSize:11, fontWeight:600, color:"#64748b", boxShadow:"0 1px 3px #0001" }}>
+    {new Date().toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"long" })}
+  </div>
+</div>
+      <div style={{ padding:"20px 28px" }}>
       {/* Stats */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
         {STATS.map(({ labelKey, val, Icon, c, bg, border }, i) => (
@@ -415,6 +414,7 @@ export default function AccueilTechnicien() {
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

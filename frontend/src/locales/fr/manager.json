@@ -8,6 +8,12 @@
     "status": "Statut"
   },
 
+  "components": {
+  "header": {
+    "previous": "Précédent",
+    "next": "Suivant"
+  }
+},
   "status": {
     "in_progress": "En cours",
     "resolved": "Résolu",
@@ -196,6 +202,7 @@
       "urgency": "Urgence",
       "createdAt": "Date Création"
     },
+    
     "slaSection": "Temps de résolution (SLA)",
     "slaPaused": "En pause",
     "slaClosed": "Clôturé",

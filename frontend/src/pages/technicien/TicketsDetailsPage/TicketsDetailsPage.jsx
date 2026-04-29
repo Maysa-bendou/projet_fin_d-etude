@@ -16,8 +16,10 @@ const TicketDetailPage = () => {
   const { t } = useTranslation("technicien");
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
 
-  const ticketIds = location.state?.ticketIds || [];
-  const currentIndex = ticketIds.indexOf(Number(id) || id);
+  const ticketIds =
+  location.state?.ticketIds ||
+  JSON.parse(localStorage.getItem("ticketIds") || "[]");
+  const currentIndex = ticketIds.findIndex(tid => String(tid) === String(id));
   const prevId = currentIndex > 0 ? ticketIds[currentIndex - 1] : null;
   const nextId = currentIndex < ticketIds.length - 1 ? ticketIds[currentIndex + 1] : null;
 
@@ -149,12 +151,17 @@ const TicketDetailPage = () => {
 
         {/* BACK + PREV / NEXT */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: 0 }}>
+          <button onClick={() => navigate(`/${currentUser.role}/tickets-service`)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: 0 }}>
             <MdArrowBack style={{ fontSize: 16 }} /> {t("ticketDetail.back")}
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
-              onClick={() => prevId && navigate(`../${prevId}`, { state: location.state })}
+              onClick={() =>
+  prevId &&
+  navigate(`/${currentUser.role}/tickets-service/${prevId}`, {
+    state: { ticketIds }
+  })
+}
               disabled={!prevId}
               style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, border: '1px solid #d9d4cc', background: '#fff', cursor: !prevId ? 'not-allowed' : 'pointer', color: !prevId ? '#c4bdb3' : '#374151', fontSize: 12, fontWeight: 700 }}
             >
@@ -162,7 +169,12 @@ const TicketDetailPage = () => {
             </button>
             <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', padding: '0 4px' }}>#{id}</span>
             <button
-              onClick={() => nextId && navigate(`../${nextId}`, { state: location.state })}
+             onClick={() =>
+  nextId &&
+  navigate(`/${currentUser.role}/tickets-service/${nextId}`, {
+    state: { ticketIds }
+  })
+}
               disabled={!nextId}
               style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, border: '1px solid #d9d4cc', background: '#fff', cursor: !nextId ? 'not-allowed' : 'pointer', color: !nextId ? '#c4bdb3' : '#374151', fontSize: 12, fontWeight: 700 }}
             >
@@ -290,19 +302,62 @@ const TicketDetailPage = () => {
 
             {/* Footer */}
             <div style={{ padding: '14px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-              <div>
-                <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 5px' }}>{t("ticketDetail.assignedTech")}</p>
-                {isAssignedToMe ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <MdCheckCircle style={{ fontSize: 15, color: '#16a34a' }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>{t("ticketDetail.managedByYou")}</span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{tk.technician?.name ? `${tk.technician.name} ${tk.technician.surname}` : t("ticketDetail.waitingExpert")}</span>
-                )}
-                {tk.assigned_at && <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>{t("ticketDetail.assignedOn")} : {new Date(tk.assigned_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
-                {tk.closed_at   && <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{t("ticketDetail.closedOn")}   : {new Date(tk.closed_at).toLocaleDateString(undefined,   { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
-              </div>
+             <div>
+  <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 5px' }}>{t("ticketDetail.assignedTech")}</p>
+  
+  {isAssignedToMe ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+      <MdCheckCircle style={{ fontSize: 15, color: '#16a34a' }} />
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>{t("ticketDetail.managedByYou")}</span>
+    </div>
+  ) : (
+    <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+      {tk.technician?.name ? `${tk.technician.name} ${tk.technician.surname}` : t("ticketDetail.waitingExpert")}
+    </span>
+  )}
+
+  {/* ── QUI A ASSIGNÉ ── */}
+ 
+{(tk.technician?.id || tk.technicienId) && (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 5, margin: '5px 0 0' }}>
+    
+    {tk.assigned_action === "taken" ? (
+      <>
+        <MdPerson style={{ fontSize: 13, color: '#3b82f6' }} />
+        <span style={{ fontSize: 11, color: '#64748b' }}>
+          Pris en charge par le technicien
+        </span>
+      </>
+    ) : (
+      ["assigned", "updated"].includes(tk.assigned_action) && (
+        <>
+          <MdSupportAgent style={{ fontSize: 13, color: '#7c3aed' }} />
+          <span style={{ fontSize: 11, color: '#64748b' }}>
+            Assigné par{" "}
+            <strong style={{ color: '#0f172a' }}>
+              {tk.assigned_by_manager
+                ? `${tk.assigned_by_manager.name} ${tk.assigned_by_manager.surname}`
+                : "un manager"}
+            </strong>
+          </span>
+        </>
+      )
+    )}
+
+  </div>
+)}
+
+  {tk.assigned_at && (
+    <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+      {t("ticketDetail.assignedOn")} : {new Date(tk.assigned_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+    </p>
+  )}
+  {tk.closed_at && (
+    <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
+      {t("ticketDetail.closedOn")} : {new Date(tk.closed_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+    </p>
+  )}
+</div>
               <button
                 onClick={handleTakeCharge}
                 disabled={taking || isAssigned}

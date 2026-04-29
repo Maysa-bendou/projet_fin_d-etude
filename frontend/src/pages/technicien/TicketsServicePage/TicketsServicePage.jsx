@@ -203,7 +203,13 @@ const TicketRow = memo(({ t, navigate, role, activeTab, isLast, ticketIds }) => 
 
   return (
     <tr
-      onClick={() => navigate(`/${role}/tickets-service/${t.id}`)}
+      // The component already receives ticketIds as a prop, just use it:
+onClick={() => {
+  localStorage.setItem("ticketIds", JSON.stringify(ticketIds));
+  navigate(`/${role}/tickets-service/${t.id}`, {
+    state: { ticketIds }
+  });
+}}
       style={{ background:"#fff", borderBottom: isLast ? "none" : "1px solid #f4f0ec", cursor:"pointer" }}
       onMouseOver={e => e.currentTarget.style.background="#faf8f5"}
       onMouseOut={e  => e.currentTarget.style.background="#fff"}
@@ -283,7 +289,9 @@ const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
           </thead>
           <tbody>
             {tickets.map((t,idx) => (
-              <TicketRow key={t.id} t={t} navigate={navigate} role={role} activeTab={activeTab} isLast={idx===tickets.length-1} />
+              <TicketRow key={t.id} t={t} navigate={navigate} role={role} activeTab={activeTab} isLast={idx===tickets.length-1}
+              ticketIds={ticketIds}
+              />
             ))}
           </tbody>
         </table>

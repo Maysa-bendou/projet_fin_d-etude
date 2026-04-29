@@ -5,13 +5,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, ReferenceLine, LabelList
 } from 'recharts';
-import {
-  MdFileDownload, MdPeople, MdFilterList, MdArrowBack,
-  MdAssignment, MdCheckCircle, MdTimer, MdTrendingUp
-} from 'react-icons/md';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
+import { MdFileDownload, MdPeople, MdFilterList, MdDashboard, MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff, MdArrowBack } from 'react-icons/md';
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -69,13 +66,25 @@ function Indicator({ color, label }) {
   );
 }
 
-function KpiCard({ label, value, color }) {
+function KpiCard({ label, desc, value, color, bg, border, Icon }) {
   return (
-    <div style={{ background: '#fff', padding: '16px 18px', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: `4px solid ${color}` }}>
-      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {label}
-      </p>
-      <p style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1 }}>{value}</p>
+    <div style={{
+      background: "#fff",
+      border: `1.5px solid ${border}`,
+      borderRadius: 16,
+      padding: "18px 20px",
+      boxShadow: `0 1px 3px #0001, inset 0 0 0 999px ${bg}30`,
+      display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+    }}>
+      <div>
+        <p style={{ margin: "0 0 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1.5px" }}>
+          {label}
+        </p>
+        <p style={{ margin: 0, fontSize: 34, fontWeight: 800, color: color, lineHeight: 1 }}>{value}</p>
+      </div>
+      <div style={{ background: bg, border: `1.5px solid ${border}`, borderRadius: 10, padding: 8 }}>
+        <Icon size={18} color={color} />
+      </div>
     </div>
   );
 }
@@ -288,21 +297,89 @@ export default function RepartitionPage() {
     </p>
   </div>
   <div style={{ padding: '20px 28px' }}>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-      {services.map((s) => (
-        <div key={s.id} className="service-card" onClick={() => handleSelectService(s.id)}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 10px 0' }}>{s.name}</h3>
-          {s.totalTickets !== undefined && (
-            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 500 }}>
-              {s.totalTickets} {t('repartition.tickets')} · {s.resolutionRate ?? 0}% {t('repartition.resolved')}
-            </p>
-          )}
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {t('repartition.analyze')} →
-          </p>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+  {services.map((s, i) => {
+    const colors = [
+      { bg: '#eff6ff', border: '#bfdbfe', icon: '#3b82f6', text: '#1d4ed8' },
+      { bg: '#f5f3ff', border: '#ddd6fe', icon: '#8b5cf6', text: '#6d28d9' },
+      { bg: '#f0fdf4', border: '#a7f3d0', icon: '#10b981', text: '#047857' },
+      { bg: '#fff7ed', border: '#fed7aa', icon: '#f97316', text: '#c2410c' },
+      { bg: '#fdf2f8', border: '#f5d0fe', icon: '#a855f7', text: '#7e22ce' },
+    ];
+    const c = colors[i % colors.length];
+    const initials = s.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+    return (
+      <div
+        key={s.id}
+        onClick={() => handleSelectService(s.id)}
+        style={{
+          background: '#fff',
+          border: '1px solid #e5e7eb',
+          borderRadius: 16,
+          padding: '22px 24px',
+          cursor: 'pointer',
+          transition: 'box-shadow 0.2s, transform 0.2s',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.10)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+      >
+        {/* Icon */}
+        <div style={{
+          width: 48, height: 48, borderRadius: 14,
+          background: c.bg, border: `1.5px solid ${c.border}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 16, fontWeight: 800, color: c.icon,
+          marginBottom: 16,
+        }}>
+          {initials}
         </div>
-      ))}
-    </div>   {/* closes grid */}
+
+        {/* Name */}
+<h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>
+  {s.name}
+</h3>
+
+        {/* Stats avec Icône (comme sur la capture) */}
+<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+  </svg>
+  <p style={{ fontSize: 12, color: '#64748b', margin: 0, fontWeight: 500 }}>
+    {s.resolutionRate ?? 0}% {t('repartition.resolved')}
+  </p>
+</div>
+
+          {/* Barre de progression (le trait) */}
+  <div style={{ width: '100%', height: 6, background: '#f1f5f9', borderRadius: 10, marginBottom: 16, overflow: 'hidden' }}>
+   <div style={{ 
+    width: `${s.resolutionRate ?? 0}%`, 
+    height: '100%', 
+    background: '#10b981', // Vert comme sur la capture
+    borderRadius: 10,
+    transition: 'width 1s ease-in-out'
+  }} />
+</div>
+
+        {/* Divider */}
+        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: c.text, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {t('repartition.analyze')} →
+          </span>
+          <div style={{
+            background: c.bg, border: `1px solid ${c.border}`,
+            borderRadius: 20, padding: '3px 10px',
+            fontSize: 11, fontWeight: 700, color: c.icon,
+          }}>
+            {s.totalTickets ?? 0} tickets
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>  {/* closes grid */}
   </div>     
 </div>       
     
@@ -406,12 +483,12 @@ export default function RepartitionPage() {
 
       {/* ── KPI Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
-        <KpiCard label={t('kpi.total')}         value={stats.totalTickets}   color="#6366f1" />
-        <KpiCard label={t('kpi.resolutionRate')} value={`${resolutionRate}%`} color="#8b5cf6" />
-        <KpiCard label={t('kpi.resolved')}      value={resolvedCount}         color="#0891b2" />
-        <KpiCard label={t('kpi.slaIn')}         value={slaIn}                color="#10b981" />
-        <KpiCard label={t('kpi.slaOut')}        value={slaOut}               color="#ef4444" />
-      </div>
+  <KpiCard label={t('kpi.total')}         value={stats.totalTickets}         color="#6366f1" bg="#eff0ff" border="#c7d2fe" Icon={MdConfirmationNumber} />
+  <KpiCard label={t('kpi.resolutionRate')} value={`${stats.resolutionRate}%`} color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" Icon={MdPercent}            />
+  <KpiCard label={t('kpi.resolved')}       value={stats.resolvedCount}        color="#0891b2" bg="#ecfeff" border="#a5f3fc" Icon={MdCheckCircle}         />
+  <KpiCard label={t('kpi.slaIn')}          value={slaIn}                      color="#10b981" bg="#f0fdf4" border="#a7f3d0" Icon={MdTimer}              />
+  <KpiCard label={t('kpi.slaOut')}         value={slaOut}                     color="#ef4444" bg="#fef2f2" border="#fecaca" Icon={MdTimerOff}            />
+</div>
 
       {/* ── Section: Efficacité Équipe ── */}
       <p className="pp-section-title">{t('section.teamEfficiency')}</p>

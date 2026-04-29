@@ -12,6 +12,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
+import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -311,12 +312,12 @@ export default function ChefPerformancesPage() {
 
       {/* ── KPI Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
-        <KpiCard label={t('kpi.total')}          desc={t('kpi.totalDesc')}         value={stats.totalTickets}         color="#6366f1" />
-        <KpiCard label={t('kpi.resolutionRate')}  desc={t('kpi.resolutionRateDesc')} value={`${stats.resolutionRate}%`} color="#8b5cf6" />
-        <KpiCard label={t('kpi.resolved')}        desc={t('kpi.resolvedDesc')}      value={stats.resolvedCount}        color="#0891b2" />
-        <KpiCard label={t('kpi.slaIn')}           desc={t('kpi.slaInDesc')}         value={slaIn}                     color="#10b981" />
-        <KpiCard label={t('kpi.slaOut')}          desc={t('kpi.slaOutDesc')}        value={slaOut}                    color="#ef4444" />
-      </div>
+       <KpiCard label={t('kpi.total')}         value={stats.totalTickets}         color="#6366f1" bg="#eff0ff" border="#c7d2fe" Icon={MdConfirmationNumber} />
+       <KpiCard label={t('kpi.resolutionRate')} value={`${stats.resolutionRate}%`} color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" Icon={MdPercent}            />
+       <KpiCard label={t('kpi.resolved')}       value={stats.resolvedCount}        color="#0891b2" bg="#ecfeff" border="#a5f3fc" Icon={MdCheckCircle}         />
+       <KpiCard label={t('kpi.slaIn')}          value={slaIn}                      color="#10b981" bg="#f0fdf4" border="#a7f3d0" Icon={MdTimer}              />
+       <KpiCard label={t('kpi.slaOut')}         value={slaOut}                     color="#ef4444" bg="#fef2f2" border="#fecaca" Icon={MdTimerOff}            />
+     </div>
 
       {/* ── Section: Répartition des flux ── */}
       <p className="pp-section-title">{t('global.section.flowDistributionAll')}</p>
@@ -464,7 +465,7 @@ export default function ChefPerformancesPage() {
       )}
 
       {/* ── Section: Répartition par Catégorie ── */}
-      {stats.categoryStats?.length > 0 && (
+       {stats.categoryStats?.length > 0 && (
         <>
           <p className="pp-section-title">{t('global.section.categoryAll')}</p>
           <div className="pp-card" style={{ marginBottom: 22 }}>
@@ -544,6 +545,7 @@ export default function ChefPerformancesPage() {
   );
 }
 
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function Indicator({ color, label }) {
@@ -555,12 +557,25 @@ function Indicator({ color, label }) {
   );
 }
 
-function KpiCard({ label, desc, value, color }) {
+function KpiCard({ label, desc, value, color, bg, border, Icon }) {
   return (
-    <div style={{ background: '#fff', padding: '16px 18px', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: `4px solid ${color}` }}>
-      <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-      <p style={{ fontSize: 10, color: '#cbd5e1', margin: '0 0 8px', fontStyle: 'italic' }}>{desc}</p>
-      <p style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1 }}>{value}</p>
+    <div style={{
+      background: "#fff",
+      border: `1.5px solid ${border}`,
+      borderRadius: 16,
+      padding: "18px 20px",
+      boxShadow: `0 1px 3px #0001, inset 0 0 0 999px ${bg}30`,
+      display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+    }}>
+      <div>
+        <p style={{ margin: "0 0 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1.5px" }}>
+          {label}
+        </p>
+        <p style={{ margin: 0, fontSize: 34, fontWeight: 800, color: color, lineHeight: 1 }}>{value}</p>
+      </div>
+      <div style={{ background: bg, border: `1.5px solid ${border}`, borderRadius: 10, padding: 8 }}>
+        <Icon size={18} color={color} />
+      </div>
     </div>
   );
 }

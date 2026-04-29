@@ -457,7 +457,7 @@ export default function TicketsAssignesPage() {
           <h1 style={{ fontSize:22, fontWeight:700, color:"#0f172a", margin:0 }}>
             {t("ticketsService.header.subtitle")}
           </h1>
-          <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 2px" }}>
+          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530 }}>
             {t("ticketsService.header.subtitleManager")}
           </p>
         </div>
@@ -595,7 +595,7 @@ export default function TicketsAssignesPage() {
                   <col style={{ width: 110 }} />
                 </colgroup>
                 <thead>
-                  <tr style={{ background: "#f9f6f2", borderBottom: "1.5px solid #e8e2d9" }}>
+                  <tr style={{ background: "#faf9f7", borderBottom: "1.5px solid #e8e2d9" }}>
                     {[
                       t("ticketsService.table.id"),
                       t("ticketsService.table.title"),

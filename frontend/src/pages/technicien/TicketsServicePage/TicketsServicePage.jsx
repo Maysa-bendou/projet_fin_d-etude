@@ -189,7 +189,7 @@ const FilterSelect = ({ icon:Icon, value, onChange, minW=115, children }) => (
 const Sep = () => <div style={{ width:1, height:20, background:"#e8e2d9", flexShrink:0 }} />;
 
 // ── TicketRow ──────────────────────────────────────────────────────────────
-const TicketRow = memo(({ t, navigate, role, activeTab, isLast }) => {
+const TicketRow = memo(({ t, navigate, role, activeTab, isLast, ticketIds }) => {
   const { t: i18n } = useTranslation("technicien");
   const technician = t.assignedTo || t.users_tickets_assigned_toTousers || null;
   const empName  = t.employee ? `${t.employee.name||""} ${t.employee.surname||""}`.trim()||null : t.employee_name||null;
@@ -261,6 +261,7 @@ const COLS = [
 // ── TicketTable ────────────────────────────────────────────────────────────
 const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
   const { t } = useTranslation("technicien");
+  const ticketIds = tickets.map(t => t.id);
   return (
     <div style={{ background:"#fff", borderRadius:12, border:"1px solid #e8e2d9", overflow:"hidden" }}>
       {tickets.length === 0 ? (
@@ -289,6 +290,7 @@ const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
       )}
     </div>
   );
+   <TicketRow key={t.id} t={t} navigate={navigate} role={role} activeTab={activeTab} isLast={idx===tickets.length-1} ticketIds={ticketIds} />
 });
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -404,7 +406,7 @@ const TicketsServicePage = () => {
 
               : t("ticketsService.header.titleFallback")}
           </h1>
-          <p style={{ fontSize:14, fontWeight:550, color:"#383c41", margin:"0 px" }}>
+          <p style={{ fontSize: 14, color: "#53575c", margin: 0, fontWeight: 530 }}>
             {role==="manager" ? t("ticketsService.header.subtitleManager") : t("ticketsService.header.subtitle")}
           </p>
         </div>

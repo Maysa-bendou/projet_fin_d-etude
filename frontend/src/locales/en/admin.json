@@ -162,7 +162,7 @@
       "technician": "Technician",
       "manager":    "Manager",
       "admin":      "Admin",
-      "chef":       "Chef"
+      "chef_service":       "Chef"
     },
     "table": {
       "id":            "ID",

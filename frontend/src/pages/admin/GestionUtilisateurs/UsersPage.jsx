@@ -1,17 +1,102 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { MdSearch, MdPersonAdd, MdRefresh } from "react-icons/md";
+import { useTranslation } from "react-i18next";
+import {
+  HiOutlineMagnifyingGlass, HiOutlineXMark, HiOutlineArrowPath,
+  HiOutlineUserPlus, HiOutlineCheckCircle, HiOutlineFunnel,
+} from "react-icons/hi2";
+import RefreshButton from "../../../components/common/RefreshButton";
 import UsersTable from "./UsersTable";
 import UserModal from "./UserModal";
 
+// ── Filter primitives (same as ticket service) ─────────────────────────────
+const FilterInput = ({ placeholder, value, onChange }) => (
+  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+    <HiOutlineMagnifyingGlass size={13} color="#94a3b8" style={{ position: "absolute", left: 9, pointerEvents: "none" }} />
+    <input
+      type="text" placeholder={placeholder} value={value}
+      onChange={e => onChange(e.target.value)}
+      style={{ border: "1px solid #e2e8f0", borderRadius: 7, padding: "0 26px 0 28px", height: 32, width: 200, fontSize: 12, color: "#1e293b", background: "#fff", outline: "none" }}
+      onFocus={e => e.target.style.borderColor = "#93c5fd"}
+      onBlur={e  => e.target.style.borderColor = "#e2e8f0"}
+    />
+    {value && (
+      <button onClick={() => onChange("")} style={{ position: "absolute", right: 7, background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex" }}>
+        <HiOutlineXMark size={12} color="#94a3b8" />
+      </button>
+    )}
+  </div>
+);
+
+const FilterSelect = ({ value, onChange, minW = 115, children }) => (
+  <select value={value} onChange={e => onChange(e.target.value)} style={{
+    border: "1px solid #e2e8f0", borderRadius: 7, padding: "0 10px",
+    height: 32, fontSize: 12, color: value ? "#1e293b" : "#94a3b8",
+    background: "#fff", outline: "none", cursor: "pointer", appearance: "none", minWidth: minW,
+  }}>
+    {children}
+  </select>
+);
+
+const Sep = () => <div style={{ width: 1, height: 20, background: "#e8e2d9", flexShrink: 0 }} />;
+
+// ── Success toast ──────────────────────────────────────────────────────────
+const SuccessCard = ({ message, onClose }) => (
+  <div style={{
+    position: "fixed", inset: 0, background: "rgba(15,23,42,0.3)",
+    backdropFilter: "blur(2px)", display: "flex", alignItems: "center",
+    justifyContent: "center", zIndex: 9999, padding: 24,
+  }}>
+    <div style={{
+      background: "#fff", borderRadius: 20, border: "1px solid #d9d4cc",
+      padding: "40px 36px", maxWidth: 400, width: "100%", textAlign: "center",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+    }}>
+      {/* Icon */}
+      <div style={{
+        width: 56, height: 56, background: "#f0fdf4", borderRadius: "50%",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        margin: "0 auto 20px", fontSize: 22, color: "#16a34a",
+        border: "2px solid #bbf7d0",
+      }}>✓</div>
+
+      {/* Title */}
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>
+        Operation Successful
+      </h2>
+
+      {/* Message */}
+      <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 28, margin: "0 0 28px" }}>
+        {message}
+      </p>
+
+      {/* Button */}
+      <button onClick={onClose} style={{
+        width: "100%", background: "#1e3a8a", color: "#fff", border: "none",
+        borderRadius: 10, padding: "12px 0", fontSize: 14, fontWeight: 600,
+        cursor: "pointer",
+      }}>
+        Done
+      </button>
+    </div>
+  </div>
+);
+
+// ── Main ───────────────────────────────────────────────────────────────────
 function UsersPage() {
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { t } = useTranslation("admin");
+
+  const [users,          setUsers]          = useState([]);
+  const [selectedUser,   setSelectedUser]   = useState(null);
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [services, setServices] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [services,       setServices]       = useState([]);
+  const [departments,    setDepartments]    = useState([]);
+  const [successMsg,     setSuccessMsg]     = useState("");
+
+  const [searchTerm,   setSearchTerm]   = useState("");
+  const [filterRole,   setFilterRole]   = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -19,167 +104,174 @@ function UsersPage() {
       const [uRes, sRes, dRes] = await Promise.all([
         fetch("http://localhost:3001/api/users"),
         fetch("http://localhost:3001/api/users/services"),
-        fetch("http://localhost:3001/api/departments")
+        fetch("http://localhost:3001/api/departments"),
       ]);
       if (uRes.ok) setUsers(await uRes.json());
       if (sRes.ok) setServices(await sRes.json());
       if (dRes.ok) setDepartments(await dRes.json());
-    } catch (err) {
-      setError("Loading error");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    } catch { setError(t("users.loadError")); }
+    finally { setLoading(false); }
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ✅ Add user
-  const addUser = async (newUser) => {
-    try {
-      const res = await fetch("http://localhost:3001/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
-      }
-      const createdUser = await res.json();
-      setUsers(prev => [createdUser, ...prev]);
-      setIsAddModalOpen(false);
-    } catch (err) {
-      console.error("Add user error:", err);
-      setError(err.message);
-    }
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(""), 3500);
   };
 
-  // ✅ Update user
-  const updateUser = async (updatedUser) => {
-    try {
-      const res = await fetch(`http://localhost:3001/api/users/${updatedUser.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedUser),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
-      }
-      setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-      setSelectedUser(null);
-    } catch (err) {
-      console.error("Update user error:", err);
-      setError(err.message);
-    }
-  };
+  // In UsersPage.jsx — change addUser and updateUser to throw on error:
 
-  // ✅ Toggle active/inactive
+const addUser = async (newUser) => {
+  const res = await fetch("http://localhost:3001/api/users", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(newUser),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || `HTTP ${res.status}`);   // ← throw, not setError
+  }
+  const created = await res.json();
+  setUsers(prev => [created, ...prev]);
+  setIsAddModalOpen(false);
+  showSuccess(t("users.modal.titleAdd") + " ✓");
+};
+
+const updateUser = async (updatedUser) => {
+  const res = await fetch(`http://localhost:3001/api/users/${updatedUser.id}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updatedUser),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || `HTTP ${res.status}`);   // ← throw, not setError
+  }
+  setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+  setSelectedUser(null);
+  showSuccess(t("users.modal.titleEdit") + " ✓");
+};
+
+  
+
   const toggleActive = async (id) => {
     try {
       const res = await fetch(`http://localhost:3001/api/users/${id}/toggle-active`, { method: "PUT" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: !u.is_active } : u));
       setSelectedUser(null);
-    } catch (err) {
-      console.error("Toggle error:", err);
-      setError(err.message);
-    }
+      showSuccess("Status updated ✓");
+    } catch (err) { setError(err.message); }
   };
+
+  const ROLES = ["employee", "technician", "chef_service", "manager", "admin"];
 
   const filteredUsers = useMemo(() => {
     const s = searchTerm.toLowerCase();
-    return users.filter(u =>
-      `${u.surname} ${u.name}`.toLowerCase().includes(s) ||
-      u.id.toString().includes(s) ||
-      (u.role || '').toLowerCase().includes(s)
-    );
-  }, [users, searchTerm]);
+    return users.filter(u => {
+      const nameMatch = `${u.surname} ${u.name}`.toLowerCase().includes(s) || String(u.id).includes(s);
+      const roleMatch = !filterRole   || u.role === filterRole;
+      const statMatch = !filterStatus || (filterStatus === "active" ? u.is_active : !u.is_active);
+      return nameMatch && roleMatch && statMatch;
+    });
+  }, [users, searchTerm, filterRole, filterStatus]);
+
+  const hasFilters = searchTerm || filterRole || filterStatus;
+  const resetFilters = () => { setSearchTerm(""); setFilterRole(""); setFilterStatus(""); };
 
   if (loading) return (
-    <div className="flex justify-center items-center h-screen bg-[#faf9f7]">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#f9f6f2" }}>
+      <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <div className="w-9 h-9 border-4 border-slate-200 border-t-red-700 rounded-full animate-spin" />
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>
+          {t("users.loadError")}
+        </span>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] p-8 font-sans">
+    <div style={{ minHeight: "100vh",  fontFamily: "sans-serif" }}>
 
-      <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
-      <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
-        Directory administration and role management
-      </p>
-
-      <div className="max-w-7xl mx-auto mb-5 flex justify-end">
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-red-700 text-white text-[11px] font-bold uppercase tracking-widest rounded-lg hover:opacity-90 shadow-md transition-all active:scale-95"
-        >
-          <MdPersonAdd size={17} />
-          Add User
-        </button>
-      </div>
-
-      <div className="max-w-7xl mx-auto bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-
-        <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-end gap-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search for a user..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-72 pl-9 pr-4 py-2.5 bg-[#faf9f7] border border-[#e8e4df] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e8e4df] focus:border-[#d0cac3] transition-all text-slate-600 placeholder:text-slate-400"
-              />
-            </div>
-            <button
-              onClick={fetchData}
-              className="p-2.5 bg-[#faf9f7] text-slate-500 rounded-lg hover:bg-[#f0ece6] transition-colors border border-[#e8e4df]"
-            >
-              <MdRefresh size={18} />
-            </button>
-          </div>
+      {/* Header */}
+      <div style={{  borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          
+         <h1 className="text-2xl font-bold text-slate-900">{t("users.pageTitle")}</h1>
+        <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
+            {t("users.pageSubtitle")}
+          </p>
         </div>
-
-        <div className="px-8 pt-5 pb-2 flex justify-between items-center">
-          <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            Collaborators List
-          </span>
-          <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase">
-            {filteredUsers.length} Accounts
-          </span>
-        </div>
-
-        <div className="px-8 pb-8 pt-2">
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            <UsersTable users={filteredUsers} onRowClick={setSelectedUser} />
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <RefreshButton onRefresh={fetchData} />
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#1e3a8a", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            <HiOutlineUserPlus size={15} />
+            {t("users.addButton")}
+          </button>
         </div>
       </div>
 
-      {/* ✅ saveUser and toggleActive props properly passed */}
+      {/* Body */}
+      <div style={{ padding: "20px 28px" }}>
+
+        {error && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 16px", color: "#dc2626", fontSize: 13, marginBottom: 16 }}>
+            {error}
+          </div>
+        )}
+
+        {/* Filters */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14, background: "#fff", border: "1px solid #e8e2d9", borderRadius: 10, padding: "7px 12px", overflowX: "auto" }}>
+          <HiOutlineFunnel size={14} color="#c4bfb8" style={{ flexShrink: 0 }} />
+          <Sep />
+          <FilterInput placeholder={t("users.searchPlaceholder")} value={searchTerm} onChange={setSearchTerm} />
+          <Sep />
+          <FilterSelect value={filterRole} onChange={setFilterRole} minW={120}>
+            <option value="">{t("users.roles.employee").replace("Employee", "All roles") || "All roles"}</option>
+            {ROLES.map(r => <option key={r} value={r}>{t(`users.roles.${r}`) || r}</option>)}
+          </FilterSelect>
+          <FilterSelect value={filterStatus} onChange={setFilterStatus} minW={100}>
+            <option value="">All statuses</option>
+            <option value="active">{t("users.table.active")}</option>
+            <option value="inactive">{t("users.table.inactive")}</option>
+          </FilterSelect>
+          <Sep />
+          <button onClick={resetFilters} style={{
+            display: "flex", alignItems: "center", gap: 5, height: 32, padding: "0 11px", borderRadius: 7, whiteSpace: "nowrap",
+            border: `1px solid ${hasFilters ? "#fca5a5" : "#e2e8f0"}`,
+            fontSize: 12, fontWeight: 600,
+            color: hasFilters ? "#dc2626" : "#94a3b8",
+            background: hasFilters ? "#fef2f2" : "#fff", cursor: "pointer", flexShrink: 0,
+          }}>
+            <HiOutlineArrowPath size={12} />
+            {t("users.refresh")}
+          </button>
+          <span style={{ marginLeft: "auto", fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>
+            <span style={{ fontWeight: 700, color: "#0f172a" }}>{filteredUsers.length}</span>
+            {filteredUsers.length !== users.length && <> / {users.length}</>} {t("users.accountsLabel")}
+          </span>
+        </div>
+
+        {/* Table */}
+        <UsersTable users={filteredUsers} onRowClick={setSelectedUser} />
+      </div>
+
+      {/* Modals */}
       {isAddModalOpen && (
-        <UserModal
-          services={services}
-          departments={departments}
-          setUser={setIsAddModalOpen}
-          saveUser={addUser}
-          mode="add"
-        />
+        <UserModal services={services} departments={departments}
+          setUser={setIsAddModalOpen} saveUser={addUser} mode="add" />
       )}
       {selectedUser && (
-        <UserModal
-          services={services}
-          departments={departments}
-          user={selectedUser}
-          setUser={setSelectedUser}
-          saveUser={updateUser}
-          toggleActive={toggleActive}
-          mode="edit"
-        />
+        <UserModal services={services} departments={departments}
+          user={selectedUser} setUser={setSelectedUser}
+          saveUser={updateUser} toggleActive={toggleActive} mode="edit" />
       )}
+
+      {/* Success toast */}
+      {successMsg && <SuccessCard message={successMsg} onClose={() => setSuccessMsg("")} />}
     </div>
   );
 }

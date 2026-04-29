@@ -115,7 +115,7 @@
   },
 
   "departments": {
-    "pageTitle":         "Gestion des départements",
+    "pageTitle":         "Gestion Des Départements",
     "pageSubtitle":      "Structure organisationnelle de l'entreprise",
     "addButton":         "Ajouter un département",
     "searchPlaceholder": "Rechercher un département...",
@@ -150,7 +150,7 @@
   },
 
   "users": {
-    "pageTitle":         "Gestion des utilisateurs",
+    "pageTitle":         "Gestion Des Utilisateurs",
     "pageSubtitle":      "Administration de l'annuaire et des rôles",
     "addButton":         "Ajouter un utilisateur",
     "searchPlaceholder": "Rechercher un utilisateur...",
@@ -163,7 +163,7 @@
       "technician": "Technicien",
       "manager":    "Manager",
       "admin":      "Admin",
-      "chef":       "Chef"
+      "chef_service":       "Chef"
     },
     "table": {
       "id":            "ID",
@@ -186,7 +186,7 @@
       "email":           "Email",
       "phone":           "Téléphone",
       "jobTitle":        "Poste",
-      "block":           "Bloquer",
+      "block":           "Bloque",
       "password":        "Mot de passe",
       "selectDepartment":"Sélectionner un département",
       "selectService":   "Sélectionner un service",

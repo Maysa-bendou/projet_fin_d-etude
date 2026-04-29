@@ -30,10 +30,10 @@ const SLA_PRIORITY_CONFIG = {
 };
 
 const ROLE_CONFIG = {
-  employee:     { color: "#475569", bg: "#f8fafc", border: "#e2e8f0" },
-  technician:   { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
-  chef_service: { color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
-  manager:      { color: "#0f766e", bg: "#f0fdfa", border: "#99f6e4" },
+    employee:     {bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
+  technician:   {  bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  chef_service: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
+  manager:      { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
   admin:        { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
 };
 
@@ -209,28 +209,31 @@ export default function ParametresAdmin() {
   };
 
   if (loading) return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#faf9f7" }}>
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh",  }}>
       <div style={{ width: 36, height: 36, border: "3px solid #e2e8f0", borderTopColor: "#b91c1c", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] p-8 font-sans">
-      <div>
+    <div style={{ minHeight: "100vh", fontFamily: "sans-serif" }}>
+      
 
         {/* HEADER */}
-        <div style={{ marginBottom: 28 }}>
-          <h1 className="text-2xl font-bold text-slate-900">{t("adminParams.title")}</h1>
-          <p style={{ fontSize: 14, color: "#6b7280", margin: 0, fontWeight: 500 }}>{t("adminParams.subtitle")}</p>
-        </div>
+       <div style={{ borderBottom: "1px solid #e8e2d9", padding: "14px 28px", marginBottom: 0 }}>
+  <h1 className="text-2xl font-bold text-slate-900">{t("adminParams.title")}</h1>
+  <p style={{ fontSize: 14, color: "#6b7280", margin: 0, fontWeight: 500 }}>{t("adminParams.subtitle")}</p>
+</div>
+
+       
+
+     <div style={{ padding: "20px 28px" }}>
 
         {error && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 16px", color: "#dc2626", fontSize: 13, marginBottom: 20 }}>
             {error}
           </div>
         )}
-
         {/* KPI CARDS */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
           {[
@@ -266,7 +269,7 @@ export default function ParametresAdmin() {
                       t("adminParams.sla.colDeadline"),
                       t("adminParams.sla.colStatus"),
                     ].map((col, i) => (
-                      <th key={i} style={{ padding: "10px 20px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "left" }}>{col}</th>
+                      <th key={i}  style={{ padding: "9px 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", textAlign: "left" }}>{col}</th>
                     ))}
                   </tr>
                 </thead>
@@ -406,8 +409,8 @@ export default function ParametresAdmin() {
 
           </div>
         </div>
-
-      </div>
     </div>
+      </div>
+   
   );
 }

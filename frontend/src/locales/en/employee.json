@@ -96,7 +96,7 @@
       "title": "Ticket created successfully",
       "subtitle": "Ticket",
       "viewTickets": "View my tickets",
-      "createAnother": "Create another ticket"
+      "createAnother": " Back To Create ticket"
     },
     "hints": {
   "title": "Be concise one sentence summarizing the issue.",

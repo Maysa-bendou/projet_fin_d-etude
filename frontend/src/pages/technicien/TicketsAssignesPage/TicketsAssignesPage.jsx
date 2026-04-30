@@ -326,7 +326,7 @@ export default function TicketsAssignesPage() {
         slaPauseElapsed:  tk.sla_pause_elapsed_ms ?? null,
       }));
       setTicketsData(mapped);
-      setStatuts(Object.fromEntries(meapped.map(tk => [tk.id, tk.statut])));
+      setStatuts(Object.fromEntries(mapped.map(tk => [tk.id, tk.statut])));
     } catch {
       setError(t("ticketsService.loading"));
     } finally {

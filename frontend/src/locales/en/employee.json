@@ -34,7 +34,7 @@
 
   "accueil": {
     "title": "My Support Space",
-     "subtitle":"Tracking your recent tickets and their status",
+    "subtitle": "Tracking your recent tickets and their status",
     "recentTickets": "My Recent Tickets",
     "viewAll": "View all my tickets",
     "stats": {
@@ -62,7 +62,7 @@
     },
     "types": {
       "incident": "Incident",
-       "problem": "Problem",
+      "problem": "Problem",
       "service_request": "Service Request"
     },
     "categories": {
@@ -96,12 +96,12 @@
       "title": "Ticket created successfully",
       "subtitle": "Ticket",
       "viewTickets": "View my tickets",
-      "createAnother": " Back To Create ticket"
+      "createAnother": "Back To Create ticket"
     },
     "hints": {
-  "title": "Be concise one sentence summarizing the issue.",
-  "description": "Include context, steps taken, and any error messages."
-}
+      "title": "Be concise one sentence summarizing the issue.",
+      "description": "Include context, steps taken, and any error messages."
+    }
   },
 
   "mesTickets": {
@@ -114,6 +114,7 @@
     },
     "filters": {
       "label": "Filters",
+      "search": "Search...",
       "status": "Status",
       "category": "Category",
       "priority": "Priority",
@@ -123,6 +124,7 @@
       "allCategories": "All categories",
       "allPriorities": "All priorities",
       "allServices": "All services",
+      "mois": "Month",
       "allYears": "All",
       "reset": "Reset"
     },
@@ -138,6 +140,16 @@
     "itTechnician": "IT Technician",
     "description": "Description",
     "initialAttachments": "Initial attachments",
+    "ticketReference": "Ticket Reference",
+    "ticketInformation": "Ticket Information",
+    "changeTech": "Change expert",
+    "employeeInfo": {
+      "email": "Email",
+      "service": "Service",
+      "poste": "Position",
+      "contact": "Contact",
+      "office": "Office"
+    },
     "types": {
       "solution": "Proposed Solution",
       "info": "Information",

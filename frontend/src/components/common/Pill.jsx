@@ -1,5 +1,4 @@
-// src/components/common/Pill.jsx
-export default function Pill({ config, value, size = "md" }) {
+export default function Pill({ config, value, label, size = "md" }) {
   const s = config?.[value];
   if (!s) return <span style={{ color: "#d1d5db" }}>—</span>;
 
@@ -18,7 +17,8 @@ export default function Pill({ config, value, size = "md" }) {
       whiteSpace:   "nowrap",
       display:      "inline-block",
     }}>
-      {s.label}
+      {/* 🔥 USE TRANSLATED LABEL if provided */}
+      {label || s.label}
     </span>
   );
 }

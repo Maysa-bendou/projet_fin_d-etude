@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   LayoutDashboard, PlusCircle, Ticket, User, 
   LogOut, ChevronRight, ChevronLeft 
@@ -7,26 +8,25 @@ import {
 
 // --- COMPOSANT LOGO DJEZZY RÉALISTE (REACT/SVG) ---
 const DjezzyLogo = ({ isOpen }) => (
-  // Taille adaptée pour accueillir les deux textes
   <div className={`relative transition-all duration-500 flex items-center justify-center ${isOpen ? "w-30 h-20" : "w-10 h-12"}`}>
     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
       
-      {/* ── LE TRIANGLE ROUGE AUX BORDS ARRONDIS (Point de la photo) ── */}
+      {/* ── LE TRIANGLE ROUGE AUX BORDS ARRONDIS ── */}
       <path 
         d="M 15 85 
            L 85 50 
            L 15 15 
            Z" 
         fill="#ff0113" 
-        strokeLinejoin="round" // C'est cette commande qui arrondit les coins
-        strokeWidth="10"       // Épaisseur pour l'arrondi
-        stroke="#ff0113"       // Couleur de l'arrondi (identique au fond)
+        strokeLinejoin="round"
+        strokeWidth="10"
+        stroke="#ff0113"
       />
       
-      {/* ── TEXTE DJEZZY (VISIBLE TOUT LE TEMPS) ── */}
+      {/* ── TEXTE DJEZZY ── */}
       <text 
         x="18" 
-        y="50" // Légèrement remonté pour laisser de la place
+        y="50"
         fill="white" 
         fontSize="12" 
         fontWeight="black" 
@@ -36,10 +36,10 @@ const DjezzyLogo = ({ isOpen }) => (
         DJEZZY
       </text>
 
-      {/* ── TEXTE ARABE 'جازی' (VISIBLE TOUT LE TEMPS) ── */}
+      {/* ── TEXTE ARABE 'جازی' ── */}
       <text 
         x="18" 
-        y="70" // Placé en dessous de DJEZZY
+        y="70"
         fill="white" 
         fontSize="12" 
         fontWeight="bold" 
@@ -55,12 +55,13 @@ const DjezzyLogo = ({ isOpen }) => (
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation("sidbar");
 
   const menuItems = [
-    { icon: LayoutDashboard, label: "Tableau De Bord", path: "/employee" },
-    { icon: PlusCircle, label: "Créer Ticket", path: "/employee/create-ticket" },
-    { icon: Ticket, label: "Mes Tickets", path: "/employee/mes-tickets" },
-    { icon: User, label: "Profil", path: "/employee/profile" },
+    { icon: LayoutDashboard, label: t("employee.dashboard"),    path: "/employee" },
+    { icon: PlusCircle,      label: t("employee.createTicket"), path: "/employee/create-ticket" },
+    { icon: Ticket,          label: t("employee.myTickets"),    path: "/employee/mes-tickets" },
+    { icon: User,            label: t("common.profile"),        path: "/employee/profile" },
   ];
 
   return (
@@ -71,12 +72,12 @@ export default function Sidebar() {
       ${isOpen ? "w-64" : "w-17"}
     `}>
       
-      {/* ── LOGO CONSTRUIT EN REACT (RÉALISTE) ── */}
+      {/* ── LOGO ── */}
       <div className="flex items-center justify-center mb-10">
         <DjezzyLogo isOpen={isOpen} />
       </div>
 
-      {/* ── FLÈCHE GRISE ── */}
+      {/* ── FLÈCHE ── */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="absolute -right-4 top-10 w-8 h-8 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-md hover:text-[#ff0113] transition-all z-[60]"
@@ -109,7 +110,7 @@ export default function Sidebar() {
                 }
               `}
             >
-              {/* Info-bulle (Tooltip) : Apparaît seulement quand fermé */}
+              {/* Tooltip */}
               {!isOpen && (
                 <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 z-[70] origin-left">
                    <div className="bg-[#fff5f5] text-[#ff0113] text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm border border-red-50">
@@ -150,12 +151,12 @@ export default function Sidebar() {
           {!isOpen && (
             <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 origin-left">
                <div className="bg-red-50 text-red-600 text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm">
-                 Quitter
+                 {t("common.quit")}
                </div>
             </div>
           )}
           <LogOut size={24} />
-          {isOpen && <span className="text-sm font-bold">Déconnexion</span>}
+          {isOpen && <span className="text-sm font-bold">{t("common.logout")}</span>}
         </Link>
       </div>
     </div>

@@ -13,6 +13,16 @@ import {
 } from "react-icons/hi2";
 import Pill from "../../../components/common/Pill";
 import { PRIORITY_CONFIG, STATUS_CONFIG, IMPACT_CONFIG, URGENCY_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
+// ── FIX 1: import shared helpers from ticketKeys ──────────────────────────────
+import {
+  formatDate,
+  translateKey,
+  STATUS_KEYS,
+  PRIORITY_KEYS,
+  CATEGORY_KEYS,
+  URGENCY_KEYS,
+  IMPACT_KEYS,
+} from "../../../constants/ticketKeys";
 
 const BADGE_STYLES = {
   "badge-yellow": { background:"#fef9ee", color:"#92400e", border:"1px solid #fde68a" },
@@ -44,7 +54,8 @@ function FileLinks({ files, dark }) {
   );
 }
 
-function ConvBubble({ item }) {
+// ── FIX 2: ConvBubble receives t so it can format dates per language ──────────
+function ConvBubble({ item, t }) {
   const isEmployee = ["emp_reply","confirmed","rejected_confirm"].includes(item.comment_type);
   const techStyle = {
     solution: { background:"#eff6ff", border:"1px solid #bfdbfe", color:"#1d4ed8" },
@@ -61,8 +72,9 @@ function ConvBubble({ item }) {
           <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.message) }} />
           <FileLinks files={item.files} dark={isEmployee} />
         </div>
+        {/* FIX: use formatDate with "withTime" so bubble timestamps follow the selected language */}
         <p style={{ fontSize:10, color:"#94a3b8", marginTop:3, padding:"0 2px" }}>
-          {new Date(item.date).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+          {formatDate(t, item.date, "withTime")}
         </p>
       </div>
     </div>
@@ -84,9 +96,13 @@ function MetaItem({ icon: Icon, label, children }) {
 export default function TicketDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t } = useTranslation('employee');
+  // ── FIX 3: load both namespaces ───────────────────────────────────────────
+  const { t, i18n } = useTranslation(["employee", "common"]);
+  const currentLang = i18n.language; // triggers re-render on language switch
+
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
 
+  // TYPE_META uses employee namespace keys — no change needed here
   const TYPE_META = {
     solution:         { label: t('ticketDetails.types.solution'),         dot:"#1d4ed8", bg:"#eff6ff", border:"#bfdbfe", text:"#1d4ed8", Icon: HiOutlineWrenchScrewdriver },
     info:             { label: t('ticketDetails.types.info'),             dot:"#d97706", bg:"#fffbeb", border:"#fde68a", text:"#92400e", Icon: HiOutlineInformationCircle },
@@ -118,6 +134,7 @@ export default function TicketDetailsPage() {
   const fileInputRef = useRef(null);
   const convEndRef   = useRef(null);
 
+  // ── All fetch/logic functions unchanged ──────────────────────────────────
   const fetchTicket = async () => {
     setLoading(true); setError(null);
     try {
@@ -135,7 +152,7 @@ export default function TicketDetailsPage() {
     if (!user?.id) return;
     fetch(`http://localhost:3001/api/tickets/my/${user.id}`)
       .then(r => r.json())
-      .then(data => setAllIds((data || []).map(t => String(t.id))))
+      .then(data => setAllIds((data || []).map(tk => String(tk.id))))
       .catch(() => {});
   }, []);
 
@@ -243,8 +260,10 @@ export default function TicketDetailsPage() {
   const btnPrimary = { background:"#534ab7", border:"none", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:5 };
   const btnOutline = { background:"#fff", border:"1px solid #d9d4cc", borderRadius:8, padding:"7px 12px", fontSize:12, fontWeight:500, color:"#1e293b", cursor:"pointer", display:"flex", alignItems:"center", gap:5 };
   const inputStyle = { width:"100%", padding:"8px 12px", border:"1px solid #d9d4cc", borderRadius:8, fontSize:13, color:"#1e293b", outline:"none", fontFamily:"inherit", background:"#fff" };
-  const fmtDate    = (s) => s ? new Date(s).toLocaleDateString("fr-DZ") : "—";
-  const fmtDT      = (s) => s ? new Date(s).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "—";
+
+  // ── FIX 4: replace hardcoded locale dates with language-aware formatDate ──
+  const fmtDate = (s) => formatDate(t, s, "short");
+  const fmtDT   = (s) => formatDate(t, s, "withTime");
 
   const historyComments = comments.filter(c => c.comment_type !== "attachment");
   const hasSolution = isClosed && ticket.solution;
@@ -321,13 +340,13 @@ export default function TicketDetailsPage() {
 
           <div style={{ width:"100%", borderTop:"1px solid #f1ede8", marginTop:4 }} />
 
-          {/* Méta employé */}
+          {/* Méta employé — static labels unchanged */}
           {[
-            { icon: HiOutlinePaperAirplane,      label: "EMAIL",   value: emp.email    ?? currentUser?.email    ?? "—" },
-            { icon: HiOutlineWrenchScrewdriver,  label: "SERVICE", value: emp.department ?? currentUser?.department ?? "—" },
-            { icon: HiOutlineUser,               label: "POSTE",   value: emp.poste    ?? currentUser?.poste    ?? "—" },
-            { icon: HiOutlineInformationCircle,  label: "CONTACT", value: emp.phone    ?? currentUser?.phone    ?? "—" },
-            { icon: HiOutlineCalendarDays,       label: "OFFICE",  value: emp.office   ?? currentUser?.office   ?? "—" },
+{ icon: HiOutlinePaperAirplane,     label: t('ticketDetails.employeeInfo.email'),   value: emp.email      ?? currentUser?.email      ?? "—" },
+{ icon: HiOutlineWrenchScrewdriver, label: t('ticketDetails.employeeInfo.service'), value: emp.department ?? currentUser?.department ?? "—" },
+{ icon: HiOutlineUser,              label: t('ticketDetails.employeeInfo.poste'),   value: emp.poste      ?? currentUser?.poste      ?? "—" },
+{ icon: HiOutlineInformationCircle, label: t('ticketDetails.employeeInfo.contact'), value: emp.phone      ?? currentUser?.phone      ?? "—" },
+{ icon: HiOutlineCalendarDays,      label: t('ticketDetails.employeeInfo.office'),  value: emp.office     ?? currentUser?.office     ?? "—" },
           ].map(({ icon: Ic, label, value }) => (
             <div key={label} style={{ width:"100%", display:"flex", alignItems:"flex-start", gap:10, padding:"3px 0" }}>
               <Ic size={13} color="#94a3b8" style={{ marginTop:2, flexShrink:0 }} />
@@ -357,7 +376,8 @@ export default function TicketDetailsPage() {
                 ) : (
                   <h1 style={{ fontSize:17, fontWeight:800, color:"#0f172a", margin:0 }}>#{id} — {ticket.title}</h1>
                 )}
-                <Pill config={STATUS_CONFIG} value={ticket.status} />
+                {/* FIX 5: status Pill with translated label */}
+                <Pill config={STATUS_CONFIG} value={ticket.status} label={translateKey(t, STATUS_KEYS, ticket.status)} />
               </div>
             </div>
 
@@ -381,28 +401,30 @@ export default function TicketDetailsPage() {
 
                 <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
                   <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
-                    <HiOutlineBolt size={10}/> {t('ticketDetails.details.priority') || "PRIORITY"}
+                    <HiOutlineBolt size={10}/> {t('ticketDetails.details.priority')}
                   </div>
-                  <Pill config={PRIORITY_CONFIG} value={ticket.priority} />
+                  {/* FIX 6: priority Pill with translated label */}
+                  <Pill config={PRIORITY_CONFIG} value={ticket.priority} label={translateKey(t, PRIORITY_KEYS, ticket.priority)} />
                 </div>
 
                 <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
                   <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
-                    <HiOutlineTag size={10}/> {t('ticketDetails.details.category') || "CATEGORY"}
+                    <HiOutlineTag size={10}/> {t('ticketDetails.details.category')}
                   </div>
-                  <Pill config={CATEGORY_CONFIG} value={ticket.category} />
+                  {/* FIX 7: category Pill with translated label */}
+                  <Pill config={CATEGORY_CONFIG} value={ticket.category} label={translateKey(t, CATEGORY_KEYS, ticket.category)} />
                 </div>
 
                 <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
                   <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
-                    <HiOutlineWrenchScrewdriver size={10}/> {t('ticketDetails.details.itService') || "SERVICE"}
+                    <HiOutlineWrenchScrewdriver size={10}/> {t('ticketDetails.details.itService')}
                   </div>
                   <span style={{ fontSize:13, fontWeight:600, color:"#1e293b" }}>{ticket.service ?? "N/A"}</span>
                 </div>
 
                 <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
                   <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
-                    <HiOutlineExclamationTriangle size={10}/> {t('ticketDetails.details.impact') || "IMPACT"}
+                    <HiOutlineExclamationTriangle size={10}/> {t('ticketDetails.details.impact')}
                   </div>
                   {isEditing ? (
                     <select value={editFields.impact} onChange={e => handleFieldChange("impact", e.target.value)}
@@ -412,13 +434,14 @@ export default function TicketDetailsPage() {
                       <option value="high">{t('createTicket.impacts.high')}</option>
                     </select>
                   ) : (
-                    <Pill config={IMPACT_CONFIG} value={ticket.impact} />
+                    // FIX 8: impact Pill with translated label
+                    <Pill config={IMPACT_CONFIG} value={ticket.impact} label={translateKey(t, IMPACT_KEYS, ticket.impact)} />
                   )}
                 </div>
 
                 <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
                   <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
-                    <HiOutlineBolt size={10}/> {t('ticketDetails.details.urgency') || "URGENCY"}
+                    <HiOutlineBolt size={10}/> {t('ticketDetails.details.urgency')}
                   </div>
                   {isEditing ? (
                     <select value={editFields.urgence} onChange={e => handleFieldChange("urgence", e.target.value)}
@@ -428,14 +451,16 @@ export default function TicketDetailsPage() {
                       <option value="high">{t('createTicket.urgencies.high')}</option>
                     </select>
                   ) : (
-                    <Pill config={URGENCY_CONFIG} value={ticket.urgency} />
+                    // FIX 9: urgency Pill with translated label
+                    <Pill config={URGENCY_CONFIG} value={ticket.urgency} label={translateKey(t, URGENCY_KEYS, ticket.urgency)} />
                   )}
                 </div>
 
                 <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
                   <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
-                    <HiOutlineCalendarDays size={10}/> {t('ticketDetails.details.createdAt') || "CREATION DATE"}
+                    <HiOutlineCalendarDays size={10}/> {t('ticketDetails.details.createdAt')}
                   </div>
+                  {/* FIX 10: date uses language-aware fmtDate */}
                   <span style={{ fontSize:13, fontWeight:600, color:"#1e293b" }}>{fmtDate(ticket.createdAt)}</span>
                 </div>
 
@@ -445,7 +470,7 @@ export default function TicketDetailsPage() {
             {/* ASSIGNED TECHNICIAN */}
             <div style={{ padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div>
-                <span style={sLabel}>{t('ticketDetails.assignedTech') || "ASSIGNED TECHNICIAN"}</span>
+                <span style={sLabel}>{t('ticketDetails.assignedTech')}</span>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <HiOutlineUser size={16} color="#534ab7" />
                   <span style={{ fontSize:14, fontWeight:700, color:"#1e293b" }}>{techName}</span>
@@ -497,8 +522,9 @@ export default function TicketDetailsPage() {
                             ))}
                           </div>
                         )}
+                        {/* FIX 11: timeline timestamps use language-aware fmtDT */}
                         <p style={{ fontSize:10, color:"#94a3b8", marginTop:3, marginBottom:0 }}>
-                          {new Date(c.date).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}
+                          {fmtDT(c.date)}
                         </p>
                         {c.author && <p style={{ fontSize:10, color:"#94a3b8", marginTop:1, marginBottom:0 }}>{t('common.by')} {c.author}</p>}
                       </div>
@@ -537,7 +563,8 @@ export default function TicketDetailsPage() {
                         </div>
                       );
                     }
-                    return <ConvBubble key={c.id} item={c} />;
+                    // FIX 12: pass t to ConvBubble for language-aware timestamps
+                    return <ConvBubble key={c.id} item={c} t={t} />;
                   })
                 )}
                 <div ref={convEndRef} />

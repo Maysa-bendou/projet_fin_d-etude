@@ -1,0 +1,86 @@
+{
+  "status": {
+    "open": "Ouvert",
+    "in_progress": "En cours",
+    "pending": "En attente",
+    "pending_supplier": "En attente fournisseur",
+    "resolved": "Résolu",
+    "closed": "Fermé",
+    "rejected": "Rejeté"
+  },
+
+  "category": {
+    "hardware": "Matériel",
+    "software": "Logiciel",
+    "network": "Réseau",
+    "access": "Accès",
+    "security": "Sécurité",
+    "messagerie": "Messagerie"
+  },
+
+  "urgency": {
+    "can_work": "Peut travailler",
+    "partially_blocked": "Partiellement bloqué",
+    "fully_blocked": "Complètement bloqué"
+  },
+
+  "impact": {
+    "one_person": "Une personne",
+    "one_service": "Un service",
+    "company": "Entreprise"
+  },
+
+  "priority": {
+    "low": "Faible",
+    "medium": "Moyen",
+    "high": "Élevé",
+    "critical": "Critique"
+  },
+
+  "date": {
+    "locale": "fr-FR",
+    "short": "DD/MM/YYYY",
+    "long": "D MMMM YYYY",
+    "withTime": "DD/MM/YYYY à HH:mm",
+    "timeOnly": "HH:mm",
+    "relative": {
+      "justNow": "À l'instant",
+      "minutesAgo": "Il y a {{count}} min",
+      "hoursAgo": "Il y a {{count}}h",
+      "daysAgo": "Il y a {{count}}j",
+      "yesterday": "Hier",
+      "daysFromNow": "Dans {{count}}j",
+      "hoursFromNow": "Dans {{count}}h"
+    },
+    "months": {
+      "january": "Janvier",
+      "february": "Février",
+      "march": "Mars",
+      "april": "Avril",
+      "may": "Mai",
+      "june": "Juin",
+      "july": "Juillet",
+      "august": "Août",
+      "september": "Septembre",
+      "october": "Octobre",
+      "november": "Novembre",
+      "december": "Décembre"
+    },
+    "days": {
+      "monday": "Lundi",
+      "tuesday": "Mardi",
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi",
+      "sunday": "Dimanche"
+    }
+  },
+  
+  "loading": "Chargement…" ,
+  
+  "refresh": {
+  "label": "Actualiser",
+  "loading": "Actualisation…"
+}
+}

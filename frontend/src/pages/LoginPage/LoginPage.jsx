@@ -89,7 +89,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={t("fields.emailPlaceholder")}
+                placeholder="example@djezzy.dz"
                 className="flex-1 bg-transparent text-sm outline-none text-slate-700 placeholder:text-slate-400"
               />
             </div>

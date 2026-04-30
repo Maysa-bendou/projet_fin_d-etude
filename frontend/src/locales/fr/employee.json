@@ -34,7 +34,7 @@
 
   "accueil": {
     "title": "Mon Espace Support",
-    "subtitle":"Suivi de vos tickets récents et de leur statut",
+    "subtitle": "Suivi de vos tickets récents et de leur statut",
     "recentTickets": "Mes Tickets Récents",
     "viewAll": "Voir tous mes tickets",
     "stats": {
@@ -98,12 +98,12 @@
       "viewTickets": "Voir mes tickets",
       "createAnother": "Retour à Créer ticket"
     },
-"hints": {
-  "title": "Soyez concis — une phrase résumant le problème.",
-  "description": "Précisez le contexte, les actions effectuées et les messages d'erreur.",
-  "priorityNote": "La priorité est calculée automatiquement",
-  "priorityDetail": "En fonction de l'impact et de l'urgence, le système attribue le niveau de priorité approprié."
-}
+    "hints": {
+      "title": "Soyez concis — une phrase résumant le problème.",
+      "description": "Précisez le contexte, les actions effectuées et les messages d'erreur.",
+      "priorityNote": "La priorité est calculée automatiquement",
+      "priorityDetail": "En fonction de l'impact et de l'urgence, le système attribue le niveau de priorité approprié."
+    }
   },
 
   "mesTickets": {
@@ -116,6 +116,7 @@
     },
     "filters": {
       "label": "Filtres",
+      "search": "Rechercher…",
       "status": "Statut",
       "category": "Catégorie",
       "priority": "Priorité",
@@ -125,6 +126,7 @@
       "allCategories": "Toutes les catégories",
       "allPriorities": "Toutes les priorités",
       "allServices": "Tous les services",
+      "mois": "Mois",
       "allYears": "Toutes",
       "reset": "Réinitialiser"
     },
@@ -140,6 +142,16 @@
     "itTechnician": "Technicien IT",
     "description": "Description",
     "initialAttachments": "Pièces jointes initiales",
+    "ticketReference": "Référence du ticket",
+    "ticketInformation": "Informations du ticket",
+    "changeTech": "Changer d'expert",
+    "employeeInfo": {
+      "email": "Email",
+      "service": "Service",
+      "poste": "Poste",
+      "contact": "Contact",
+      "office": "Bureau"
+    },
     "types": {
       "solution": "Solution proposée",
       "info": "Information",

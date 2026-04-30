@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   BarChart3, 
   PieChart, 
@@ -34,17 +35,17 @@ export default function SidebarChef() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation("sidbar");
 
-  // Menu spécifique pour le Chef de Service
   const menuItems = [
     { 
       icon: BarChart3, 
-      label: "Statistiques global", 
+      label: t("chef.globalStats"), 
       path: "/chef/statistiques",
-      hasNotify: true // Le petit badge rouge sur l'icône
+      hasNotify: true
     },
-    { icon: PieChart, label: "Répartition services", path: "/chef/repartition" },
-    { icon: User,     label: "Profil",               path: "/chef/profile" },
+    { icon: PieChart, label: t("chef.serviceDistribution"), path: "/chef/repartition" },
+    { icon: User,     label: t("common.profile"),           path: "/chef/profile" },
   ];
 
   const handleLogout = () => {
@@ -101,12 +102,12 @@ export default function SidebarChef() {
                 </div>
               )}
 
-              {/* Indicateur vertical à gauche (image_5e4524.png) */}
+              {/* Indicateur vertical à gauche */}
               {isActive && isOpen && (
                 <div className="absolute left-0 top-1/4 bottom-1/4 w-1.5 bg-[#ff0113] rounded-r-full" />
               )}
               
-              {/* ICÔNE + BADGE DE NOTIFICATION (image_5202da.png) */}
+              {/* ICÔNE + BADGE DE NOTIFICATION */}
               <div className="relative flex items-center justify-center shrink-0">
                 <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                 
@@ -141,12 +142,12 @@ export default function SidebarChef() {
           {!isOpen && (
             <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 origin-left">
                <div className="bg-red-50 text-red-600 text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm">
-                 Quitter
+                 {t("common.quit")}
                </div>
             </div>
           )}
           <LogOut size={24} />
-          {isOpen && <span className="text-sm font-bold">Déconnexion</span>}
+          {isOpen && <span className="text-sm font-bold">{t("common.logout")}</span>}
         </button>
       </div>
     </div>

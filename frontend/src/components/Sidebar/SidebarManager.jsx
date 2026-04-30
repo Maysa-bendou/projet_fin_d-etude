@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   BarChart3, 
   Wrench, 
@@ -34,17 +35,17 @@ export default function SidebarManager() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation("sidbar");
 
-  // Menu spécifique pour le Manager avec une propriété 'hasNotify'
   const menuItems = [
     { 
       icon: Wrench, 
-      label: "Tickets du service", 
+      label: t("manager.serviceTickets"), 
       path: "/manager/tickets-service",
-      hasNotify: true // <--- C'est ici qu'on active le point rouge !
+      hasNotify: true
     },
-    { icon: BarChart3, label: "Suivi performances", path: "/manager/performances" },
-    { icon: User, label: "Profil", path: "/manager/profile" },
+    { icon: BarChart3, label: t("manager.performanceTracking"), path: "/manager/performances" },
+    { icon: User,      label: t("common.profile"),              path: "/manager/profile" },
   ];
 
   const handleLogout = () => {
@@ -111,7 +112,6 @@ export default function SidebarManager() {
               <div className="relative shrink-0">
                 <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                 
-                {/* Le petit point de notification rouge (comme sur la photo) */}
                 {item.hasNotify && (
                   <div className={`
                     absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-[#ff0113]
@@ -144,12 +144,12 @@ export default function SidebarManager() {
           {!isOpen && (
             <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 origin-left">
                <div className="bg-red-50 text-red-600 text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm">
-                 Quitter
+                 {t("common.quit")}
                </div>
             </div>
           )}
           <LogOut size={24} />
-          {isOpen && <span className="text-sm font-bold">Déconnexion</span>}
+          {isOpen && <span className="text-sm font-bold">{t("common.logout")}</span>}
         </button>
       </div>
     </div>

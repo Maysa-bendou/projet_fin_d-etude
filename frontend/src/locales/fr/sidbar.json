@@ -1,0 +1,35 @@
+{
+  "common": {
+    "logout": "Déconnexion",
+    "quit": "Quitter",
+    "profile": "Profil"
+  },
+  "employee": {
+    "dashboard": "Tableau De Bord",
+    "createTicket": "Créer Ticket",
+    "myTickets": "Mes Tickets",
+    "profile": "Profil"
+  },
+  "admin": {
+    "userManagement": "Gestion des utilisateurs",
+    "departments": "Départements",
+    "settings": "Paramètres",
+    "profile": "Profil"
+  },
+  "chef": {
+    "globalStats": "Statistiques global",
+    "serviceDistribution": "Répartition services",
+    "profile": "Profil"
+  },
+  "manager": {
+    "serviceTickets": "Tickets du service",
+    "performanceTracking": "Suivi performances",
+    "profile": "Profil"
+  },
+  "technician": {
+    "dashboard": "Tableau De Bord",
+    "assignedTickets": "Tickets assignés",
+    "serviceTickets": "Tickets du service",
+    "profile": "Profil"
+  }
+}

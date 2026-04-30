@@ -56,7 +56,7 @@ i18n
     },
     lng:         savedLang,
     fallbackLng: 'en',
-    defaultNS:   'employee',
+   defaultNS: 'common',
     ns:         ['employee', 'manager' , 'chef', 'admin' , 'technicien' , 'profil' , 'login' , 'sidbar' ,
                       'topnavbar', 'common'
                 ],

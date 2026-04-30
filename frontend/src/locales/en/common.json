@@ -76,5 +76,11 @@
       "sunday": "Sunday"
     }
   },
-  "loading": "Loading…"
+
+  "loading": "Loading…" ,
+
+"refresh": {
+  "label": "Refresh",
+  "loading": "Refreshing…"
+}
 }

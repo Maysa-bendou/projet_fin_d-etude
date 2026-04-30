@@ -42,6 +42,106 @@ function getNotifMeta(type) {
   }
 }
 
+// ─── Parse raw French DB message → extract dynamic parts ─────────────────
+// The DB has no metadata column, so we extract the ticket title, actor name,
+// and status value directly from the known French message patterns.
+// Returns { title, actor, status, ticket, variant } ready for t() interpolation.
+function parseNotifParams(n) {
+  const msg = n.message || "";
+  const ticket = n.ticket_id ? String(n.ticket_id) : "";
+
+  // ── Title ──────────────────────────────────────────────────────────────────
+  // Messages have the title as the FIRST quoted string: …"titre"…
+  // We cannot anchor to end-of-string because assigned_employee ends with
+  // "…assigné à Prénom Nom." (the actor comes AFTER the title).
+  const titleMatch = msg.match(/"([^"]+)"/);
+  const title = titleMatch ? titleMatch[1] : "";
+
+  // ── Actor ──────────────────────────────────────────────────────────────────
+  // Two distinct patterns:
+  //   a) emp_reply / confirmed / updated / reopen  → "Firstname Lastname a …"  (at the start)
+  //   b) assigned_employee                         → "… assigné à Firstname Lastname."  (at the end)
+  let actor = "";
+  const actorStartMatch = msg.match(/^\s*([A-ZÀ-Ö][^\s]+(?: [A-ZÀ-Ö][^\s]+)*)\s+a\s/);
+  if (actorStartMatch) {
+    actor = actorStartMatch[1];
+  } else {
+    const actorEndMatch = msg.match(/assigné à ([^.]+)\./);
+    if (actorEndMatch) actor = actorEndMatch[1].trim();
+  }
+
+  // ── Status ─────────────────────────────────────────────────────────────────
+  const statusMatch = msg.match(/a changé\s*:\s*([^.]+)\./);
+  const status = statusMatch ? statusMatch[1].trim() : "";
+
+  // ── SLA variant ────────────────────────────────────────────────────────────
+  let slaVariant = "";
+  if (n.type === "sla") {
+    const isWarning    = msg.includes("bientôt dépassé");
+    const isUnassigned = msg.includes("non assigné");
+    slaVariant = isWarning ? "warning" : isUnassigned ? "exceeded_unassigned" : "exceeded_assigned";
+  }
+
+  // ── new_ticket variant ─────────────────────────────────────────────────────
+  let newVariant = "";
+  if (n.type === "new_ticket") {
+    newVariant = msg.includes("avec succès") ? "created" : "service";
+  }
+
+  // ── assigned variant ───────────────────────────────────────────────────────
+  let assignedVariant = "";
+  if (n.type === "assigned") {
+    assignedVariant = msg.trimStart().startsWith("Votre ticket") ? "employee" : "technician";
+  }
+
+  return { ticket, title, actor, status, slaVariant, newVariant, assignedVariant };
+}
+
+// ─── Translate a notification using its type + parsed params ──────────────
+// Falls back to n.message (raw French) if no key matches — safe for any
+// notification types added in the future without a translation entry.
+function resolveNotifMessage(n, t) {
+  const p = parseNotifParams(n);
+
+  switch (n.type) {
+    case "assigned":
+      return t(`notifications.messages.assigned_${p.assignedVariant}`, p, { defaultValue: n.message });
+
+    case "solution":
+      return t("notifications.messages.solution", p, { defaultValue: n.message });
+
+    case "info":
+      return t("notifications.messages.info", p, { defaultValue: n.message });
+
+    case "status":
+      return t("notifications.messages.status", p, { defaultValue: n.message });
+
+    case "emp_reply":
+      return t("notifications.messages.emp_reply", p, { defaultValue: n.message });
+
+    case "confirmed":
+      return t("notifications.messages.confirmed", p, { defaultValue: n.message });
+
+    case "updated":
+      return t("notifications.messages.updated", p, { defaultValue: n.message });
+
+    case "reopen":
+      return t("notifications.messages.reopen", p, { defaultValue: n.message });
+
+    case "redirect":
+      return t("notifications.messages.redirect", p, { defaultValue: n.message });
+
+    case "new_ticket":
+      return t(`notifications.messages.new_ticket_${p.newVariant}`, p, { defaultValue: n.message });
+
+    case "sla":
+      return t(`notifications.messages.sla_${p.slaVariant}`, p, { defaultValue: n.message });
+
+    default:
+      return n.message;
+  }
+}
+
 function formatTime(dateStr, t) {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -257,7 +357,7 @@ export default function TopNavbar({ pageTitle = "" }) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                              <p className={`text-xs leading-snug ${!n.is_read ? "font-bold text-slate-900" : "text-slate-600"}`}>{n.message}</p>
+                              <p className={`text-xs leading-snug ${!n.is_read ? "font-bold text-slate-900" : "text-slate-600"}`}>{resolveNotifMessage(n, t)}</p>
                               {!n.is_read && <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />}
                             </div>
                             <p className="text-[10px] text-slate-400 mt-1">{formatTime(n.created_at, t)}</p>

@@ -13,7 +13,24 @@
     "timeJustNow": "À l'instant",
     "timeMinutes": "Il y a {{count}} min",
     "timeHours": "Il y a {{count}}h",
-    "timeDays": "Il y a {{count}}j"
+    "timeDays": "Il y a {{count}}j",
+    "messages": {
+      "assigned_employee":        "Votre ticket \"{{title}}\" a été assigné à {{actor}}.",
+      "assigned_technician":      "Un nouveau ticket vous a été assigné : \"{{title}}\".",
+      "solution":                 "Le technicien a proposé une solution pour votre ticket \"{{title}}\".",
+      "info":                     "Le technicien a besoin d'informations supplémentaires pour votre ticket \"{{title}}\".",
+      "status":                   "Le statut de votre ticket \"{{title}}\" a changé : {{status}}.",
+      "emp_reply":                "{{actor}} a répondu au ticket \"{{title}}\".",
+      "confirmed":                "{{actor}} a confirmé la résolution du ticket \"{{title}}\".",
+      "updated":                  "{{actor}} a modifié le ticket \"{{title}}\".",
+      "reopen":                   "{{actor}} a réouvert le ticket \"{{title}}\".",
+      "redirect":                 "Votre ticket \"{{title}}\" a été redirigé vers un autre service.",
+      "new_ticket_created":       "Votre ticket \"{{title}}\" a été créé avec succès.",
+      "new_ticket_service":       "Nouveau ticket dans votre service : \"{{title}}\".",
+      "sla_warning":              "🕐 SLA bientôt dépassé — Ticket #{{ticket}} \"{{title}}\" vous est assigné",
+      "sla_exceeded_assigned":    "⚠️ SLA dépassé — Ticket #{{ticket}} \"{{title}}\" vous est assigné",
+      "sla_exceeded_unassigned":  "⚠️ SLA dépassé — Ticket #{{ticket}} \"{{title}}\" non assigné (votre service)"
+    }
   },
 
   "profile": {

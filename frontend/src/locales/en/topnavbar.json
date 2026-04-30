@@ -13,7 +13,24 @@
     "timeJustNow": "Just now",
     "timeMinutes": "{{count}} min ago",
     "timeHours": "{{count}}h ago",
-    "timeDays": "{{count}}d ago"
+    "timeDays": "{{count}}d ago",
+    "messages": {
+      "assigned_employee":        "Your ticket \"{{title}}\" has been assigned to {{actor}}.",
+      "assigned_technician":      "A new ticket has been assigned to you: \"{{title}}\".",
+      "solution":                 "A solution has been proposed for your ticket \"{{title}}\".",
+      "info":                     "The technician needs more information for your ticket \"{{title}}\".",
+      "status":                   "The status of your ticket \"{{title}}\" changed to: {{status}}.",
+      "emp_reply":                "{{actor}} replied to ticket \"{{title}}\".",
+      "confirmed":                "{{actor}} confirmed the resolution of ticket \"{{title}}\".",
+      "updated":                  "{{actor}} updated ticket \"{{title}}\".",
+      "reopen":                   "{{actor}} reopened ticket \"{{title}}\".",
+      "redirect":                 "Your ticket \"{{title}}\" has been redirected to another service.",
+      "new_ticket_created":       "Your ticket \"{{title}}\" has been created successfully.",
+      "new_ticket_service":       "New ticket in your service: \"{{title}}\".",
+      "sla_warning":              "🕐 SLA warning — Ticket #{{ticket}} \"{{title}}\" is assigned to you",
+      "sla_exceeded_assigned":    "⚠️ SLA breached — Ticket #{{ticket}} \"{{title}}\" is assigned to you",
+      "sla_exceeded_unassigned":  "⚠️ SLA breached — Ticket #{{ticket}} \"{{title}}\" is unassigned (your service)"
+    }
   },
 
   "profile": {
@@ -29,3 +46,4 @@
     "admin": "Administrator"
   }
 }
+

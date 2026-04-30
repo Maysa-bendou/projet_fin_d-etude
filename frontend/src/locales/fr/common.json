@@ -76,5 +76,11 @@
       "sunday": "Dimanche"
     }
   },
-  "loading": "Chargement…"
+  
+  "loading": "Chargement…" ,
+  
+  "refresh": {
+  "label": "Actualiser",
+  "loading": "Actualisation…"
+}
 }

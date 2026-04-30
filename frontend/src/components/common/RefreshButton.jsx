@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { HiOutlineArrowPath } from "react-icons/hi2";
 
-export default function RefreshButton({ onRefresh, label = "Actualiser" }) {
+export default function RefreshButton({ onRefresh }) {
+  const { t } = useTranslation("common");
   const [loading, setLoading] = useState(false);
 
   async function handleClick() {
@@ -26,7 +28,7 @@ export default function RefreshButton({ onRefresh, label = "Actualiser" }) {
         size={14}
         className={loading ? "animate-spin" : ""}
       />
-      {loading ? "Actualisation…" : label}
+      {loading ? t("refresh.loading") : t("refresh.label")}
     </button>
   );
 }

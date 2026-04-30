@@ -1,50 +1,37 @@
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { MdArrowBack } from "react-icons/md";
 
-export default function Header({ 
-  ticket, 
-  allIds, 
-  idx, 
-  prevId, 
-  nextId, 
-  goToTicket,
-  navigate 
-}) {
+export default function Header({ ticket, allIds, idx, prevId, nextId, goToTicket, navigate }) {
   const { t } = useTranslation("technicien");
 
   return (
-    <div className="flex items-center justify-between flex-wrap gap-3">
-      <div className="flex items-center gap-2 text-sm">
-        <button 
-          onClick={() => navigate("/technician/tickets-assignes")}
-          className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 transition bg-transparent border-none cursor-pointer p-0 font-medium"
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      <button
+        onClick={() => navigate("/technician/tickets-assignes")}
+        style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "#9ca3af", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", padding: 0 }}
+      >
+        <MdArrowBack style={{ fontSize: 16 }} /> {t("components.header.assignedTickets")}
+      </button>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button
+          onClick={() => prevId && goToTicket(prevId)}
+          disabled={!prevId}
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 8, border: "1px solid #d9d4cc", background: "#fff", cursor: !prevId ? "not-allowed" : "pointer", color: !prevId ? "#c4bdb3" : "#374151", fontSize: 12, fontWeight: 700 }}
         >
-          <ArrowLeft size={15}/> {t("components.header.assignedTickets")}
-        </button>
-        <ChevronRight size={13} className="text-gray-300"/>
-        <span className="text-gray-800 font-semibold truncate max-w-xs sm:max-w-md">
-          T n°{ticket.id} — {ticket.title}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <button 
-          disabled={!prevId} 
-          onClick={() => goToTicket(prevId)}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-        >
-          <ChevronLeft size={13}/> {t("components.header.previous")}
+          <MdArrowBack style={{ fontSize: 14 }} /> {t("components.header.previous")}
         </button>
         {idx >= 0 && (
-          <span className="text-xs text-gray-400 font-mono">
-            {idx+1}/{allIds.length}
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", padding: "0 4px" }}>
+            #{ticket.id}
           </span>
         )}
-        <button 
-          disabled={!nextId} 
-          onClick={() => goToTicket(nextId)}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+        <button
+          onClick={() => nextId && goToTicket(nextId)}
+          disabled={!nextId}
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 8, border: "1px solid #d9d4cc", background: "#fff", cursor: !nextId ? "not-allowed" : "pointer", color: !nextId ? "#c4bdb3" : "#374151", fontSize: 12, fontWeight: 700 }}
         >
-          {t("components.header.next")} <ChevronRight size={13}/>
+          {t("components.header.next")} <MdArrowBack style={{ fontSize: 14, transform: "rotate(180deg)" }} />
         </button>
       </div>
     </div>

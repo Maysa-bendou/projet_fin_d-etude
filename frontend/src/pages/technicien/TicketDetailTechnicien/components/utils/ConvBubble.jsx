@@ -1,5 +1,13 @@
 import { Paperclip } from "lucide-react";
 
+// ── Couleurs des bulles ──────────────────────────────────────────────
+const COLORS = {
+  employee:   { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },  // rose/rouge
+  technician: { bg: "#eff6ff", color: "#1d4ed8",  border: "#bfdbfe" },   // bleu
+  techInfo:   { bg: "#fffbeb", color: "#92400e",  border: "#fde68a" },   // amber (mode "info/commentaire")
+  confirm:    { bg: "#f0fdf4", color: "#15803d",  border: "#bbf7d0" },   // vert
+};
+
 function FileList({ files, isMine }) {
   if (!files || files.length === 0) return null;
   return (
@@ -21,9 +29,10 @@ function FileList({ files, isMine }) {
 }
 
 export default function ConvBubble({ item, currentUser, empInitials, empName }) {
-  var isMine = item.authorId === currentUser?.id;
+  var isMine   = item.authorId === currentUser?.id;
   var isSystem = item.type === "status";
 
+  // ── System message ─────────────────────────────────────────────────
   if (isSystem) {
     return (
       <div className="flex justify-center my-4">
@@ -35,25 +44,32 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
     );
   }
 
+  // ── Confirmation bubble ────────────────────────────────────────────
   if (item.type === "confirm") {
     return (
       <div className="flex flex-col items-end mb-5">
         <div className="flex items-end gap-2.5 flex-row-reverse">
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white">
+          <div className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white"
+            style={{ background: "#1d4ed8" }}>
             {(currentUser?.name?.[0] ?? "T") + (currentUser?.surname?.[0] ?? "")}
           </div>
           <div className="max-w-[78%]">
-            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-2 inline-block bg-emerald-100 text-emerald-700 tracking-wide">
+            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-2 inline-block tracking-wide"
+              style={{ background: COLORS.confirm.bg, color: COLORS.confirm.color, border: `1px solid ${COLORS.confirm.border}` }}>
               Confirmation envoyée
             </span>
-            <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200/70 rounded-2xl rounded-tr-sm px-4 py-3.5 shadow-sm">
-              <p className="text-[12px] text-slate-700 mb-3 font-medium">Le problème est-il résolu ?</p>
+            <div className="rounded-2xl rounded-tr-sm px-4 py-3.5 shadow-sm"
+              style={{ background: COLORS.confirm.bg, border: `1px solid ${COLORS.confirm.border}` }}>
+              <p className="text-[12px] mb-3 font-medium" style={{ color: COLORS.confirm.color }}>
+                Le problème est-il résolu ?
+              </p>
               <div className="flex gap-2">
-                <span className="flex-1 text-center text-[11px] font-semibold border border-emerald-300 text-emerald-700 rounded-xl py-1.5 bg-white shadow-xs hover:bg-emerald-50 transition-colors cursor-default">
+                <span className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
+                  style={{ border: `1px solid ${COLORS.confirm.border}`, color: COLORS.confirm.color }}>
                   Oui, résolu
                 </span>
-                <span className="flex-1 text-center text-[11px] font-semibold border border-red-200 text-red-500 rounded-xl py-1.5 bg-white shadow-xs hover:bg-red-50 transition-colors cursor-default">
+                <span className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
+                  style={{ border: "1px solid #fecaca", color: "#dc2626" }}>
                   Non, toujours un problème
                 </span>
               </div>
@@ -65,48 +81,66 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
     );
   }
 
+  // ── Choisir la palette selon l'auteur et le type ───────────────────
+  var palette;
+  if (isMine) {
+    palette =  COLORS.technician;
+  } else {
+    palette = COLORS.employee;
+  }
+
+  // ── Type tags ─────────────────────────────────────────────────────
   var tags = {
-    solution:         { label: "Solution",             cls: "bg-blue-100 text-blue-700"     },
-    info:             { label: "Commentaire",           cls: "bg-amber-100 text-amber-700"   },
-    redirect:         { label: "Redirigé",              cls: "bg-pink-100 text-pink-700"     },
-    confirm:          { label: "Confirmation envoyée",  cls: "bg-emerald-100 text-emerald-700" },
-    emp_reply:        { label: "Réponse employé",       cls: "bg-slate-100 text-slate-600"   },
-    confirmed:        { label: "Résolution confirmée",  cls: "bg-emerald-100 text-emerald-700" },
-    rejected_confirm: { label: "Solution refusée",      cls: "bg-red-100 text-red-600"       },
+    solution:         { label: "Solution",             bg: COLORS.technician.bg, color: COLORS.technician.color, border: COLORS.technician.border },
+    info:             { label: "Commentaire",           bg: COLORS.technician.bg,   color: COLORS.technician.color,border: COLORS.technician.border },
+    redirect:         { label: "Redirigé",              bg: "#fdf4ff",             color: "#7e22ce",               border: "#e9d5ff"                 },
+    confirm:          { label: "Confirmation envoyée",  bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
+    emp_reply:        { label: "Réponse employé",       bg: COLORS.employee.bg,   color: COLORS.employee.color,   border: COLORS.employee.border   },
+    confirmed:        { label: "Résolution confirmée",  bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
+    rejected_confirm: { label: "Solution refusée",      bg: "#fef2f2",             color: "#dc2626",               border: "#fecaca"                 },
   };
   var typeTag = tags[item.type];
-
-  // Bubble styling — no logic changed, only visual classes refined
-  var bubbleCls = isMine
-    ? item.type === "info"
-      ? "bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/80 text-amber-900 rounded-tr-sm shadow-sm"
-      : "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-sm shadow-md"
-    : "bg-white border border-slate-200/80 text-slate-800 rounded-tl-sm shadow-sm";
-
-  var avatarCls = isMine
-    ? "w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white"
-    : "w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600 text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white";
 
   return (
     <div className={"flex flex-col mb-5 " + (isMine ? "items-end" : "items-start")}>
       <div className={"flex items-end gap-2.5 " + (isMine ? "flex-row-reverse" : "flex-row")}>
+
         {/* Avatar */}
-        <div className={avatarCls}>
+        <div
+          className="w-8 h-8 rounded-full text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white"
+          style={{
+            background: isMine ? COLORS.technician.bg : COLORS.employee.bg,
+            color:      isMine ? COLORS.technician.color : COLORS.employee.color,
+            border:     isMine ? `1px solid ${COLORS.technician.border}` : `1px solid ${COLORS.employee.border}`,
+          }}
+        >
           {isMine
             ? (currentUser?.name?.[0] ?? "T") + (currentUser?.surname?.[0] ?? "")
             : empInitials}
         </div>
 
         <div className={"max-w-[75%] flex flex-col " + (isMine ? "items-end" : "items-start")}>
+
           {/* Type tag */}
           {typeTag && (
-            <span className={"text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-1.5 tracking-wide " + typeTag.cls}>
+            <span
+              className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-1.5 tracking-wide"
+              style={{ background: typeTag.bg, color: typeTag.color, border: `1px solid ${typeTag.border}` }}
+            >
               {typeTag.label}
             </span>
           )}
 
           {/* Bubble */}
-          <div className={"rounded-2xl px-4 py-3 text-[12.5px] leading-relaxed " + bubbleCls}>
+          <div
+            className={"rounded-2xl px-4 py-3 text-[12.5px] leading-relaxed " + (isMine ? "rounded-tr-sm" : "rounded-tl-sm")}
+            style={{
+              background: palette.bg,
+              color:      palette.color,
+              border:     `1px solid ${palette.border}`,
+              boxShadow:  "0 1px 3px rgba(0,0,0,0.06)",
+            }}
+          >
             <div dangerouslySetInnerHTML={{ __html: item.message }} />
             <FileList files={item.files} isMine={isMine} />
           </div>

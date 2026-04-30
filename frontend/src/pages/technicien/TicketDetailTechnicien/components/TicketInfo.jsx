@@ -1,327 +1,321 @@
-import { 
-  User, Mail, Building2, Briefcase, Phone, DoorOpen, Hash, 
-  Tag, Layers, AlertTriangle, FileText, Calendar, Clock,
-  Lock, Circle, LogIn, XCircle, Forward
-} from "lucide-react";
+import { useState } from "react";
+import { Forward, Clock, Lock, Circle, XCircle, CheckCircle } from "lucide-react";
+import {
+  MdTimer, MdFlag, MdCategory, MdSupportAgent, MdFlashOn, MdTrendingUp,
+  MdCalendarToday, MdMeetingRoom, MdEmail, MdBusiness, MdWork, MdPhone, MdPerson,
+} from "react-icons/md";
 import { useTranslation } from "react-i18next";
-import UserTooltip from "./utils/UserTooltip";
-import { PRIORITY_CLASS, PRIORITY_KEYS, IMPACT_KEYS, URGENCY_KEYS, CATEGORY_KEYS, TYPE_KEYS, STATUS_CLASS, STATUS_KEYS } from "./constants"
-function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElapsed) {
-  if (!slaDateLimite) return null;
+import Pill from "../../../../components/common/Pill";
+import {
+  PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG, IMPACT_CONFIG, URGENCY_CONFIG,
+} from "../../../../config/styles";
+import { STATUS_KEYS } from "./constants";
 
-  const PAUSED   = ["pending", "pending_supplier"];
-  const TERMINAL = ["resolved", "closed", "rejected"];
-  const due      = new Date(slaDateLimite).getTime();
-  const debut    = slaDateDebut ? new Date(slaDateDebut).getTime() : due - 24 * 3600000;
-  const window   = due - debut;
-  const now      = Date.now();
-
-  // ── Terminal : bilan figé ──
-  if (TERMINAL.includes(statut)) {
-    const closed   = closedAt ? new Date(closedAt).getTime() : due;
-    const exceeded = closed > due;
-    const delta    = Math.abs(closed - due);
-    const used     = exceeded ? window + delta : window - (due - closed);
-    return {
-      mode: "terminal",
-      exceeded,
-      diffH: Math.floor(delta / 3600000),
-      diffM: Math.floor((delta % 3600000) / 60000),
-      pct:   Math.min(100, Math.max(0, (used / window) * 100)),
-      deadline: new Date(slaDateLimite),
-    };
-  }
-
-  // ── Pause : figé ──
-  if (PAUSED.includes(statut)) {
-    const frozen  = slaPauseElapsed != null ? window - slaPauseElapsed : Math.max(0, due - now);
-    const elapsed = window - frozen;
-    return {
-      mode: "paused",
-      diffH: Math.floor(frozen / 3600000),
-      diffM: Math.floor((frozen % 3600000) / 60000),
-      pct:   Math.min(100, Math.max(0, (elapsed / window) * 100)),
-      deadline: new Date(slaDateLimite),
-    };
-  }
-
-  // ── Actif ──
-  const remaining = due - now;
-  const exceeded  = remaining <= 0;
-  const abs       = Math.abs(remaining);
-  return {
-    mode: "active",
-    exceeded,
-    diffH: Math.floor(abs / 3600000),
-    diffM: Math.floor((abs % 3600000) / 60000),
-    pct:   Math.max(0, Math.min(100, (remaining / window) * 100)),
-    deadline: new Date(slaDateLimite),
-  };
+function MiniTooltip({ user, children }) {
+  const [show, setShow] = useState(false);
+  if (!user) return children;
+  return (
+    <div style={{ position: "relative", display: "inline-flex" }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {children}
+      {show && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
+          background: "#0f172a", color: "#fff", borderRadius: 10, padding: "10px 14px",
+          fontSize: 11, whiteSpace: "nowrap", zIndex: 9999, boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+          display: "flex", flexDirection: "column", gap: 3, pointerEvents: "none",
+        }}>
+          <span style={{ fontWeight: 700, fontSize: 12 }}>{user.name} {user.surname}</span>
+          {user.email      && <span style={{ color: "#94a3b8" }}>{user.email}</span>}
+          {user.department && <span style={{ color: "#94a3b8" }}>{user.department}</span>}
+          {user.job_title  && <span style={{ color: "#cbd5e1" }}>{user.job_title}</span>}
+          <div style={{
+            position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
+            width: 0, height: 0,
+            borderLeft: "6px solid transparent",
+            borderRight: "6px solid transparent",
+            borderTop: "6px solid #0f172a",
+          }} />
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default function TicketInfo({ 
-  ticket, 
-  status, 
-  savingStatus, 
-  isClosed, 
-  handleStatusChange,
-  currentUser 
-}) {
+function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElapsed) {
+  if (!slaDateLimite) return null;
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const due   = new Date(slaDateLimite).getTime();
+  const debut = slaDateDebut ? new Date(slaDateDebut).getTime() : due - 24 * 3600000;
+  const win   = due - debut;
+  const now   = Date.now();
+  if (TERMINAL.includes(statut)) {
+    const closed = closedAt ? new Date(closedAt).getTime() : due;
+    const exceeded = closed > due;
+    const delta = Math.abs(closed - due);
+    const used = exceeded ? win + delta : win - (due - closed);
+    return { mode: "terminal", exceeded, diffH: Math.floor(delta / 3600000), diffM: Math.floor((delta % 3600000) / 60000), pct: Math.min(100, Math.max(0, (used / win) * 100)), deadline: new Date(slaDateLimite) };
+  }
+  if (PAUSED.includes(statut)) {
+    const frozen = slaPauseElapsed != null ? win - slaPauseElapsed : Math.max(0, due - now);
+    const elapsed = win - frozen;
+    return { mode: "paused", diffH: Math.floor(frozen / 3600000), diffM: Math.floor((frozen % 3600000) / 60000), pct: Math.min(100, Math.max(0, (elapsed / win) * 100)), deadline: new Date(slaDateLimite) };
+  }
+  const remaining = due - now;
+  const exceeded  = remaining <= 0;
+  const abs = Math.abs(remaining);
+  return { mode: "active", exceeded, diffH: Math.floor(abs / 3600000), diffM: Math.floor((abs % 3600000) / 60000), pct: Math.max(0, Math.min(100, (remaining / win) * 100)), deadline: new Date(slaDateLimite) };
+}
+
+const S = {
+  cardEmp:    { background: "#fff", border: "1px solid #d9d4cc", borderRadius: 16, overflow: "hidden" },
+  cardTicket: { background: "#fff", border: "1px solid #d9d4cc", borderRadius: 16, overflow: "visible" },
+  label:      { fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 },
+  cell:       { background: "#faf9f7", border: "1px solid #e8e2d9", borderRadius: 10, padding: "10px 14px" },
+  divider:    { borderBottom: "1px solid #e8e2d9" },
+};
+
+export default function TicketInfo({ ticket, status, savingStatus, isClosed, handleStatusChange, currentUser }) {
   const { t, i18n } = useTranslation("technicien");
-
   const emp = ticket.employee ?? {};
-  const ini = `${emp.name?.[0] ?? "?"} ${emp.surname?.[0] ?? ""}`;
-  const empName = `${emp.name ?? ""} ${emp.surname ?? ""}`.trim();
-
-  const sla = getSLAInfo(
-    ticket.sla_date_limite,
-    ticket.sla_date_debut,
-    status,                        // ← statut local (déjà mis à jour)
-    ticket.closedAt,
-    ticket.sla_pause_elapsed_ms ?? null,
-  );
-
-  // Use locale from i18n for date formatting; fallback to fr-FR
+  const ini = `${emp.name?.[0] ?? "?"}${emp.surname?.[0] ?? ""}`.toUpperCase();
   const dateLocale = i18n.language?.startsWith("en") ? "en-GB" : "fr-FR";
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
 
-  const fmtDate = (d) =>
-    d
-      ? new Date(d).toLocaleDateString(dateLocale, {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : "N/A";
+  const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut, status, ticket.closedAt, ticket.sla_pause_elapsed_ms ?? null);
 
-  const fmtDateTime = (d) =>
-    d
-      ? new Date(d).toLocaleDateString(dateLocale, {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : "N/A";
+  const slaColor = !sla ? "#9ca3af"
+    : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
+    : sla.mode === "paused"   ? "#7c3aed"
+    : sla.exceeded            ? "#dc2626"
+    : sla.pct > 50            ? "#16a34a"
+    : sla.pct > 20            ? "#d97706"
+    : "#f97316";
+
+  const empFields = [
+    { icon: MdEmail,       label: "Email",                                      value: emp.email },
+    { icon: MdBusiness,    label: t("components.ticketInfo.fields.department"), value: emp.department },
+    { icon: MdWork,        label: t("components.ticketInfo.fields.jobTitle"),   value: emp.job_title },
+    { icon: MdPhone,       label: t("components.ticketInfo.fields.phone"),      value: emp.phone },
+    { icon: MdMeetingRoom, label: t("components.ticketInfo.fields.office"),     value: emp.office },
+  ];
+
+  const assignedByNode = (() => {
+    if (ticket.assigned_action === "taken") {
+      return (
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a", display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <CheckCircle size={13} color="#16a34a" />
+          {t("ticketDetail.managedByYou")}
+        </span>
+      );
+    }
+    if (["assigned", "updated"].includes(ticket.assigned_action) && ticket.assigned_by_manager) {
+      const mgr = ticket.assigned_by_manager;
+      return (
+        <MiniTooltip user={{ name: mgr.name, surname: mgr.surname, email: mgr.email, department: mgr.department, job_title: mgr.job_title ?? mgr.jobTitle ?? mgr.poste }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", cursor: "default", display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <MdSupportAgent style={{ fontSize: 14, color: "#7c3aed" }} />
+            {mgr.name} {mgr.surname}
+          </span>
+        </MiniTooltip>
+      );
+    }
+    if (ticket.assignedBy?.type === "auto") {
+      return <span style={{ fontSize: 12, fontWeight: 700, color: "#4f46e5", fontStyle: "italic" }}>{t("components.ticketInfo.directAssignment")}</span>;
+    }
+    if (ticket.assignedBy?.label) {
+      return (
+        <MiniTooltip user={ticket.assignedBy}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", cursor: "default", display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <MdSupportAgent style={{ fontSize: 14, color: "#7c3aed" }} />
+            {ticket.assignedBy.label}
+          </span>
+        </MiniTooltip>
+      );
+    }
+    return <span style={{ color: "#6b7280", fontSize: 12 }}>—</span>;
+  })();
+  const IMPACT_NORMALIZE = {
+    "Entreprise":   "high",
+    "Un service":   "medium",
+    "Une personne": "low",
+  };
+  const URGENCY_NORMALIZE = {
+    "Complètement bloqué":  "high",
+    "Partiellement bloqué": "medium",
+    "Peut travailler":      "low",
+  };
+  const specCells = [
+  { icon: MdFlag,          label: t("ticketDetail.cols.priority"),                    node: <Pill config={PRIORITY_CONFIG} value={ticket.priority} /> },
+  { icon: MdCategory,      label: t("ticketDetail.cols.category"),                    node: <Pill config={CATEGORY_CONFIG} value={ticket.category} /> },
+  { icon: MdSupportAgent,  label: t("ticketDetail.cols.service"),                     value: ticket.service ?? "N/A" },
+  { icon: MdTrendingUp,    label: t("ticketDetail.cols.impact"),                      node: <Pill config={IMPACT_CONFIG}  value={IMPACT_NORMALIZE[ticket.impact]  ?? ticket.impact}  /> },
+  { icon: MdFlashOn,       label: t("ticketDetail.cols.urgency"),                     node: <Pill config={URGENCY_CONFIG} value={URGENCY_NORMALIZE[ticket.urgency] ?? ticket.urgency} /> },
+  { icon: MdCalendarToday, label: t("components.ticketInfo.fields.createdOn"),        value: fmtDate(ticket.createdAt) },
+  { icon: MdCalendarToday, label: t("components.ticketInfo.fields.assignedOn"),       value: fmtDate(ticket.assignedAt) },
+  { icon: ticket.assigned_action === "taken" ? MdPerson : MdSupportAgent,             label: t("components.ticketInfo.fields.assignedBy"), node: assignedByNode },
+  ...(isClosed && ticket.closedAt ? [{ icon: XCircle, label: t("components.ticketInfo.fields.closedOn"), value: fmtDate(ticket.closedAt) }] : []),
+];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-stretch">
-      {/* Employee card */}
-      <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
-        <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-          <User size={12}/> {t("components.ticketInfo.employeeCard")}
-        </h2>
-        <UserTooltip user={emp}>
-          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 cursor-default">
-            <div className="w-12 h-12 rounded-full bg-blue-600 text-white text-base font-bold flex items-center justify-center shrink-0 shadow-sm">
-              {ini}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-900">{emp.name} {emp.surname}</p>
-              <p className="text-[11px] text-blue-600 font-medium mt-0.5">
-                {emp.job_title ?? emp.role ?? "N/A"}
-              </p>
-            </div>
+    <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, alignItems: "stretch" }}>
+
+      {/* ── EMPLOYEE ── */}
+      <div style={S.cardEmp}>
+        <div style={{ background: "#fff", padding: "20px 20px 16px", textAlign: "center", ...S.divider }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: "50%",
+            background: "linear-gradient(135deg,#fce7f3,#fecaca)",
+            border: "2px solid #fecaca",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 17, fontWeight: 800, color: "#9d174d",
+            margin: "0 auto 10px",
+          }}>
+            {ini}
           </div>
-        </UserTooltip>
-        <div className="flex flex-col gap-0.5">
-          {[
-            { Icon: Hash,      label: "ID",                                          value: emp.id },
-            { Icon: Mail,      label: "Email",                                       value: emp.email },
-            { Icon: Building2, label: t("components.ticketInfo.fields.department"),  value: emp.department },
-            { Icon: Briefcase, label: t("components.ticketInfo.fields.jobTitle"),    value: emp.job_title },
-            { Icon: Phone,     label: t("components.ticketInfo.fields.phone"),       value: emp.phone },
-            { Icon: Building2, label: "Block",                                       value: emp.block_number || emp.block || "N/A" },
-            { Icon: DoorOpen,  label: t("components.ticketInfo.fields.office"),      value: emp.office },
-          ].map(f => (
-            <div key={f.label} className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
-              <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-                <f.Icon size={12} className="text-gray-400"/>
-              </div>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>
+            {emp.name} {emp.surname}
+          </h2>
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: "#9d174d",
+            background: "#fce7f3", border: "1px solid #fecaca",
+            padding: "3px 10px", borderRadius: 99,
+            textTransform: "uppercase", letterSpacing: "0.08em",
+          }}>
+            {emp.job_title ?? emp.role ?? "N/A"}
+          </span>
+        </div>
+        <div style={{ padding: "4px 0" }}>
+          {empFields.map(({ icon: Icon, label, value }, i, arr) => (
+            <div key={label} style={{
+              display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 18px",
+              ...(i < arr.length - 1 ? { borderBottom: "1px solid #f0ebe3" } : {}),
+            }}>
+              <Icon style={{ fontSize: 14, color: "#94a3b8", marginTop: 2, flexShrink: 0 }} />
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{f.label}</p>
-                <p className="text-[12px] text-gray-800 font-medium mt-0.5">{f.value ?? "N/A"}</p>
+                <p style={{ ...S.label, marginBottom: 1 }}>{label}</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#0f172a", margin: 0 }}>{value || "—"}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
+      {/* ── END EMPLOYEE ── */}
 
-      {/* Ticket card */}
-      <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-gray-400 font-mono mb-0.5">#{ticket.id}</p>
-            <h1 className="text-base font-bold text-gray-900 leading-snug">{ticket.title}</h1>
+      {/* ── TICKET ── */}
+      <div style={S.cardTicket}>
+
+        <div style={{ padding: "16px 22px", ...S.divider, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+          <div>
+            <p style={{ ...S.label, marginBottom: 3 }}>#{ticket.id}</p>
+            <h1 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>{ticket.title}</h1>
           </div>
-          <span className={`text-[11px] font-semibold px-3 py-1 rounded-full shrink-0 ${STATUS_CLASS[status] ?? "bg-gray-100 text-gray-600"}`}>
-            {t(STATUS_KEYS[status]) ?? status}
-          </span>
+          <Pill config={STATUS_CONFIG} value={status} />
         </div>
 
         {ticket.redirect_note && (
-          <div className="flex flex-col gap-1 bg-purple-50 border border-purple-200 rounded-xl px-3 py-2.5">
-            <div className="flex items-center gap-2 text-[11px] font-semibold text-purple-700">
-              <Forward size={13} className="shrink-0"/>
-              {t("components.ticketInfo.redirect.title")}
-            </div>
-            <p className="text-[11px] text-purple-600 pl-5">
-              {ticket.redirectInfo?.reason ?? ticket.redirect_note}
-            </p>
-            {ticket.redirectInfo && (
-              <div className="flex items-center gap-3 pl-5 text-[10px] text-purple-400 font-medium">
-                {ticket.redirectInfo.by && (
-                  <span>
-                    {t("components.ticketInfo.redirect.by")}{" "}
-                    <span className="text-purple-600 font-semibold">{ticket.redirectInfo.by}</span>
-                  </span>
-                )}
-                {ticket.redirectInfo.from && (
-                  <span>
-                    {t("components.ticketInfo.redirect.previousTech")}{" "}
-                    <span className="text-purple-600 font-semibold">{ticket.redirectInfo.from}</span>
-                  </span>
-                )}
-                {ticket.redirectInfo.date && (
-                  <span>
-                    {new Date(ticket.redirectInfo.date).toLocaleDateString(dateLocale, { day: "2-digit", month: "short" })}
-                  </span>
-                )}
+          <div style={{ padding: "14px 22px", ...S.divider }}>
+            <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: 10, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "#7e22ce" }}>
+                <Forward size={13} /> {t("components.ticketInfo.redirect.title")}
               </div>
-            )}
+              <p style={{ fontSize: 12, color: "#6b21a8", margin: 0, paddingLeft: 19 }}>
+                {ticket.redirectInfo?.reason ?? ticket.redirect_note}
+              </p>
+              {ticket.redirectInfo && (
+                <div style={{ display: "flex", gap: 12, paddingLeft: 19, flexWrap: "wrap" }}>
+                  {ticket.redirectInfo.by   && <span style={{ fontSize: 10, color: "#a855f7" }}>{t("components.ticketInfo.redirect.by")} <strong style={{ color: "#7e22ce" }}>{ticket.redirectInfo.by}</strong></span>}
+                  {ticket.redirectInfo.from && <span style={{ fontSize: 10, color: "#a855f7" }}>{t("components.ticketInfo.redirect.previousTech")} <strong style={{ color: "#7e22ce" }}>{ticket.redirectInfo.from}</strong></span>}
+                  {ticket.redirectInfo.date && <span style={{ fontSize: 10, color: "#a855f7" }}>{new Date(ticket.redirectInfo.date).toLocaleDateString(dateLocale, { day: "2-digit", month: "short" })}</span>}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">
-            {t("ticketDetail.description")}
-          </p>
-          <p className="text-[13px] text-gray-700 leading-relaxed">
+        <div style={{ padding: "14px 22px", ...S.divider }}>
+          <p style={{ ...S.label, marginBottom: 8 }}>{t("ticketDetail.description")}</p>
+          <div style={{ background: "#faf9f7", border: "1px solid #e8e2d9", borderRadius: 10, padding: "11px 14px", fontSize: 13, color: "#475569", lineHeight: 1.65, fontStyle: "italic" }}>
             {ticket.description ?? t("components.ticketInfo.noDescription")}
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {[
-            { Icon: AlertTriangle, label: t("ticketDetail.cols.priority"), custom: ticket.priority
-                ? <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${PRIORITY_CLASS[ticket.priority] ?? "bg-gray-100"}`}>{t(PRIORITY_KEYS[ticket.priority]) ?? ticket.priority}</span>
-                : null },
-            { Icon: Tag,           label: t("ticketDetail.cols.category"), value: t(CATEGORY_KEYS[ticket.category]) ?? ticket.category },
-            { Icon: Layers,        label: t("ticketDetail.cols.service"),  value: ticket.service ?? "N/A" },
-            { Icon: AlertTriangle, label: t("ticketDetail.cols.impact"),   value: t(IMPACT_KEYS[ticket.impact]) ?? ticket.impact ?? "N/A"},
-            { Icon: AlertTriangle, label: t("ticketDetail.cols.urgency"),  value: t(URGENCY_KEYS[ticket.urgency]) ?? ticket.urgency ?? "N/A" },
-            { Icon: FileText,      label: "Type",                          value: t(TYPE_KEYS[ticket.type]) ?? ticket.type ?? "Incident" },
-            { Icon: User,          label: t("components.ticketInfo.fields.assignedBy"), custom: ticket.assignedBy
-                ? ticket.assignedBy.type === "auto"
-                  ? <span className="text-[12px] font-semibold text-indigo-600 italic">{t("components.ticketInfo.directAssignment")}</span>
-                  : <UserTooltip user={ticket.assignedBy}>
-                      <span className="text-[12px] font-semibold text-blue-700 cursor-default underline decoration-dotted">{ticket.assignedBy.label}</span>
-                    </UserTooltip>
-                : null },
-            { Icon: Calendar, label: t("components.ticketInfo.fields.createdOn"),  value: ticket.createdAt  ? fmtDate(ticket.createdAt)      : "N/A" },
-            { Icon: LogIn,    label: t("components.ticketInfo.fields.assignedOn"), value: ticket.assignedAt ? fmtDateTime(ticket.assignedAt)  : "N/A" },
-            ...(isClosed && ticket.closedAt ? [
-              { Icon: XCircle, label: t("components.ticketInfo.fields.closedOn"), value: fmtDateTime(ticket.closedAt) }
-            ] : []),
-          ].map(f => (
-            <div key={f.label} className="bg-gray-50 rounded-xl p-2.5 border border-gray-100">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <f.Icon size={10} className="text-gray-400"/>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{f.label}</p>
-              </div>
-              {f.custom ? f.custom : <p className="text-[12px] font-semibold text-gray-800">{f.value}</p>}
-            </div>
-          ))}
+          </div>
         </div>
 
-        {/* SLA */}
+        <div style={{ padding: "14px 22px", ...S.divider }}>
+          <p style={{ ...S.label, marginBottom: 10 }}>{t("ticketDetail.info")}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+            {specCells.map(({ icon: Icon, label, value, node }, i) => (
+              <div key={i} style={{ ...S.cell, overflow: "visible", position: "relative" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
+                  <Icon style={{ fontSize: 13, color: "#94a3b8" }} />
+                  <span style={{ ...S.label }}>{label}</span>
+                </div>
+                {node ?? <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{value}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {sla && (
-          <div className="rounded-xl p-3 border bg-gray-50 border-gray-200">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-1.5">
-                <Clock size={12} className={sla.exceeded ? "text-red-500" : sla.mode === "paused" ? "text-purple-500" : "text-gray-500"}/>
-                <p className="text-[11px] font-bold text-gray-700">SLA</p>
-                {sla.mode === "paused" && (
-                  <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-medium">
-                    {t("components.ticketInfo.sla.onHold")}
-                  </span>
-                )}
-                {sla.mode === "terminal" && (
-                  <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
-                    {t("components.ticketInfo.sla.closed")}
-                  </span>
-                )}
+          <div style={{ padding: "12px 22px", ...S.divider }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <MdTimer style={{ fontSize: 14, color: slaColor }} />
+                <span style={{ ...S.label }}>SLA</span>
+                {sla.mode === "paused"   && <span style={{ fontSize: 10, fontWeight: 700, color: "#7c3aed", background: "#ede9fe", padding: "2px 7px", borderRadius: 99 }}>{t("components.ticketInfo.sla.onHold")}</span>}
+                {sla.mode === "terminal" && <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", background: "#f1f5f9", padding: "2px 7px", borderRadius: 99 }}>{t("components.ticketInfo.sla.closed")}</span>}
               </div>
-
-              {sla.mode === "terminal" && (
-                <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : "text-emerald-700"}`}>
-                  {sla.exceeded
-                    ? t("components.ticketInfo.sla.exceededBy", { h: sla.diffH, m: sla.diffM })
-                    : t("components.ticketInfo.sla.respected")}
-                </span>
-              )}
-              {sla.mode === "paused" && (
-                <span className="text-[11px] font-bold text-purple-600">
-                  {t("components.ticketInfo.sla.frozen", { h: sla.diffH, m: sla.diffM })}
-                </span>
-              )}
-              {sla.mode === "active" && (
-                <span className={`text-[11px] font-bold ${sla.exceeded ? "text-red-600" : sla.pct > 50 ? "text-emerald-700" : sla.pct > 20 ? "text-amber-600" : "text-red-600"}`}>
-                  {sla.exceeded
-                    ? t("components.ticketInfo.sla.alertExceeded", { h: sla.diffH, m: sla.diffM })
-                    : t("components.ticketInfo.sla.remaining", { h: sla.diffH, m: sla.diffM })}
-                </span>
-              )}
+              <div style={{ flex: 1, minWidth: 80, background: "#e8e2d9", height: 5, borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ width: `${Math.round(sla.pct)}%`, background: slaColor, height: "100%", borderRadius: 99, transition: "width 1s ease" }} />
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 800, color: slaColor, whiteSpace: "nowrap" }}>
+                {sla.mode === "terminal"
+                  ? sla.exceeded ? t("components.ticketInfo.sla.exceededBy", { h: sla.diffH, m: sla.diffM }) : t("components.ticketInfo.sla.respected")
+                  : sla.mode === "paused"
+                  ? t("components.ticketInfo.sla.frozen", { h: sla.diffH, m: sla.diffM })
+                  : sla.exceeded ? t("components.ticketInfo.sla.alertExceeded", { h: sla.diffH, m: sla.diffM }) : t("components.ticketInfo.sla.remaining", { h: sla.diffH, m: sla.diffM })}
+              </span>
+              <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>
+                {t("components.ticketInfo.sla.deadline")}{" "}
+                {sla.deadline.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
+                {" "}{t("components.ticketInfo.sla.at")}{" "}
+                {sla.deadline.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}
+              </span>
             </div>
-
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1.5">
-              <div
-                className={`h-1.5 rounded-full transition-all ${
-                  sla.mode === "terminal"
-                    ? sla.exceeded ? "bg-red-400" : "bg-emerald-500"
-                    : sla.mode === "paused"
-                    ? "bg-purple-400"
-                    : sla.exceeded ? "bg-red-500" : sla.pct > 50 ? "bg-emerald-500" : sla.pct > 20 ? "bg-amber-500" : "bg-red-500"
-                }`}
-                style={{ width: `${Math.round(sla.pct)}%` }}
-              />
-            </div>
-
-            <p className="text-[10px] text-gray-400">
-              {t("components.ticketInfo.sla.deadline")}{" "}
-              {sla.deadline.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
-              {" "}{t("components.ticketInfo.sla.at")}{" "}
-              {sla.deadline.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}
-            </p>
           </div>
         )}
 
-        {/* Status selector */}
-        <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-gray-100">
-          <label className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
-            <Clock size={11}/> {t("components.ticketInfo.status.label")}
-          </label>
+        <div style={{ padding: "14px 22px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ ...S.label, display: "flex", alignItems: "center", gap: 4 }}>
+            <Clock size={11} /> {t("components.ticketInfo.status.label")}
+          </span>
           {isClosed ? (
-            <span className="text-[12px] font-semibold text-gray-500 flex items-center gap-1.5">
-              <Lock size={12}/> {t("components.ticketInfo.status.locked")}
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "flex", alignItems: "center", gap: 5 }}>
+              <Lock size={12} /> {t("components.ticketInfo.status.locked")}
             </span>
           ) : (
-            <select 
-              value={status} 
+            <select
+              value={status}
               onChange={e => handleStatusChange(e.target.value)}
-              className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-800 cursor-pointer focus:outline-none focus:border-blue-400"
+              style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, border: "1px solid #d9d4cc", background: "#faf9f7", color: "#374151", cursor: "pointer", outline: "none" }}
             >
-
               {Object.entries(STATUS_KEYS).map(([val, key]) => (
-  <option key={val} value={val}>{t(key)}</option>
-))}
+                <option key={val} value={val}>{t(key)}</option>
+              ))}
             </select>
           )}
           {savingStatus && (
-            <span className="text-[10px] text-gray-400 animate-pulse flex items-center gap-1">
-              <Circle size={8} className="animate-spin"/> {t("components.ticketInfo.status.saving")}
+            <span style={{ fontSize: 10, color: "#94a3b8", display: "flex", alignItems: "center", gap: 4 }}>
+              <Circle size={8} className="animate-spin" /> {t("components.ticketInfo.status.saving")}
             </span>
           )}
         </div>
+
       </div>
+      {/* ── END TICKET ── */}
+
     </div>
   );
 }

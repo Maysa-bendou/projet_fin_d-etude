@@ -293,7 +293,7 @@ export default function TicketDetailTechnicien() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div  className="min-h-screen flex items-center justify-center p-6">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"/>
         <p className="text-sm text-gray-500">{t("ticketDetailTech.loading")}</p>
@@ -315,7 +315,7 @@ export default function TicketDetailTechnicien() {
   const solutionBlocked = !isClosed && awaitingConfirm && !ticket?.is_resolved_confirmed;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5">
+    <div className="min-h-screen  p-5" style={{ background: "#faf9f7" }}>
       {showManualClose && (
         <ManualCloseModal
           loading={closingManually}

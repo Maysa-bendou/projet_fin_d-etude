@@ -116,6 +116,7 @@
     },
     "filters": {
       "label": "Filtres",
+      "search": "Rechercher…",
       "status": "Statut",
       "category": "Catégorie",
       "priority": "Priorité",
@@ -125,6 +126,7 @@
       "allCategories": "Toutes les catégories",
       "allPriorities": "Toutes les priorités",
       "allServices": "Tous les services",
+      "mois": "mois",
       "allYears": "Toutes",
       "reset": "Réinitialiser"
     },

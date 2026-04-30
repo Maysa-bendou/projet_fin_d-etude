@@ -3,19 +3,21 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bell, ChevronDown, User, LogOut, CheckCircle2,
-  AlertCircle, Clock, Info, Ticket, Languages,Forward,
+  AlertCircle, Clock, Info, Ticket, Languages, Forward,
 } from "lucide-react";
 
-const ROLE_LABEL = {
-  technician: "Technicien", technicien: "Technicien",
-  manager: "Manager", chef_service: "Chef de service",
-  employee: "Employé", admin: "Administrateur",
-};
-
+// ─── Role keys only (no labels here — labels come from i18n) ───────────────
 const ROLE_PATH = {
   technician: "technician", technicien: "technician",
   manager: "manager", chef_service: "chef",
   employee: "employee", admin: "admin",
+};
+
+// Role key → i18n translation key
+const ROLE_I18N_KEY = {
+  technician: "roles.technician", technicien: "roles.technician",
+  manager: "roles.manager", chef_service: "roles.chef_service",
+  employee: "roles.employee", admin: "roles.admin",
 };
 
 const LANGUAGES = [
@@ -35,21 +37,21 @@ function getNotifMeta(type) {
     case "rejected_confirm": return { icon: AlertCircle,  color: "text-red-600 bg-red-50"       };
     case "new_ticket":       return { icon: Ticket,       color: "text-blue-600 bg-blue-50"     };
     case "updated":          return { icon: Info,         color: "text-amber-600 bg-amber-50"   };
-    case "redirect":         return { icon: Forward,      color: "text-purple-600 bg-purple-50" }; // ← ici
+    case "redirect":         return { icon: Forward,      color: "text-purple-600 bg-purple-50" };
     default:                 return { icon: Info,         color: "text-gray-600 bg-gray-50"     };
   }
 }
 
-function formatTime(dateStr) {
+function formatTime(dateStr, t) {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(diff / 86400000);
-  if (m < 1)  return "À l'instant";
-  if (m < 60) return `Il y a ${m} min`;
-  if (h < 24) return `Il y a ${h}h`;
-  return `Il y a ${d}j`;
+  if (m < 1)  return t("notifications.timeJustNow");
+  if (m < 60) return t("notifications.timeMinutes", { count: m });
+  if (h < 24) return t("notifications.timeHours",   { count: h });
+  return t("notifications.timeDays", { count: d });
 }
 
 function useOnClickOutside(ref, handler) {
@@ -64,21 +66,27 @@ function useOnClickOutside(ref, handler) {
 }
 
 export default function TopNavbar({ pageTitle = "" }) {
-  const navigate   = useNavigate();
-  const user       = JSON.parse(localStorage.getItem("user") || "null");
-  const rolePath   = ROLE_PATH[user?.role] || "";
-  const roleLabel  = ROLE_LABEL[user?.role] || user?.role || "";
-  const initials   = `${user?.name?.[0] || "?"}${user?.surname?.[0] || ""}`.toUpperCase();
+  const { t, i18n } = useTranslation("topnavbar");
+  const navigate    = useNavigate();
+  const user        = JSON.parse(localStorage.getItem("user") || "null");
+  const rolePath    = ROLE_PATH[user?.role] || "";
+
+  // Role label is now resolved via i18n so it reacts to language changes
+  const roleI18nKey = ROLE_I18N_KEY[user?.role];
+  const roleLabel   = roleI18nKey ? t(roleI18nKey) : (user?.role || "");
+
+  const initials    = `${user?.name?.[0] || "?"}${user?.surname?.[0] || ""}`.toUpperCase();
 
   const [notifOpen,   setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [langOpen,    setLangOpen]    = useState(false);
-const { i18n } = useTranslation();
-const [activeLang, setActiveLang] = useState(
-  LANGUAGES.find(l => l.code === (localStorage.getItem('lang') || 'en')) || LANGUAGES[1]
-);
-  const [notifs,      setNotifs]      = useState([]);
-  const [time,        setTime]        = useState(new Date());
+
+  const [activeLang, setActiveLang] = useState(
+    LANGUAGES.find(l => l.code === (localStorage.getItem("lang") || "en")) || LANGUAGES[1]
+  );
+
+  const [notifs, setNotifs] = useState([]);
+  const [time,   setTime]   = useState(new Date());
 
   const notifRef   = useRef(null);
   const profileRef = useRef(null);
@@ -134,17 +142,14 @@ const [activeLang, setActiveLang] = useState(
     <header className="w-full px-6 py-4" style={{ backgroundColor: "#faf9f7" }}>
       <div className="flex items-center justify-between bg-white px-8 h-16 rounded-[40px] border border-[#e2e8f0] shadow-sm">
 
-        {/* ── GAUCHE ── */}
+        {/* ── LEFT ── */}
         <div className="flex items-center gap-6">
           <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest border-r border-slate-100 pr-6">
-            Support Panel
+            {t("brand")}
           </span>
-          <div className="flex items-center gap-2 text-slate-500">
-            
-          </div>
         </div>
 
-        {/* ── DROITE ── */}
+        {/* ── RIGHT ── */}
         <div className="flex items-center gap-4">
 
           {/* ── Language Switcher ── */}
@@ -152,7 +157,7 @@ const [activeLang, setActiveLang] = useState(
             <button
               onClick={() => { closeAll(); setLangOpen(v => !v); }}
               className="flex items-center gap-2 px-3 py-2 rounded-2xl text-slate-500 hover:bg-slate-50 hover:text-blue-600 transition-all cursor-pointer border border-slate-100 bg-transparent"
-              title="Langue"
+              title={t("language.tooltip")}
             >
               <Languages size={16} />
               <span className="text-xs font-bold uppercase">{activeLang.code}</span>
@@ -165,11 +170,11 @@ const [activeLang, setActiveLang] = useState(
                   <button
                     key={lang.code}
                     onClick={() => {
-  setActiveLang(lang);
-  i18n.changeLanguage(lang.code);
-  localStorage.setItem('lang', lang.code);
-  setLangOpen(false);
-}}
+                      setActiveLang(lang);
+                      i18n.changeLanguage(lang.code);
+                      localStorage.setItem("lang", lang.code);
+                      setLangOpen(false);
+                    }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition border-none cursor-pointer
                       ${activeLang.code === lang.code
                         ? "bg-blue-50 text-blue-600 font-bold"
@@ -193,7 +198,7 @@ const [activeLang, setActiveLang] = useState(
             <button
               onClick={() => { closeAll(); setNotifOpen(v => !v); }}
               className="relative p-2.5 rounded-2xl text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-all cursor-pointer border-none bg-transparent"
-              title="Notifications"
+              title={t("notifications.tooltip")}
             >
               <Bell size={20} />
               {unread > 0 && (
@@ -205,45 +210,47 @@ const [activeLang, setActiveLang] = useState(
               <div className="absolute right-0 mt-3 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-50">
                 <div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-800">Notifications</span>
+                    <span className="font-bold text-slate-800">{t("notifications.title")}</span>
                     {unread > 0 && (
                       <span className="bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded-full font-bold">{unread}</span>
                     )}
                   </div>
                   {unread > 0 && (
-                    <button onClick={markAllRead} className="text-[11px] text-blue-600 hover:underline bg-transparent border-none cursor-pointer font-semibold">
-                      Tout marquer lu
+                    <button
+                      onClick={markAllRead}
+                      className="text-[11px] text-blue-600 hover:underline bg-transparent border-none cursor-pointer font-semibold"
+                    >
+                      {t("notifications.markAllRead")}
                     </button>
                   )}
                 </div>
 
                 <div className="max-h-[400px] overflow-y-auto">
                   {notifs.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400 text-sm">Aucune notification</div>
+                    <div className="p-8 text-center text-slate-400 text-sm">{t("notifications.empty")}</div>
                   ) : (
                     notifs.map(n => {
                       const { icon: Icon, color } = getNotifMeta(n.type);
                       return (
                         <button
                           key={n.id}
-                   onClick={() => {
-  markRead(n.id);
-  setNotifOpen(false);
-  if (n.ticket_id) {
-    if (rolePath === "technician") {
-      // assigned = ticket assigné directement → détail technicien
-      // tout le reste (new_ticket, redirect, etc.) → liste service
-      const path = n.type === "assigned"
-        ? `/technician/ticket-technicien/${n.ticket_id}`
-        : `/technician/tickets-service/${n.ticket_id}`;
-      navigate(path);
-    } else if (rolePath === "manager" || rolePath === "chef") {
-      navigate(`/manager/tickets-service/${n.ticket_id}`);
-    } else if (rolePath === "employee") {
-      navigate(`/employee/ticket/${n.ticket_id}`);
-    }
-  }
-}} className={`w-full flex gap-3 px-5 py-4 text-left hover:bg-slate-50 transition border-none bg-transparent cursor-pointer ${!n.is_read ? "bg-blue-50/30" : ""}`}
+                          onClick={() => {
+                            markRead(n.id);
+                            setNotifOpen(false);
+                            if (n.ticket_id) {
+                              if (rolePath === "technician") {
+                                const path = n.type === "assigned"
+                                  ? `/technician/ticket-technicien/${n.ticket_id}`
+                                  : `/technician/tickets-service/${n.ticket_id}`;
+                                navigate(path);
+                              } else if (rolePath === "manager" || rolePath === "chef") {
+                                navigate(`/manager/tickets-service/${n.ticket_id}`);
+                              } else if (rolePath === "employee") {
+                                navigate(`/employee/ticket/${n.ticket_id}`);
+                              }
+                            }
+                          }}
+                          className={`w-full flex gap-3 px-5 py-4 text-left hover:bg-slate-50 transition border-none bg-transparent cursor-pointer ${!n.is_read ? "bg-blue-50/30" : ""}`}
                         >
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
                             <Icon size={14} />
@@ -253,22 +260,20 @@ const [activeLang, setActiveLang] = useState(
                               <p className={`text-xs leading-snug ${!n.is_read ? "font-bold text-slate-900" : "text-slate-600"}`}>{n.message}</p>
                               {!n.is_read && <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" />}
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-1">{formatTime(n.created_at)}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">{formatTime(n.created_at, t)}</p>
                           </div>
                         </button>
                       );
                     })
                   )}
                 </div>
-
-              
               </div>
             )}
           </div>
 
           <div className="w-[1px] h-8 bg-slate-100 mx-1" />
 
-          {/* ── Profil ── */}
+          {/* ── Profile ── */}
           <div ref={profileRef} className="relative">
             <button
               onClick={() => { closeAll(); setProfileOpen(v => !v); }}
@@ -276,6 +281,7 @@ const [activeLang, setActiveLang] = useState(
             >
               <div className="hidden md:flex flex-col text-right">
                 <span className="text-xs font-bold text-slate-900 leading-none">{user?.name} {user?.surname}</span>
+                {/* roleLabel now uses t() so it updates on language switch */}
                 <span className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{roleLabel}</span>
               </div>
               <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-lg shadow-blue-100">
@@ -291,7 +297,7 @@ const [activeLang, setActiveLang] = useState(
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition border-none bg-transparent cursor-pointer"
                 >
                   <User size={16} />
-                  <span className="font-semibold">Mon Profil</span>
+                  <span className="font-semibold">{t("profile.myProfile")}</span>
                 </button>
                 <div className="h-[1px] bg-slate-50 my-1 mx-2" />
                 <button
@@ -299,7 +305,7 @@ const [activeLang, setActiveLang] = useState(
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm text-red-500 hover:bg-red-50 transition border-none bg-transparent cursor-pointer"
                 >
                   <LogOut size={16} />
-                  <span className="font-semibold">Déconnexion</span>
+                  <span className="font-semibold">{t("profile.logout")}</span>
                 </button>
               </div>
             )}

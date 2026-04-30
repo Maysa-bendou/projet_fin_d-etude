@@ -1,0 +1,35 @@
+{
+  "common": {
+    "logout": "Logout",
+    "quit": "Quit",
+    "profile": "Profile"
+  },
+  "employee": {
+    "dashboard": "Dashboard",
+    "createTicket": "Create Ticket",
+    "myTickets": "My Tickets",
+    "profile": "Profile"
+  },
+  "admin": {
+    "userManagement": "User Management",
+    "departments": "Departments",
+    "settings": "Settings",
+    "profile": "Profile"
+  },
+  "chef": {
+    "globalStats": "Global Statistics",
+    "serviceDistribution": "Service Distribution",
+    "profile": "Profile"
+  },
+  "manager": {
+    "serviceTickets": "Service Tickets",
+    "performanceTracking": "Performance Tracking",
+    "profile": "Profile"
+  },
+  "technician": {
+    "dashboard": "Dashboard",
+    "assignedTickets": "Assigned Tickets",
+    "serviceTickets": "Service Tickets",
+    "profile": "Profile"
+  }
+}

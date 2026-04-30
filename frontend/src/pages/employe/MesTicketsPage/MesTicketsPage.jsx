@@ -299,7 +299,7 @@ export default function MesTicketsPage() {
           </FilterSelect>
          
 <FilterSelect icon={HiOutlineCalendarDays} value={filterMonth} onChange={setFilterMonth} minW={90}>
-  <option value="">Mois</option>
+  <option value="">{t("mesTickets.filters.mois")}</option>
   {MONTHS_FR.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
 </FilterSelect>
 

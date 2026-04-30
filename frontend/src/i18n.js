@@ -8,6 +8,13 @@ import adminEN  from './locales/en/admin.json';
 import technicienEN  from './locales/en/technicien.json';
 import profilEN  from './locales/en/profil.json';
 import loginEN  from './locales/en/login.json';
+import sidbarEN  from './locales/en/sidbar.json';
+import topnavbarEN  from './locales/en/topnavbar.json';
+import commonEN  from './locales/en/common.json';
+
+import commonFR from './locales/fr/common.json';
+import topnavbarFR from './locales/fr/topnavbar.json';
+import sidbarFR from './locales/fr/sidbar.json';
 import loginFR from './locales/fr/login.json';
 import profilFR from './locales/fr/profil.json';
 import technicienFR from './locales/fr/technicien.json';
@@ -30,6 +37,9 @@ i18n
         technicien: technicienEN,
         profil: profilEN,
         login: loginEN,
+        sidbar: sidbarEN,
+        topnavbar: topnavbarEN,
+        common: commonEN,
       },
       fr: {
         employee: employeeFR,
@@ -39,12 +49,17 @@ i18n
         technicien: technicienFR,
         profil: profilFR,
         login: loginFR,
+        sidbar: sidbarFR,
+        topnavbar: topnavbarFR,
+        common: commonFR,
       },
     },
     lng:         savedLang,
     fallbackLng: 'en',
     defaultNS:   'employee',
-    ns:          ['employee', 'manager' , 'chef', 'admin' , 'technicien' , 'profil' , 'login'],
+    ns:         ['employee', 'manager' , 'chef', 'admin' , 'technicien' , 'profil' , 'login' , 'sidbar' ,
+                      'topnavbar', 'common'
+                ],
     interpolation: { escapeValue: false },
   });
 

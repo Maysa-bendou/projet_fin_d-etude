@@ -1,0 +1,31 @@
+{
+  "brand": "Support Panel",
+
+  "language": {
+    "tooltip": "Langue"
+  },
+
+  "notifications": {
+    "tooltip": "Notifications",
+    "title": "Notifications",
+    "markAllRead": "Tout marquer lu",
+    "empty": "Aucune notification",
+    "timeJustNow": "À l'instant",
+    "timeMinutes": "Il y a {{count}} min",
+    "timeHours": "Il y a {{count}}h",
+    "timeDays": "Il y a {{count}}j"
+  },
+
+  "profile": {
+    "myProfile": "Mon Profil",
+    "logout": "Déconnexion"
+  },
+
+  "roles": {
+    "technician": "Technicien",
+    "manager": "Manager",
+    "chef_service": "Chef de service",
+    "employee": "Employé",
+    "admin": "Administrateur"
+  }
+}

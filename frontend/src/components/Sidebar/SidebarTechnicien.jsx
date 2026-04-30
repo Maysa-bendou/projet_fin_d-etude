@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   LayoutDashboard, 
   ClipboardCheck, 
@@ -35,13 +36,14 @@ export default function SidebarTechnician() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation("sidbar");
 
   // Menu spécifique pour le technicien
   const menuItems = [
-    { icon: LayoutDashboard, label: "Tableau De Bord", path: "/technician" },
-    { icon: ClipboardCheck, label: "Tickets assignés", path: "/technician/tickets-assignes" },
-    { icon: Wrench, label: "Tickets du service", path: "/technician/tickets-service" },
-    { icon: User, label: "Profil", path: "/technician/profile" },
+    { icon: LayoutDashboard, label: t("technician.dashboard"),      path: "/technician" },
+    { icon: ClipboardCheck, label: t("technician.assignedTickets"), path: "/technician/tickets-assignes" },
+    { icon: Wrench,         label: t("technician.serviceTickets"),  path: "/technician/tickets-service" },
+    { icon: User,           label: t("common.profile"),             path: "/technician/profile" },
   ];
 
   const handleLogout = () => {
@@ -128,12 +130,12 @@ export default function SidebarTechnician() {
           {!isOpen && (
             <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 origin-left">
                <div className="bg-red-50 text-red-600 text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm">
-                 Quitter
+                 {t("common.quit")}
                </div>
             </div>
           )}
           <LogOut size={24} />
-          {isOpen && <span className="text-sm font-bold">Déconnexion</span>}
+          {isOpen && <span className="text-sm font-bold">{t("common.logout")}</span>}
         </button>
       </div>
     </div>

@@ -1,0 +1,31 @@
+{
+  "brand": "Support Panel",
+
+  "language": {
+    "tooltip": "Language"
+  },
+
+  "notifications": {
+    "tooltip": "Notifications",
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "timeJustNow": "Just now",
+    "timeMinutes": "{{count}} min ago",
+    "timeHours": "{{count}}h ago",
+    "timeDays": "{{count}}d ago"
+  },
+
+  "profile": {
+    "myProfile": "My Profile",
+    "logout": "Logout"
+  },
+
+  "roles": {
+    "technician": "Technician",
+    "manager": "Manager",
+    "chef_service": "Service Manager",
+    "employee": "Employee",
+    "admin": "Administrator"
+  }
+}

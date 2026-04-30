@@ -1,0 +1,80 @@
+{
+  "status": {
+    "open": "Open",
+    "in_progress": "In Progress",
+    "pending": "Pending",
+    "pending_supplier": "Pending Supplier",
+    "resolved": "Resolved",
+    "closed": "Closed",
+    "rejected": "Rejected"
+  },
+
+  "category": {
+    "hardware": "Hardware",
+    "software": "Software",
+    "network": "Network",
+    "access": "Access",
+    "security": "Security",
+    "messagerie": "Messaging"
+  },
+
+  "urgency": {
+    "can_work": "Can still work",
+    "partially_blocked": "Partially blocked",
+    "fully_blocked": "Completely blocked"
+  },
+
+  "impact": {
+    "one_person": "One person",
+    "one_service": "One department",
+    "company": "Entire company"
+  },
+
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+
+  "date": {
+    "locale": "en-GB",
+    "short": "MM/DD/YYYY",
+    "long": "MMMM D, YYYY",
+    "withTime": "MM/DD/YYYY at HH:mm",
+    "timeOnly": "HH:mm",
+    "relative": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} min ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago",
+      "yesterday": "Yesterday",
+      "daysFromNow": "In {{count}}d",
+      "hoursFromNow": "In {{count}}h"
+    },
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    }
+  },
+  "loading": "Loading…"
+}

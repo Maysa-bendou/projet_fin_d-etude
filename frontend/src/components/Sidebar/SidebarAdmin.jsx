@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { 
   Users, 
   Layers, 
@@ -14,7 +15,6 @@ import {
 const DjezzyLogo = ({ isOpen }) => (
   <div className={`relative transition-all duration-500 flex items-center justify-center ${isOpen ? "w-36 h-20" : "w-16 h-12"}`}>
     <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
-      {/* Triangle rouge arrondi */}
       <path 
         d="M 15 85 L 85 50 L 15 15 Z" 
         fill="#ff0113" 
@@ -36,18 +36,18 @@ export default function SidebarAdmin() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation("sidbar");
 
-  // Menu Admin
   const menuItems = [
     { 
       icon: Users, 
-      label: "Gestion des utilisateurs", 
+      label: t("admin.userManagement"), 
       path: "/admin/utilisateurs",
-      hasNotify: true // Petit point rouge de notification
+      hasNotify: true
     },
-    { icon: Layers,   label: "Départements", path: "/admin/departements" },
-    { icon: Settings, label: "Paramètres",   path: "/admin/parametres" },
-    { icon: User,     label: "Profil",      path: "/admin/profile" },
+    { icon: Layers,   label: t("admin.departments"), path: "/admin/departements" },
+    { icon: Settings, label: t("admin.settings"),    path: "/admin/parametres" },
+    { icon: User,     label: t("common.profile"),    path: "/admin/profile" },
   ];
 
   const handleLogout = () => {
@@ -68,7 +68,7 @@ export default function SidebarAdmin() {
         <DjezzyLogo isOpen={isOpen} />
       </div>
 
-      {/* ── BOUTON DE CONTRÔLE (FLÈCHE) ── */}
+      {/* ── BOUTON DE CONTRÔLE ── */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="absolute -right-4 top-10 w-8 h-8 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-md hover:text-[#ff0113] transition-all z-[60]"
@@ -95,7 +95,7 @@ export default function SidebarAdmin() {
                 }
               `}
             >
-              {/* Tooltip quand le sidebar est fermé */}
+              {/* Tooltip */}
               {!isOpen && (
                 <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 z-[70] origin-left">
                    <div className="bg-[#fff5f5] text-[#ff0113] text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm border border-red-50 whitespace-nowrap">
@@ -104,12 +104,12 @@ export default function SidebarAdmin() {
                 </div>
               )}
 
-              {/* Barre verticale de sélection (image_5e4524.png) */}
+              {/* Barre verticale de sélection */}
               {isActive && isOpen && (
                 <div className="absolute left-0 top-1/4 bottom-1/4 w-1.5 bg-[#ff0113] rounded-r-full" />
               )}
               
-              {/* ICÔNE AVEC BADGE DE NOTIFICATION (image_5202da.png) */}
+              {/* ICÔNE AVEC BADGE DE NOTIFICATION */}
               <div className="relative flex items-center justify-center shrink-0">
                 <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                 
@@ -144,12 +144,12 @@ export default function SidebarAdmin() {
           {!isOpen && (
             <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 origin-left">
                <div className="bg-red-50 text-red-600 text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm">
-                 Quitter
+                 {t("common.quit")}
                </div>
             </div>
           )}
           <LogOut size={24} />
-          {isOpen && <span className="text-sm font-bold">Déconnexion</span>}
+          {isOpen && <span className="text-sm font-bold">{t("common.logout")}</span>}
         </button>
       </div>
     </div>

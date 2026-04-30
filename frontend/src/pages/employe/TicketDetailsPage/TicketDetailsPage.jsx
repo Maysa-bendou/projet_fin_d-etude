@@ -249,14 +249,17 @@ export default function TicketDetailsPage() {
   const historyComments = comments.filter(c => c.comment_type !== "attachment");
   const hasSolution = isClosed && ticket.solution;
 
+  // Employee info fallback
+  const emp = ticket.employee ?? {};
+  const empName = emp.name ? `${emp.name} ${emp.surname ?? ""}`.trim() : currentUser?.name ?? "—";
+  const empInitials = empName.split(" ").filter(Boolean).map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+
   return (
     <div style={{ minHeight:"100vh", background:"#faf9f7", fontFamily:"sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      {/* ── HEADER BAR — même style que toutes les autres pages ── */}
+      {/* ── HEADER BAR ── */}
       <div style={{ background:"#faf9f7", borderBottom:"1px solid #e8e2d9", padding:"12px 28px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-
-        {/* breadcrumb */}
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <button onClick={() => navigate(-1)} style={{ background:"none", border:"none", cursor:"pointer", color:"#534ab7", fontSize:12, fontWeight:600, padding:0, display:"flex", alignItems:"center", gap:4 }}>
             <HiOutlineArrowLeft size={13} /> {t('common.back')}
@@ -267,7 +270,6 @@ export default function TicketDetailsPage() {
           <span style={{ fontSize:12, color:"#1e293b", fontWeight:700 }}>#{id}</span>
         </div>
 
-        {/* actions + nav précédent/suivant */}
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
           {isEditing ? (
             <>
@@ -292,7 +294,6 @@ export default function TicketDetailsPage() {
               )}
             </>
           )}
-          {/* séparateur */}
           <div style={{ width:1, height:18, background:"#e8e2d9", margin:"0 2px" }} />
           <button onClick={() => prevId && navigate(`/employee/ticket/${prevId}`)} disabled={!prevId}
             style={{ ...btnOutline, opacity: prevId ? 1 : .35, padding:"5px 10px", fontSize:11 }}>
@@ -305,266 +306,329 @@ export default function TicketDetailsPage() {
         </div>
       </div>
 
-      {/* ── BODY ── */}
-      <div style={{ padding:"20px 28px", maxWidth:1060, margin:"0 auto", display:"flex", flexDirection:"column", gap:14 }}>
-
-        {/* ── TICKET INFO CARD ── */}
-        <div style={{ ...card, overflow:"hidden" }}>
-
-          {/* title + pills */}
-          <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid #f1ede8" }}>
-            {isEditing ? (
-              <input value={editFields.titre} onChange={e => handleFieldChange("titre", e.target.value)}
-                style={{ ...inputStyle, fontSize:16, fontWeight:700, marginBottom:8 }} />
-            ) : (
-              <h1 style={{ fontSize:16, fontWeight:700, color:"#0f172a", margin:"0 0 8px" }}>{ticket.title}</h1>
-            )}
-            <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap" }}>
-              <Pill config={STATUS_CONFIG} value={ticket.status} />
-              <Pill config={PRIORITY_CONFIG} value={ticket.priority} />
-            </div>
+      {/* ── BODY : 2-column grid ── */}
+      <div style={{ padding:"20px 28px", maxWidth:"100%", margin:"0 auto", display:"grid", gridTemplateColumns:"270px 1fr", gap:18, alignItems:"start" }}>
+        {/* ── COLONNE GAUCHE : PROFIL EMPLOYÉ ── */}
+        <div style={{ ...card, padding:"24px 18px", display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+          {/* Avatar */}
+          <div style={{ width:64, height:64, borderRadius:"50%", background:"linear-gradient(135deg,#f9a8d4,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:22, color:"#fff" }}>
+            {empInitials}
           </div>
+          <div style={{ fontWeight:700, fontSize:15, color:"#0f172a", textAlign:"center" }}>{empName}</div>
+          <span style={{ fontSize:11, fontWeight:600, padding:"2px 14px", borderRadius:99, background:"#fce7f3", color:"#be185d", border:"1px solid #fbcfe8" }}>
+            EMPLOYEE
+          </span>
 
-          {/* description */}
-          <div style={{ padding:"12px 18px", borderBottom:"1px solid #f1ede8" }}>
-            <span style={sLabel}>{t('ticketDetails.description')}</span>
-            {isEditing ? (
-              <textarea rows={3} value={editFields.description} onChange={e => handleFieldChange("description", e.target.value)}
-                style={{ ...inputStyle, resize:"vertical", lineHeight:1.6 }} />
-            ) : (
-              <p style={{ fontSize:13, color:"#475569", lineHeight:1.7, margin:0 }}>{ticket.description}</p>
-            )}
-          </div>
+          <div style={{ width:"100%", borderTop:"1px solid #f1ede8", marginTop:4 }} />
 
-          {/* 3-column meta grid */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)" }}>
-
-            {/* col 1 */}
-            <div style={{ padding:"14px 18px", borderRight:"1px solid #f1ede8", display:"flex", flexDirection:"column", gap:14 }}>
-              <MetaItem icon={HiOutlineUser} label={t('ticketDetails.assignedTech')}>
-                <div style={{ display:"flex", alignItems:"center", gap:7, marginTop:2 }}>
-                  <div style={{ width:26, height:26, borderRadius:"50%", background:"#dbeafe", border:"1px solid #bfdbfe", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700, fontSize:9, color:"#1d4ed8", flexShrink:0 }}>
-                    {techInitials}
-                  </div>
-                  <span style={{ fontSize:12, fontWeight:600, color:"#1e293b" }}>{techName}</span>
-                </div>
-              </MetaItem>
-              <MetaItem icon={HiOutlineCalendarDays} label={t('ticketDetails.details.createdAt')}>
-                <span style={{ color:"#64748b" }}>{fmtDate(ticket.createdAt)}</span>
-              </MetaItem>
-              <MetaItem icon={HiOutlineCalendarDays} label={t('ticketDetails.details.assignedAt') || "Date d'assignation"}>
-                <span style={{ color:"#64748b" }}>{fmtDate(ticket.assigned_at || ticket.createdAt)}</span>
-              </MetaItem>
-              {isClosed && (
-                <MetaItem icon={HiOutlineCalendarDays} label={t('ticketDetails.details.closedAt') || "Date de clôture"}>
-                  <span style={{ color:"#64748b" }}>{fmtDate(ticket.closed_at)}</span>
-                </MetaItem>
-              )}
-              <MetaItem icon={HiOutlineClock} label={t('ticketDetails.details.updatedAt')}>
-                <span style={{ color:"#534ab7" }}>{fmtDT(ticket.updatedAt)}</span>
-              </MetaItem>
+          {/* Méta employé */}
+          {[
+            { icon: HiOutlinePaperAirplane,      label: "EMAIL",   value: emp.email    ?? currentUser?.email    ?? "—" },
+            { icon: HiOutlineWrenchScrewdriver,  label: "SERVICE", value: emp.department ?? currentUser?.department ?? "—" },
+            { icon: HiOutlineUser,               label: "POSTE",   value: emp.poste    ?? currentUser?.poste    ?? "—" },
+            { icon: HiOutlineInformationCircle,  label: "CONTACT", value: emp.phone    ?? currentUser?.phone    ?? "—" },
+            { icon: HiOutlineCalendarDays,       label: "OFFICE",  value: emp.office   ?? currentUser?.office   ?? "—" },
+          ].map(({ icon: Ic, label, value }) => (
+            <div key={label} style={{ width:"100%", display:"flex", alignItems:"flex-start", gap:10, padding:"3px 0" }}>
+              <Ic size={13} color="#94a3b8" style={{ marginTop:2, flexShrink:0 }} />
+              <div>
+                <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8" }}>{label}</div>
+                <div style={{ fontSize:12, fontWeight:600, color:"#1e293b", marginTop:1, wordBreak:"break-all" }}>{value}</div>
+              </div>
             </div>
-
-            {/* col 2 */}
-            <div style={{ padding:"14px 18px", borderRight:"1px solid #f1ede8", display:"flex", flexDirection:"column", gap:14 }}>
-              <MetaItem icon={HiOutlineExclamationTriangle} label={t('ticketDetails.details.impact')}>
-                {isEditing ? (
-                  <select value={editFields.impact} onChange={e => handleFieldChange("impact", e.target.value)}
-                    style={{ border:"1px solid #d9d4cc", borderRadius:6, padding:"4px 8px", fontSize:12, outline:"none", background:"#fff", marginTop:2 }}>
-                    <option value="low">{t('createTicket.impacts.low')}</option>
-                    <option value="medium">{t('createTicket.impacts.medium')}</option>
-                    <option value="high">{t('createTicket.impacts.high')}</option>
-                  </select>
-                ) : <div style={{ marginTop:2 }}><Pill config={IMPACT_CONFIG} value={ticket.impact} /></div>}
-              </MetaItem>
-              <MetaItem icon={HiOutlineBolt} label={t('ticketDetails.details.urgency')}>
-                {isEditing ? (
-                  <select value={editFields.urgence} onChange={e => handleFieldChange("urgence", e.target.value)}
-                    style={{ border:"1px solid #d9d4cc", borderRadius:6, padding:"4px 8px", fontSize:12, outline:"none", background:"#fff", marginTop:2 }}>
-                    <option value="low">{t('createTicket.urgencies.low')}</option>
-                    <option value="medium">{t('createTicket.urgencies.medium')}</option>
-                    <option value="high">{t('createTicket.urgencies.high')}</option>
-                  </select>
-                ) : <div style={{ marginTop:2 }}><Pill config={URGENCY_CONFIG} value={ticket.urgency} /></div>}
-              </MetaItem>
-              <MetaItem icon={HiOutlineTag} label={t('ticketDetails.details.category')}>
-                <div style={{ marginTop:2 }}><Pill config={CATEGORY_CONFIG} value={ticket.category} /></div>
-              </MetaItem>
-            </div>
-
-            {/* col 3 */}
-            <div style={{ padding:"14px 18px", display:"flex", flexDirection:"column", gap:14 }}>
-              <MetaItem icon={HiOutlineWrenchScrewdriver} label={t('ticketDetails.details.itService')}>
-                <div style={{ marginTop:2 }}><Badge cls="badge-blue">{ticket.service ?? "N/A"}</Badge></div>
-              </MetaItem>
-              <MetaItem icon={HiOutlineInformationCircle} label={t('ticketDetails.details.type')}>
-                <span>{ticket.type ? t(`createTicket.types.${ticket.type}`, { defaultValue: ticket.type }) : "N/A"}</span>
-              </MetaItem>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* ── ACTIVITY — timeline horizontale ── */}
-        <div style={{ ...card, padding:"14px 18px" }}>
-          <span style={sLabel}>{t('ticketDetails.history.title')}</span>
-          {historyComments.length === 0 ? (
-            <p style={{ fontSize:13, color:"#94a3b8", margin:0 }}>{t('ticketDetails.history.empty')}</p>
-          ) : (
-            <div style={{ display:"flex", alignItems:"flex-start", overflowX:"auto", paddingBottom:4 }}>
-              {historyComments.map((c, i, arr) => {
-                const meta = TYPE_META[c.comment_type] ?? TYPE_META.comment;
-                const Icon = meta.Icon;
-                return (
-                  <div key={c.id} style={{ display:"flex", flexDirection:"column", alignItems:"center", flex:"1 0 130px", minWidth:130, position:"relative" }}>
-                    {i < arr.length - 1 && (
-                      <div style={{ position:"absolute", top:11, left:"50%", width:"100%", height:1.5, background:"#e8e2d9", zIndex:0 }} />
-                    )}
-                    <div style={{ width:22, height:22, borderRadius:"50%", background:meta.bg, border:`1.5px solid ${meta.border}`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative", zIndex:1, flexShrink:0 }}>
-                      <Icon size={10} color={meta.dot} />
-                    </div>
-                    <div style={{ marginTop:7, padding:"7px 9px", borderRadius:8, background:meta.bg, border:`1px solid ${meta.border}`, width:"calc(100% - 14px)", fontSize:11, textAlign:"center" }}>
-                      <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:meta.text, marginBottom:2 }}>{meta.label}</div>
-                      <div style={{ fontSize:11, lineHeight:1.4, color:meta.text, opacity:.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.message) }} />
-                      {c.files?.length > 0 && (
-                        <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:3, marginTop:4 }}>
-                          {c.files.map((f, fi) => (
-                            <a key={fi} href={"http://localhost:3001/"+f.filePath} target="_blank" rel="noopener noreferrer"
-                              style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:10, padding:"2px 6px", borderRadius:5, background:"rgba(0,0,0,0.06)", color:meta.text, textDecoration:"none", fontWeight:500 }}>
-                              <HiOutlinePaperClip size={9}/> {f.fileName}
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                      <p style={{ fontSize:10, color:"#94a3b8", marginTop:3, marginBottom:0 }}>
-                        {new Date(c.date).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}
-                      </p>
-                      {c.author && <p style={{ fontSize:10, color:"#94a3b8", marginTop:1, marginBottom:0 }}>{t('common.by')} {c.author}</p>}
-                    </div>
-                  </div>
-                );
-              })}
+        {/* ── COLONNE DROITE ── */}
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+          {/* ── TICKET INFO CARD ── */}
+          <div style={{ ...card, overflow:"hidden" }}>
+
+            {/* Référence + titre + statut */}
+            <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid #f1ede8" }}>
+              <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:"#94a3b8", marginBottom:6 }}>
+                {t('ticketDetails.ticketReference') || "TICKET REFERENCE"}
+              </div>
+              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
+                {isEditing ? (
+                  <input value={editFields.titre} onChange={e => handleFieldChange("titre", e.target.value)}
+                    style={{ ...inputStyle, fontSize:17, fontWeight:800, flex:1 }} />
+                ) : (
+                  <h1 style={{ fontSize:17, fontWeight:800, color:"#0f172a", margin:0 }}>#{id} — {ticket.title}</h1>
+                )}
+                <Pill config={STATUS_CONFIG} value={ticket.status} />
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* ── CONVERSATION + SOLUTION ── */}
-        <div style={{ display:"grid", gridTemplateColumns: hasSolution ? "1fr 320px" : "1fr", gap:14, alignItems:"start" }}>
-
-          <div style={{ ...card, padding:"14px 18px" }}>
-            <span style={sLabel}>{t('ticketDetails.conversation.title')}</span>
-            <div style={{ maxHeight:340, overflowY:"auto", paddingRight:2, marginBottom:12 }}>
-              {comments.filter(c => !["status","update","reopen","redirect"].includes(c.comment_type)).length === 0 ? (
-                <p style={{ textAlign:"center", color:"#94a3b8", padding:"28px 0", fontSize:13 }}>{t('ticketDetails.conversation.empty')}</p>
+            {/* Description */}
+            <div style={{ padding:"12px 18px", borderBottom:"1px solid #f1ede8" }}>
+              <span style={sLabel}>{t('ticketDetails.description') || "INCIDENT DESCRIPTION"}</span>
+              {isEditing ? (
+                <textarea rows={3} value={editFields.description} onChange={e => handleFieldChange("description", e.target.value)}
+                  style={{ ...inputStyle, resize:"vertical", lineHeight:1.6 }} />
               ) : (
-                comments.filter(c => !["status","update","reopen","redirect"].includes(c.comment_type)).map(c => {
-                  if (c.comment_type === "attachment") {
-                    return (
-                      <div key={c.id} style={{ marginBottom:10, padding:"8px 12px", background:"#f0f9ff", border:"1px solid #bae6fd", borderRadius:8 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:6 }}>
-                          <HiOutlinePaperClip size={12} color="#0369a1" />
-                          <span style={{ fontSize:11, fontWeight:600, color:"#0369a1" }}>{t('ticketDetails.initialAttachments')}</span>
-                        </div>
-                        <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
-                          {(c.files ?? []).map((f, i) => (
-                            <a key={i} href={"http://localhost:3001/"+f.filePath} target="_blank" rel="noopener noreferrer"
-                              style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 9px", borderRadius:6, background:"#e0f2fe", color:"#0369a1", textDecoration:"none", fontWeight:500 }}>
-                              <HiOutlinePaperClip size={10}/> {f.fileName}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return <ConvBubble key={c.id} item={c} />;
-                })
+                <div style={{ background:"#faf9f7", border:"1px solid #f1ede8", borderRadius:8, padding:"12px 14px" }}>
+                  <p style={{ fontSize:13, color:"#475569", lineHeight:1.7, margin:0, fontStyle:"italic" }}>{ticket.description}</p>
+                </div>
               )}
-              <div ref={convEndRef} />
             </div>
 
-            {pendingConfirm && (
-              <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"12px 14px", marginBottom:10 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                  <HiOutlineCheckCircle size={14} color="#15803d" />
-                  <p style={{ fontSize:13, fontWeight:600, color:"#15803d", margin:0 }}>{t('ticketDetails.confirm.question')}</p>
-                </div>
-                <div style={{ display:"flex", gap:7 }}>
-                  <button onClick={() => handleConfirmReply(true)} disabled={confirming}
-                    style={{ flex:1, padding:"7px 0", background:"#15803d", border:"none", borderRadius:8, color:"#fff", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    <HiOutlineCheck size={12}/> {t('ticketDetails.confirm.yes')}
-                  </button>
-                  <button onClick={() => handleConfirmReply(false)} disabled={confirming}
-                    style={{ flex:1, padding:"7px 0", background:"#fff", border:"1px solid #fecaca", borderRadius:8, color:"#dc2626", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    <HiOutlineXMark size={12}/> {t('ticketDetails.confirm.no')}
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* TICKET INFORMATION — grille 3×2 */}
+            <div style={{ padding:"14px 18px", borderBottom:"1px solid #f1ede8" }}>
+              <span style={sLabel}>{t('ticketDetails.ticketInformation') || "TICKET INFORMATION"}</span>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
 
-            {alreadyConfirmed && (
-              <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:"9px 12px", marginBottom:10, fontSize:12, color:"#6b7280", display:"flex", alignItems:"center", gap:6 }}>
-                <HiOutlineCheckCircle size={13} color="#15803d" /> {t('ticketDetails.confirm.alreadyReplied')}
-              </div>
-            )}
-
-            {!isClosed ? (
-              <div style={{ border:"1px solid #d9d4cc", borderRadius:10, overflow:"hidden" }}>
-                <textarea rows={3} value={replyMsg} onChange={e => setReplyMsg(e.target.value)}
-                  placeholder={t('ticketDetails.conversation.placeholder')}
-                  style={{ width:"100%", padding:"10px 14px", border:"none", outline:"none", fontSize:13, color:"#1e293b", fontFamily:"inherit", resize:"none", background:"#fff", lineHeight:1.55, boxSizing:"border-box" }} />
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", background:"#faf9f7", borderTop:"1px solid #e8e2d9" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <button type="button" onClick={() => fileInputRef.current?.click()}
-                      style={{ fontSize:12, color:"#94a3b8", background:"none", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:6, display:"flex", alignItems:"center", gap:4, fontWeight:500 }}>
-                      <HiOutlinePaperClip size={13}/> {t('common.attach')}
-                    </button>
-                    {replyFiles.length > 0 && <span style={{ fontSize:11, color:"#94a3b8" }}>{t('common.fileCount', { count: replyFiles.length })}</span>}
+                <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
+                    <HiOutlineBolt size={10}/> {t('ticketDetails.details.priority') || "PRIORITY"}
                   </div>
-                  <button onClick={handleSendReply} disabled={sendingReply || (!replyMsg.trim() && replyFiles.length===0)}
-                    style={{ ...btnPrimary, opacity:(sendingReply || (!replyMsg.trim() && replyFiles.length===0)) ? .5 : 1 }}>
-                    {sendingReply ? t('common.sending') : <><HiOutlinePaperAirplane size={12}/> {t('common.send')}</>}
-                  </button>
+                  <Pill config={PRIORITY_CONFIG} value={ticket.priority} />
                 </div>
-                <input ref={fileInputRef} type="file" multiple style={{ display:"none" }} onChange={e => setReplyFiles(Array.from(e.target.files))} />
+
+                <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
+                    <HiOutlineTag size={10}/> {t('ticketDetails.details.category') || "CATEGORY"}
+                  </div>
+                  <Pill config={CATEGORY_CONFIG} value={ticket.category} />
+                </div>
+
+                <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
+                    <HiOutlineWrenchScrewdriver size={10}/> {t('ticketDetails.details.itService') || "SERVICE"}
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:600, color:"#1e293b" }}>{ticket.service ?? "N/A"}</span>
+                </div>
+
+                <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
+                    <HiOutlineExclamationTriangle size={10}/> {t('ticketDetails.details.impact') || "IMPACT"}
+                  </div>
+                  {isEditing ? (
+                    <select value={editFields.impact} onChange={e => handleFieldChange("impact", e.target.value)}
+                      style={{ border:"1px solid #d9d4cc", borderRadius:6, padding:"4px 8px", fontSize:12, outline:"none", background:"#fff" }}>
+                      <option value="low">{t('createTicket.impacts.low')}</option>
+                      <option value="medium">{t('createTicket.impacts.medium')}</option>
+                      <option value="high">{t('createTicket.impacts.high')}</option>
+                    </select>
+                  ) : (
+                    <Pill config={IMPACT_CONFIG} value={ticket.impact} />
+                  )}
+                </div>
+
+                <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
+                    <HiOutlineBolt size={10}/> {t('ticketDetails.details.urgency') || "URGENCY"}
+                  </div>
+                  {isEditing ? (
+                    <select value={editFields.urgence} onChange={e => handleFieldChange("urgence", e.target.value)}
+                      style={{ border:"1px solid #d9d4cc", borderRadius:6, padding:"4px 8px", fontSize:12, outline:"none", background:"#fff" }}>
+                      <option value="low">{t('createTicket.urgencies.low')}</option>
+                      <option value="medium">{t('createTicket.urgencies.medium')}</option>
+                      <option value="high">{t('createTicket.urgencies.high')}</option>
+                    </select>
+                  ) : (
+                    <Pill config={URGENCY_CONFIG} value={ticket.urgency} />
+                  )}
+                </div>
+
+                <div style={{ border:"1px solid #e8e2d9", borderRadius:10, padding:"10px 14px" }}>
+                  <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8", marginBottom:6, display:"flex", alignItems:"center", gap:4 }}>
+                    <HiOutlineCalendarDays size={10}/> {t('ticketDetails.details.createdAt') || "CREATION DATE"}
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:600, color:"#1e293b" }}>{fmtDate(ticket.createdAt)}</span>
+                </div>
+
               </div>
+            </div>
+
+            {/* ASSIGNED TECHNICIAN */}
+            <div style={{ padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div>
+                <span style={sLabel}>{t('ticketDetails.assignedTech') || "ASSIGNED TECHNICIAN"}</span>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <HiOutlineUser size={16} color="#534ab7" />
+                  <span style={{ fontSize:14, fontWeight:700, color:"#1e293b" }}>{techName}</span>
+                </div>
+                {ticket.assigned_by && (
+                  <div style={{ fontSize:11, color:"#94a3b8", marginTop:4, display:"flex", alignItems:"center", gap:4 }}>
+                    <span style={{ fontSize:14 }}>🤖</span>
+                    {t('ticketDetails.assignedBy') || "Assigné par"}{" "}
+                    <strong style={{ color:"#64748b" }}>{ticket.assigned_by}</strong>
+                  </div>
+                )}
+              </div>
+              {!isClosed && (
+                <button style={{ background:"#fff", border:"1.5px solid #f97316", borderRadius:9, padding:"8px 16px", fontSize:12, fontWeight:700, color:"#f97316", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+                  <HiOutlineArrowPath size={13}/> {t('ticketDetails.changeTech') || "Change expert"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── ACTIVITY timeline ── */}
+          <div style={{ ...card, padding:"14px 18px" }}>
+            <span style={sLabel}>{t('ticketDetails.history.title')}</span>
+            {historyComments.length === 0 ? (
+              <p style={{ fontSize:13, color:"#94a3b8", margin:0 }}>{t('ticketDetails.history.empty')}</p>
             ) : (
-              <div style={{ textAlign:"center", padding:"12px 0", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                <HiOutlineLockClosed size={13} color="#94a3b8" />
-                <p style={{ fontSize:13, color:"#94a3b8", margin:0 }}>
-                  {canReopen ? t('ticketDetails.reopen.canReopen') : reopenCount >= 2 ? t('ticketDetails.reopen.limitMsg') : t('ticketDetails.reopen.expiredMsg')}
-                </p>
+              <div style={{ display:"flex", alignItems:"flex-start", overflowX:"auto", paddingBottom:4 }}>
+                {historyComments.map((c, i, arr) => {
+                  const meta = TYPE_META[c.comment_type] ?? TYPE_META.comment;
+                  const Icon = meta.Icon;
+                  return (
+                    <div key={c.id} style={{ display:"flex", flexDirection:"column", alignItems:"center", flex:"1 0 130px", minWidth:130, position:"relative" }}>
+                      {i < arr.length - 1 && (
+                        <div style={{ position:"absolute", top:11, left:"50%", width:"100%", height:1.5, background:"#e8e2d9", zIndex:0 }} />
+                      )}
+                      <div style={{ width:22, height:22, borderRadius:"50%", background:meta.bg, border:`1.5px solid ${meta.border}`, display:"flex", alignItems:"center", justifyContent:"center", position:"relative", zIndex:1, flexShrink:0 }}>
+                        <Icon size={10} color={meta.dot} />
+                      </div>
+                      <div style={{ marginTop:7, padding:"7px 9px", borderRadius:8, background:meta.bg, border:`1px solid ${meta.border}`, width:"calc(100% - 14px)", fontSize:11, textAlign:"center" }}>
+                        <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:meta.text, marginBottom:2 }}>{meta.label}</div>
+                        <div style={{ fontSize:11, lineHeight:1.4, color:meta.text, opacity:.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.message) }} />
+                        {c.files?.length > 0 && (
+                          <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:3, marginTop:4 }}>
+                            {c.files.map((f, fi) => (
+                              <a key={fi} href={"http://localhost:3001/"+f.filePath} target="_blank" rel="noopener noreferrer"
+                                style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:10, padding:"2px 6px", borderRadius:5, background:"rgba(0,0,0,0.06)", color:meta.text, textDecoration:"none", fontWeight:500 }}>
+                                <HiOutlinePaperClip size={9}/> {f.fileName}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        <p style={{ fontSize:10, color:"#94a3b8", marginTop:3, marginBottom:0 }}>
+                          {new Date(c.date).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}
+                        </p>
+                        {c.author && <p style={{ fontSize:10, color:"#94a3b8", marginTop:1, marginBottom:0 }}>{t('common.by')} {c.author}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {hasSolution && (
-            <div style={{ ...card, border:"1px solid #bbf7d0", background:"#f0fdf4", padding:"14px 16px" }}>
-              <span style={{ ...sLabel, color:"#15803d" }}>✓ {t('ticketDetails.solution.title')}</span>
-              <div style={{ fontSize:13, color:"#166534", lineHeight:1.7, marginBottom:10 }}
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.solution) }} />
-              {(() => {
-                const files = (ticket.comments ?? []).filter(c => ["solution","comment"].includes(c.comment_type)).flatMap(c => c.files ?? []);
-                return files.length > 0 ? (
-                  <div style={{ borderTop:"1px solid #bbf7d0", paddingTop:8, marginTop:8 }}>
-                    <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#15803d", marginBottom:6 }}>{t('ticketDetails.solution.attachments')}</p>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                      {files.map((f, i) => (
-                        <a key={f.id ?? i} href={"http://localhost:3001/" + f.filePath} target="_blank" rel="noopener noreferrer"
-                          style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 9px", borderRadius:6, background:"#dcfce7", color:"#15803d", textDecoration:"none", fontWeight:500 }}>
-                          <HiOutlinePaperClip size={10} /> {f.fileName}
-                        </a>
-                      ))}
-                    </div>
+          {/* ── CONVERSATION + SOLUTION ── */}
+          <div style={{ display:"grid", gridTemplateColumns: hasSolution ? "1fr 320px" : "1fr", gap:14, alignItems:"start" }}>
+
+            <div style={{ ...card, padding:"14px 18px" }}>
+              <span style={sLabel}>{t('ticketDetails.conversation.title')}</span>
+              <div style={{ maxHeight:340, overflowY:"auto", paddingRight:2, marginBottom:12 }}>
+                {comments.filter(c => !["status","update","reopen","redirect"].includes(c.comment_type)).length === 0 ? (
+                  <p style={{ textAlign:"center", color:"#94a3b8", padding:"28px 0", fontSize:13 }}>{t('ticketDetails.conversation.empty')}</p>
+                ) : (
+                  comments.filter(c => !["status","update","reopen","redirect"].includes(c.comment_type)).map(c => {
+                    if (c.comment_type === "attachment") {
+                      return (
+                        <div key={c.id} style={{ marginBottom:10, padding:"8px 12px", background:"#f0f9ff", border:"1px solid #bae6fd", borderRadius:8 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:6 }}>
+                            <HiOutlinePaperClip size={12} color="#0369a1" />
+                            <span style={{ fontSize:11, fontWeight:600, color:"#0369a1" }}>{t('ticketDetails.initialAttachments')}</span>
+                          </div>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                            {(c.files ?? []).map((f, i) => (
+                              <a key={i} href={"http://localhost:3001/"+f.filePath} target="_blank" rel="noopener noreferrer"
+                                style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 9px", borderRadius:6, background:"#e0f2fe", color:"#0369a1", textDecoration:"none", fontWeight:500 }}>
+                                <HiOutlinePaperClip size={10}/> {f.fileName}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return <ConvBubble key={c.id} item={c} />;
+                  })
+                )}
+                <div ref={convEndRef} />
+              </div>
+
+              {pendingConfirm && (
+                <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"12px 14px", marginBottom:10 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                    <HiOutlineCheckCircle size={14} color="#15803d" />
+                    <p style={{ fontSize:13, fontWeight:600, color:"#15803d", margin:0 }}>{t('ticketDetails.confirm.question')}</p>
                   </div>
-                ) : null;
-              })()}
-              {ticket.closing_note && (
-                <div style={{ marginTop:8, borderTop:"1px solid #bbf7d0", paddingTop:8 }}>
-                  <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#15803d", marginBottom:4 }}>{t('ticketDetails.solution.closingNote')}</p>
-                  <p style={{ fontSize:12, color:"#166534", margin:0 }}>{ticket.closing_note}</p>
+                  <div style={{ display:"flex", gap:7 }}>
+                    <button onClick={() => handleConfirmReply(true)} disabled={confirming}
+                      style={{ flex:1, padding:"7px 0", background:"#15803d", border:"none", borderRadius:8, color:"#fff", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                      <HiOutlineCheck size={12}/> {t('ticketDetails.confirm.yes')}
+                    </button>
+                    <button onClick={() => handleConfirmReply(false)} disabled={confirming}
+                      style={{ flex:1, padding:"7px 0", background:"#fff", border:"1px solid #fecaca", borderRadius:8, color:"#dc2626", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                      <HiOutlineXMark size={12}/> {t('ticketDetails.confirm.no')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {alreadyConfirmed && (
+                <div style={{ background:"#f9fafb", border:"1px solid #e5e7eb", borderRadius:8, padding:"9px 12px", marginBottom:10, fontSize:12, color:"#6b7280", display:"flex", alignItems:"center", gap:6 }}>
+                  <HiOutlineCheckCircle size={13} color="#15803d" /> {t('ticketDetails.confirm.alreadyReplied')}
+                </div>
+              )}
+
+              {!isClosed ? (
+                <div style={{ border:"1px solid #d9d4cc", borderRadius:10, overflow:"hidden" }}>
+                  <textarea rows={3} value={replyMsg} onChange={e => setReplyMsg(e.target.value)}
+                    placeholder={t('ticketDetails.conversation.placeholder')}
+                    style={{ width:"100%", padding:"10px 14px", border:"none", outline:"none", fontSize:13, color:"#1e293b", fontFamily:"inherit", resize:"none", background:"#fff", lineHeight:1.55, boxSizing:"border-box" }} />
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", background:"#faf9f7", borderTop:"1px solid #e8e2d9" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <button type="button" onClick={() => fileInputRef.current?.click()}
+                        style={{ fontSize:12, color:"#94a3b8", background:"none", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:6, display:"flex", alignItems:"center", gap:4, fontWeight:500 }}>
+                        <HiOutlinePaperClip size={13}/> {t('common.attach')}
+                      </button>
+                      {replyFiles.length > 0 && <span style={{ fontSize:11, color:"#94a3b8" }}>{t('common.fileCount', { count: replyFiles.length })}</span>}
+                    </div>
+                    <button onClick={handleSendReply} disabled={sendingReply || (!replyMsg.trim() && replyFiles.length===0)}
+                      style={{ ...btnPrimary, opacity:(sendingReply || (!replyMsg.trim() && replyFiles.length===0)) ? .5 : 1 }}>
+                      {sendingReply ? t('common.sending') : <><HiOutlinePaperAirplane size={12}/> {t('common.send')}</>}
+                    </button>
+                  </div>
+                  <input ref={fileInputRef} type="file" multiple style={{ display:"none" }} onChange={e => setReplyFiles(Array.from(e.target.files))} />
+                </div>
+              ) : (
+                <div style={{ textAlign:"center", padding:"12px 0", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <HiOutlineLockClosed size={13} color="#94a3b8" />
+                  <p style={{ fontSize:13, color:"#94a3b8", margin:0 }}>
+                    {canReopen ? t('ticketDetails.reopen.canReopen') : reopenCount >= 2 ? t('ticketDetails.reopen.limitMsg') : t('ticketDetails.reopen.expiredMsg')}
+                  </p>
                 </div>
               )}
             </div>
-          )}
+
+            {hasSolution && (
+              <div style={{ ...card, border:"1px solid #bbf7d0", background:"#f0fdf4", padding:"14px 16px" }}>
+                <span style={{ ...sLabel, color:"#15803d" }}>✓ {t('ticketDetails.solution.title')}</span>
+                <div style={{ fontSize:13, color:"#166534", lineHeight:1.7, marginBottom:10 }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.solution) }} />
+                {(() => {
+                  const files = (ticket.comments ?? []).filter(c => ["solution","comment"].includes(c.comment_type)).flatMap(c => c.files ?? []);
+                  return files.length > 0 ? (
+                    <div style={{ borderTop:"1px solid #bbf7d0", paddingTop:8, marginTop:8 }}>
+                      <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#15803d", marginBottom:6 }}>{t('ticketDetails.solution.attachments')}</p>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                        {files.map((f, i) => (
+                          <a key={f.id ?? i} href={"http://localhost:3001/" + f.filePath} target="_blank" rel="noopener noreferrer"
+                            style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 9px", borderRadius:6, background:"#dcfce7", color:"#15803d", textDecoration:"none", fontWeight:500 }}>
+                            <HiOutlinePaperClip size={10} /> {f.fileName}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+                {ticket.closing_note && (
+                  <div style={{ marginTop:8, borderTop:"1px solid #bbf7d0", paddingTop:8 }}>
+                    <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#15803d", marginBottom:4 }}>{t('ticketDetails.solution.closingNote')}</p>
+                    <p style={{ fontSize:12, color:"#166534", margin:0 }}>{ticket.closing_note}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
     </div>

@@ -94,5 +94,9 @@
   "employeeUpdated": "Modifié par l'employé : {{detail}}",
   "ticketAssigned": "Ticket assigné à un technicien",
     "employeeReopened": "Ticket réouvert par l'employé"
+},
+"type": {
+  "service_request": "Demande de service",
+  "problem": "Problème"
 }
 }

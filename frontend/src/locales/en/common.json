@@ -94,5 +94,9 @@
   "employeeUpdated": "Updated by employee: {{detail}}",
   "ticketAssigned": "Ticket assigned to a technician",
     "employeeReopened": "Ticket reopened by employee"
+},
+"type": {
+  "service_request": "Service Request",
+  "problem": "Problem"
 }
 }

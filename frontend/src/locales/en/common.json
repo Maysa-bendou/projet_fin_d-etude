@@ -18,17 +18,16 @@
     "messagerie": "Messaging"
   },
 
-  "urgency": {
-    "can_work": "Can still work",
-    "partially_blocked": "Partially blocked",
-    "fully_blocked": "Completely blocked"
-  },
-
-  "impact": {
-    "one_person": "One person",
-    "one_service": "One department",
-    "company": "Entire company"
-  },
+"urgency": {
+  "low": "Can still work",
+  "medium": "Partially blocked",
+  "high": "Completely blocked"
+},
+"impact": {
+  "low": "One person",
+  "medium": "One department",
+  "high": "Entire company"
+},
 
   "priority": {
     "low": "Low",
@@ -93,6 +92,7 @@
   "employeeConfirmed": "Employee confirmed the resolution",
   "employeeRejected": "Employee reported the problem persists",
   "employeeUpdated": "Updated by employee: {{detail}}",
-  "ticketAssigned": "Ticket assigned to a technician"
+  "ticketAssigned": "Ticket assigned to a technician",
+    "employeeReopened": "Ticket reopened by employee"
 }
 }

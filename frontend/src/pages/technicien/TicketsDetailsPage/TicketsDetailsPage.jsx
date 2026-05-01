@@ -8,26 +8,39 @@ import {
 } from "react-icons/md";
 import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG, IMPACT_CONFIG, URGENCY_CONFIG } from "../../../config/styles";
 import Pill from "../../../components/common/Pill";
+import {
+  STATUS_KEYS,
+  PRIORITY_KEYS,
+  CATEGORY_KEYS,
+  URGENCY_KEYS,
+  IMPACT_KEYS,
+  translateKey,
+  formatDate,
+} from "../../../constants/ticketKeys";
 
 const TicketDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation("technicien");
+  // Both namespaces: "technicien" for page-specific keys, "common" for shared labels
+  const { t, i18n } = useTranslation(["technicien", "common"]);
+  const currentLang = i18n.language; // triggers re-render on language switch
+
   const currentUser = JSON.parse(localStorage.getItem("user") || "null");
 
   const ticketIds =
-  location.state?.ticketIds ||
-  JSON.parse(localStorage.getItem("ticketIds") || "[]");
+    location.state?.ticketIds ||
+    JSON.parse(localStorage.getItem("ticketIds") || "[]");
   const currentIndex = ticketIds.findIndex(tid => String(tid) === String(id));
   const prevId = currentIndex > 0 ? ticketIds[currentIndex - 1] : null;
   const nextId = currentIndex < ticketIds.length - 1 ? ticketIds[currentIndex + 1] : null;
 
-  const [ticket, setTicket] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [taking, setTaking] = useState(false);
+  const [ticket,    setTicket]    = useState(null);
+  const [loading,   setLoading]   = useState(true);
+  const [taking,    setTaking]    = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  // ── Data fetching — UNCHANGED ─────────────────────────────────────────────
   useEffect(() => {
     fetch(`http://localhost:3001/api/tickets/${id}`)
       .then(res => res.json())
@@ -35,6 +48,7 @@ const TicketDetailPage = () => {
       .catch(err => console.error("Error fetching ticket:", err));
   }, [id]);
 
+  // ── Take charge — UNCHANGED ───────────────────────────────────────────────
   const handleTakeCharge = async () => {
     setTaking(true);
     try {
@@ -56,6 +70,59 @@ const TicketDetailPage = () => {
     }
   };
 
+  // ── Legacy history message translator ─────────────────────────────────────
+  // Maps hard-coded French DB strings → translated common.json history.* keys.
+  // Same pattern as the employee TicketDetailsPage.
+  const LEGACY_MSG_MAP = {
+    "Technicien a pris en charge le ticket":                      t("history.technicianTookOver",    { ns: "common" }),
+    "Ticket assigné à un technicien":                             t("history.ticketAssigned",         { ns: "common" }),
+    "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns: "common" }),
+    "Ticket fermé manuellement par le technicien.":               t("history.ticketClosed",           { ns: "common" }),
+    "Confirme resolu.":                                           t("history.employeeConfirmed",      { ns: "common" }),
+    "Probleme persiste.":                                         t("history.employeeRejected",       { ns: "common" }),
+  };
+
+  const translateLegacyMsg = (msg) => {
+    if (!msg) return "";
+
+    // Exact match
+    if (LEGACY_MSG_MAP[msg]) return LEGACY_MSG_MAP[msg];
+
+    // "Statut changé en : Résolu" etc.
+    const statusMatch = msg.match(/^Statut changé en : (.+)$/);
+    if (statusMatch) {
+      const rawStatus = statusMatch[1];
+      const statusKey = Object.entries({
+        open: "Ouvert", in_progress: "En cours", pending: "En attente",
+        pending_supplier: "En attente fournisseur", resolved: "Résolu",
+        closed: "Fermé", rejected: "Rejeté",
+      }).find(([, v]) => v === rawStatus)?.[0] ?? rawStatus;
+      const translatedStatus = t(`status.${statusKey}`, { ns: "common", defaultValue: rawStatus });
+      return t("history.statusChanged", { ns: "common", status: translatedStatus });
+    }
+
+    // "[REDIRECTION] Redirigé par X : reason"
+    const redirMatch = msg.match(/^\[REDIRECTION\] Redirigé par (.+?) : (.+)$/);
+    if (redirMatch) {
+      return t("history.ticketRedirected", { ns: "common", by: redirMatch[1], reason: redirMatch[2] });
+    }
+
+    // "Ticket fermé. Note : ..."
+    const closedNoteMatch = msg.match(/^Ticket fermé\. Note : (.+)$/);
+    if (closedNoteMatch) {
+      return t("history.ticketClosedWithNote", { ns: "common", note: closedNoteMatch[1] });
+    }
+
+    // "Modifié par l'employé : ..."
+    const updateMatch = msg.match(/^Modifié par l'employé : (.+)$/);
+    if (updateMatch) {
+      return t("history.employeeUpdated", { ns: "common", detail: updateMatch[1] });
+    }
+
+    // Free-text (user-typed content) — return null → caller renders as HTML
+    return null;
+  };
+
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#f9f6f2" }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
@@ -64,19 +131,21 @@ const TicketDetailPage = () => {
     </div>
   );
 
-  const tk = ticket;
-  const employee = tk.employee || tk.users_tickets_created_byTousers;
-  const isAssigned = !!(tk.technician?.id || tk.technicienId);
+  // ── Derived values — UNCHANGED ────────────────────────────────────────────
+  const tk             = ticket;
+  const employee       = tk.employee || tk.users_tickets_created_byTousers;
+  const isAssigned     = !!(tk.technician?.id || tk.technicienId);
   const isAssignedToMe = (tk.technician?.id === currentUser?.id) || (tk.technicienId === currentUser?.id);
 
+  // ── SLA logic — UNCHANGED ─────────────────────────────────────────────────
   const calculateSLA = () => {
     if (!tk.sla_date_limite) return null;
     const PAUSED   = ["pending", "pending_supplier"];
     const TERMINAL = ["resolved", "closed", "rejected"];
-    const now      = Date.now();
-    const due      = new Date(tk.sla_date_limite).getTime();
-    const debut    = tk.sla_date_debut ? new Date(tk.sla_date_debut).getTime() : due - 24 * 3600000;
-    const window   = due - debut;
+    const now    = Date.now();
+    const due    = new Date(tk.sla_date_limite).getTime();
+    const debut  = tk.sla_date_debut ? new Date(tk.sla_date_debut).getTime() : due - 24 * 3600000;
+    const window = due - debut;
     if (TERMINAL.includes(tk.status)) {
       const closed   = tk.closed_at ? new Date(tk.closed_at).getTime() : due;
       const exceeded = closed > due;
@@ -85,14 +154,14 @@ const TicketDetailPage = () => {
       return { mode: "terminal", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.closedOk"), pct: exceeded ? 100 : Math.min(100, ((window - (due - closed)) / window) * 100) };
     }
     if (PAUSED.includes(tk.status)) {
-      const elapsed  = tk.sla_pause_elapsed_ms ? Number(tk.sla_pause_elapsed_ms) : null;
-      const frozen   = elapsed != null ? window - elapsed : Math.max(0, due - now);
+      const elapsed = tk.sla_pause_elapsed_ms ? Number(tk.sla_pause_elapsed_ms) : null;
+      const frozen  = elapsed != null ? window - elapsed : Math.max(0, due - now);
       const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
       return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, ((window - frozen) / window) * 100) };
     }
     const remaining = due - now;
     const exceeded  = remaining <= 0;
-    const abs       = Math.abs(remaining);
+    const abs = Math.abs(remaining);
     const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
     return { mode: "active", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.remaining", { h, m }), pct: Math.min(100, Math.max(0, (remaining / window) * 100)) };
   };
@@ -107,13 +176,15 @@ const TicketDetailPage = () => {
     : sla.pct > 20            ? "#d97706"
     : "#f97316";
 
-  const LevelBadge = ({ config, value }) => {
-    const cfg = config?.[value];
-    if (!cfg) return <span style={{ fontSize: 13, color: '#6b7280' }}>{value || '—'}</span>;
+  // ── LevelBadge — dot colour from config (unchanged), label from translateKey ─
+  const LevelBadge = ({ config, value, keyMap }) => {
+    const cfg   = config?.[value];
+    const label = keyMap ? translateKey(t, keyMap, value) : value;
+    if (!cfg) return <span style={{ fontSize: 13, color: '#6b7280' }}>{label || '—'}</span>;
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: cfg.color || '#374151' }}>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color || '#9ca3af', flexShrink: 0 }} />
-        {value}
+        {label}
       </span>
     );
   };
@@ -124,7 +195,7 @@ const TicketDetailPage = () => {
         @keyframes scaleIn { from { opacity:0; transform:scale(0.93); } to { opacity:1; transform:scale(1); } }
       `}</style>
 
-      {/* ── MODAL ── */}
+      {/* ── MODAL — structure unchanged, already uses t() ── */}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.25)", backdropFilter: "blur(2px)" }}>
           <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #d9d4cc", boxShadow: "0 24px 60px rgba(0,0,0,0.12)", maxWidth: 400, width: "100%", overflow: "hidden", animation: "scaleIn 0.22s ease" }}>
@@ -149,19 +220,14 @@ const TicketDetailPage = () => {
       {/* Body */}
       <div style={{ padding: '20px 28px' }}>
 
-        {/* BACK + PREV / NEXT */}
+        {/* BACK + PREV / NEXT — UNCHANGED */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <button onClick={() => navigate(`/${currentUser.role}/tickets-service`)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: 0 }}>
             <MdArrowBack style={{ fontSize: 16 }} /> {t("ticketDetail.back")}
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
-              onClick={() =>
-  prevId &&
-  navigate(`/${currentUser.role}/tickets-service/${prevId}`, {
-    state: { ticketIds }
-  })
-}
+              onClick={() => prevId && navigate(`/${currentUser.role}/tickets-service/${prevId}`, { state: { ticketIds } })}
               disabled={!prevId}
               style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, border: '1px solid #d9d4cc', background: '#fff', cursor: !prevId ? 'not-allowed' : 'pointer', color: !prevId ? '#c4bdb3' : '#374151', fontSize: 12, fontWeight: 700 }}
             >
@@ -169,12 +235,7 @@ const TicketDetailPage = () => {
             </button>
             <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', padding: '0 4px' }}>#{id}</span>
             <button
-             onClick={() =>
-  nextId &&
-  navigate(`/${currentUser.role}/tickets-service/${nextId}`, {
-    state: { ticketIds }
-  })
-}
+              onClick={() => nextId && navigate(`/${currentUser.role}/tickets-service/${nextId}`, { state: { ticketIds } })}
               disabled={!nextId}
               style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 8, border: '1px solid #d9d4cc', background: '#fff', cursor: !nextId ? 'not-allowed' : 'pointer', color: !nextId ? '#c4bdb3' : '#374151', fontSize: 12, fontWeight: 700 }}
             >
@@ -183,13 +244,11 @@ const TicketDetailPage = () => {
           </div>
         </div>
 
-        {/* ── TWO COLUMNS — same height ── */}
+        {/* ── TWO COLUMNS ── */}
         <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start' }}>
 
-          {/* ── LEFT : EMPLOYEE ── */}
+          {/* ── LEFT : EMPLOYEE PROFILE — free-text DB fields, labels translated ── */}
           <div style={{ background: '#fff', border: '1px solid #d9d4cc', borderRadius: 16, overflow: 'hidden', height: '100%' }}>
-
-            {/* Avatar header */}
             <div style={{ background: '#ffff', padding: '20px 20px 16px', textAlign: 'center', borderBottom: '1px solid #e8e2d9' }}>
               <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #fce7f3, #fecaca)', border: '2px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 800, color: '#9d174d', margin: '0 auto 10px' }}>
                 {(employee?.name?.[0] || "").toUpperCase()}{(employee?.surname?.[0] || "").toUpperCase()}
@@ -199,15 +258,13 @@ const TicketDetailPage = () => {
                 {employee?.role || t("ticketDetail.profile.employee")}
               </span>
             </div>
-
-            {/* Fields */}
             <div style={{ padding: '4px 0' }}>
               {[
-                { icon: <MdEmail    style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.email"),      value: employee?.email },
-                { icon: <MdBusiness style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.department"), value: employee?.department },
-                { icon: <MdWork     style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.position"),   value: employee?.job_title },
-                { icon: <MdPhone    style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.contact"),    value: employee?.phone },
-                { icon: <MdLocationOn style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.office"),  value: employee?.office },
+                { icon: <MdEmail      style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.email"),      value: employee?.email },
+                { icon: <MdBusiness   style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.department"), value: employee?.department },
+                { icon: <MdWork       style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.position"),   value: employee?.job_title },
+                { icon: <MdPhone      style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.contact"),    value: employee?.phone },
+                { icon: <MdLocationOn style={{ fontSize: 14, color: '#94a3b8' }} />, label: t("ticketDetail.profile.office"),    value: employee?.office },
               ].map(({ icon, label, value }, i, arr) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 18px', borderBottom: i < arr.length - 1 ? '1px solid #f0ebe3' : 'none' }}>
                   <div style={{ marginTop: 2, flexShrink: 0 }}>{icon}</div>
@@ -220,19 +277,24 @@ const TicketDetailPage = () => {
             </div>
           </div>
 
-          {/* ── RIGHT : TICKET ── */}
+          {/* ── RIGHT : TICKET DETAIL ── */}
           <div style={{ background: '#fff', border: '1px solid #d9d4cc', borderRadius: 16, overflow: 'hidden' }}>
 
-            {/* Ticket header */}
+            {/* Header — status Pill translated */}
             <div style={{ padding: '16px 22px', borderBottom: '1px solid #e8e2d9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 3px' }}>{t("ticketDetail.reference")}</p>
                 <h1 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>#{id} — {tk.title}</h1>
               </div>
-              <Pill config={STATUS_CONFIG} value={tk.status} />
+              {/* Status — translated label via STATUS_KEYS → common.json */}
+              <Pill
+                config={STATUS_CONFIG}
+                value={tk.status}
+                label={translateKey(t, STATUS_KEYS, tk.status)}
+              />
             </div>
 
-            {/* Description */}
+            {/* Description — free-text from DB, not translated */}
             <div style={{ padding: '14px 22px', borderBottom: '1px solid #e8e2d9' }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>{t("ticketDetail.description")}</p>
               <div style={{ background: '#faf9f7', border: '1px solid #e8e2d9', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#475569', lineHeight: 1.65, fontStyle: 'italic' }}>
@@ -240,17 +302,47 @@ const TicketDetailPage = () => {
               </div>
             </div>
 
-            {/* SPECS — 3 per row */}
+            {/* SPECS — 3 per row — all translated */}
             <div style={{ padding: '14px 22px', borderBottom: '1px solid #e8e2d9' }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>{t("ticketDetail.info")}</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                 {[
-                  { icon: <MdFlag style={{ fontSize: 13 }} />,         label: t("ticketDetail.cols.priority"),  node: <Pill config={PRIORITY_CONFIG} value={tk.priority} /> },
-                  { icon: <MdCategory style={{ fontSize: 13 }} />,     label: t("ticketDetail.cols.category"),  node: <Pill config={CATEGORY_CONFIG} value={tk.category} /> },
-                  { icon: <MdSupportAgent style={{ fontSize: 13 }} />, label: t("ticketDetail.cols.service"),   node: <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>{tk.service?.name || tk.service || '—'}</span> },
-                  { icon: <MdTrendingUp style={{ fontSize: 13 }} />,   label: t("ticketDetail.cols.impact"),    node: <LevelBadge config={IMPACT_CONFIG}  value={tk.impact} /> },
-                  { icon: <MdFlashOn style={{ fontSize: 13 }} />,      label: t("ticketDetail.cols.urgency"),   node: <LevelBadge config={URGENCY_CONFIG} value={tk.urgency} /> },
-                  { icon: <MdCalendarToday style={{ fontSize: 13 }} />,label: t("ticketDetail.cols.createdAt"), node: <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>{new Date(tk.createdAt || tk.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span> },
+                  {
+                    icon:  <MdFlag style={{ fontSize: 13 }} />,
+                    label: t("ticketDetail.cols.priority"),
+                    // Priority — label from PRIORITY_KEYS → common.json priority.*
+                    node:  <Pill config={PRIORITY_CONFIG} value={tk.priority} label={translateKey(t, PRIORITY_KEYS, tk.priority)} />,
+                  },
+                  {
+                    icon:  <MdCategory style={{ fontSize: 13 }} />,
+                    label: t("ticketDetail.cols.category"),
+                    // Category — label from CATEGORY_KEYS → common.json category.*
+                    node:  <Pill config={CATEGORY_CONFIG} value={tk.category} label={translateKey(t, CATEGORY_KEYS, tk.category)} />,
+                  },
+                  {
+                    icon:  <MdSupportAgent style={{ fontSize: 13 }} />,
+                    label: t("ticketDetail.cols.service"),
+                    // Service — free DB value
+                    node:  <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>{tk.service?.name || tk.service || '—'}</span>,
+                  },
+                  {
+                    icon:  <MdTrendingUp style={{ fontSize: 13 }} />,
+                    label: t("ticketDetail.cols.impact"),
+                    // Impact — label from IMPACT_KEYS → common.json impact.*
+                    node:  <LevelBadge config={IMPACT_CONFIG} value={tk.impact} keyMap={IMPACT_KEYS} />,
+                  },
+                  {
+                    icon:  <MdFlashOn style={{ fontSize: 13 }} />,
+                    label: t("ticketDetail.cols.urgency"),
+                    // Urgency — label from URGENCY_KEYS → common.json urgency.*
+                    node:  <LevelBadge config={URGENCY_CONFIG} value={tk.urgency} keyMap={URGENCY_KEYS} />,
+                  },
+                  {
+                    icon:  <MdCalendarToday style={{ fontSize: 13 }} />,
+                    label: t("ticketDetail.cols.createdAt"),
+                    // Date — locale-aware via formatDate → reads date.locale from common.json
+                    node:  <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>{formatDate(t, tk.createdAt || tk.created_at, "long")}</span>,
+                  },
                 ].map(({ icon, label, node }, i) => (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 5, background: '#faf9f7', border: '1px solid #e8e2d9', borderRadius: 10, padding: '10px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -280,8 +372,9 @@ const TicketDetailPage = () => {
                   {sla.mode === "active" && sla.exceeded && (
                     <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '2px 8px', borderRadius: 99, border: '1px solid #fecaca' }}>{t("ticketDetail.sla.breachDetected")}</span>
                   )}
+                  {/* SLA deadline date — locale-aware long format */}
                   <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                    {t("ticketDetail.sla.limit")} : {tk.sla_date_limite ? new Date(tk.sla_date_limite).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                    {t("ticketDetail.sla.limit")} : {tk.sla_date_limite ? formatDate(t, tk.sla_date_limite, "long") : "N/A"}
                   </span>
                 </div>
               </div>
@@ -294,70 +387,120 @@ const TicketDetailPage = () => {
                 <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {tk.service    && <div style={{ fontSize: 12, color: '#374151' }}><span style={{ fontWeight: 700, color: '#6b21a8' }}>{t("ticketDetail.redirect.service")} : </span>{tk.service?.name || tk.service}</div>}
                   {tk.technician && <div style={{ fontSize: 12, color: '#374151' }}><span style={{ fontWeight: 700, color: '#6b21a8' }}>{t("ticketDetail.redirect.technician")} : </span>{tk.technician.name} {tk.technician.surname}</div>}
-                  {tk.redirected_at && <div style={{ fontSize: 12, color: '#374151' }}><span style={{ fontWeight: 700, color: '#6b21a8' }}>{t("ticketDetail.redirect.redirectedAt")} : </span>{new Date(tk.redirected_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
-                  <div style={{ fontSize: 12, color: '#374151', borderTop: '1px solid #e9d5ff', paddingTop: 6, marginTop: 2 }}><span style={{ fontWeight: 700, color: '#6b21a8' }}>{t("ticketDetail.redirect.reason")} : </span>{tk.redirect_note}</div>
+                  {/* redirected_at — locale-aware withTime format */}
+                  {tk.redirected_at && (
+                    <div style={{ fontSize: 12, color: '#374151' }}>
+                      <span style={{ fontWeight: 700, color: '#6b21a8' }}>{t("ticketDetail.redirect.redirectedAt")} : </span>
+                      {formatDate(t, tk.redirected_at, "withTime")}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: '#374151', borderTop: '1px solid #e9d5ff', paddingTop: 6, marginTop: 2 }}>
+                    <span style={{ fontWeight: 700, color: '#6b21a8' }}>{t("ticketDetail.redirect.reason")} : </span>{tk.redirect_note}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Footer */}
+            {/* History timeline — translates legacy French DB messages */}
+            {tk.comments?.filter(c => c.comment_type !== "attachment").length > 0 && (
+              <div style={{ padding: '14px 22px', borderBottom: '1px solid #e8e2d9' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>
+                  {t("ticketDetail.history", { defaultValue: "History" })}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 4 }}>
+                  {tk.comments
+                    .filter(c => c.comment_type !== "attachment")
+                    .map((c, i, arr) => {
+                      const translated = translateLegacyMsg(c.message ?? "");
+                      return (
+                        <div key={c.id ?? i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '1 0 130px', minWidth: 130, position: 'relative' }}>
+                          {i < arr.length - 1 && (
+                            <div style={{ position: 'absolute', top: 11, left: '50%', width: '100%', height: 1.5, background: '#e8e2d9', zIndex: 0 }} />
+                          )}
+                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#f1f5f9', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, flexShrink: 0 }} />
+                          <div style={{ marginTop: 7, padding: '7px 9px', borderRadius: 8, background: '#faf9f7', border: '1px solid #e8e2d9', width: 'calc(100% - 14px)', fontSize: 11, textAlign: 'center', color: '#475569' }}>
+                            {/* Message: translated if legacy string, otherwise HTML */}
+                            <div style={{ fontSize: 11, lineHeight: 1.4, marginBottom: 2 }}>
+                              {translated !== null
+                                ? translated
+                                : <span dangerouslySetInnerHTML={{ __html: c.message }} />
+                              }
+                            </div>
+                            {/* Timestamp — locale-aware withTime */}
+                            <p style={{ fontSize: 10, color: '#94a3b8', margin: '3px 0 0' }}>
+                              {formatDate(t, c.date, "withTime")}
+                            </p>
+                            {c.author && (
+                              <p style={{ fontSize: 10, color: '#94a3b8', margin: '1px 0 0' }}>
+                                {t("common.by", { ns: "common", defaultValue: "by" })} {c.author}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Footer — assignment info + take-charge button */}
             <div style={{ padding: '14px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-             <div>
-  <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 5px' }}>{t("ticketDetail.assignedTech")}</p>
-  
-  {isAssignedToMe ? (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-      <MdCheckCircle style={{ fontSize: 15, color: '#16a34a' }} />
-      <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>{t("ticketDetail.managedByYou")}</span>
-    </div>
-  ) : (
-    <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
-      {tk.technician?.name ? `${tk.technician.name} ${tk.technician.surname}` : t("ticketDetail.waitingExpert")}
-    </span>
-  )}
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 5px' }}>{t("ticketDetail.assignedTech")}</p>
 
-  {/* ── QUI A ASSIGNÉ ── */}
- 
-{(tk.technician?.id || tk.technicienId) && (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 5, margin: '5px 0 0' }}>
-    
-    {tk.assigned_action === "taken" ? (
-      <>
-        <MdPerson style={{ fontSize: 13, color: '#3b82f6' }} />
-        <span style={{ fontSize: 11, color: '#64748b' }}>
-          Pris en charge par le technicien
-        </span>
-      </>
-    ) : (
-      ["assigned", "updated"].includes(tk.assigned_action) && (
-        <>
-          <MdSupportAgent style={{ fontSize: 13, color: '#7c3aed' }} />
-          <span style={{ fontSize: 11, color: '#64748b' }}>
-            Assigné par{" "}
-            <strong style={{ color: '#0f172a' }}>
-              {tk.assigned_by_manager
-                ? `${tk.assigned_by_manager.name} ${tk.assigned_by_manager.surname}`
-                : "un manager"}
-            </strong>
-          </span>
-        </>
-      )
-    )}
+                {isAssignedToMe ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <MdCheckCircle style={{ fontSize: 15, color: '#16a34a' }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>{t("ticketDetail.managedByYou")}</span>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+                    {tk.technician?.name ? `${tk.technician.name} ${tk.technician.surname}` : t("ticketDetail.waitingExpert")}
+                  </span>
+                )}
 
-  </div>
-)}
+                {/* Who assigned — uses common.json history keys */}
+                {(tk.technician?.id || tk.technicienId) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, margin: '5px 0 0' }}>
+                    {tk.assigned_action === "taken" ? (
+                      <>
+                        <MdPerson style={{ fontSize: 13, color: '#3b82f6' }} />
+                        <span style={{ fontSize: 11, color: '#64748b' }}>
+                          {t("history.technicianTookOver", { ns: "common" })}
+                        </span>
+                      </>
+                    ) : (
+                      ["assigned", "updated"].includes(tk.assigned_action) && (
+                        <>
+                          <MdSupportAgent style={{ fontSize: 13, color: '#7c3aed' }} />
+                          <span style={{ fontSize: 11, color: '#64748b' }}>
+                            {t("ticketDetail.assignedByManager")}{" "}
+                            <strong style={{ color: '#0f172a' }}>
+                              {tk.assigned_by_manager
+                                ? `${tk.assigned_by_manager.name} ${tk.assigned_by_manager.surname}`
+                                : t("ticketDetail.aManager")}
+                            </strong>
+                          </span>
+                        </>
+                      )
+                    )}
+                  </div>
+                )}
 
-  {tk.assigned_at && (
-    <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
-      {t("ticketDetail.assignedOn")} : {new Date(tk.assigned_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-    </p>
-  )}
-  {tk.closed_at && (
-    <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
-      {t("ticketDetail.closedOn")} : {new Date(tk.closed_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-    </p>
-  )}
-</div>
+                {/* assigned_at — locale-aware long format */}
+                {tk.assigned_at && (
+                  <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+                    {t("ticketDetail.assignedOn")} : {formatDate(t, tk.assigned_at, "long")}
+                  </p>
+                )}
+                {/* closed_at — locale-aware long format */}
+                {tk.closed_at && (
+                  <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
+                    {t("ticketDetail.closedOn")} : {formatDate(t, tk.closed_at, "long")}
+                  </p>
+                )}
+              </div>
+
               <button
                 onClick={handleTakeCharge}
                 disabled={taking || isAssigned}

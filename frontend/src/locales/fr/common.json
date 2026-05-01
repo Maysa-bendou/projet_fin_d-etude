@@ -18,17 +18,16 @@
     "messagerie": "Messagerie"
   },
 
-  "urgency": {
-    "can_work": "Peut travailler",
-    "partially_blocked": "Partiellement bloqué",
-    "fully_blocked": "Complètement bloqué"
-  },
-
-  "impact": {
-    "one_person": "Une personne",
-    "one_service": "Un service",
-    "company": "Entreprise"
-  },
+"urgency": {
+  "low": "Peut encore travailler",
+  "medium": "Partiellement bloqué",
+  "high": "Complètement bloqué"
+},
+"impact": {
+  "low": "Une personne",
+  "medium": "Un département",
+  "high": "Toute l'entreprise"
+},
 
   "priority": {
     "low": "Faible",
@@ -93,6 +92,7 @@
   "employeeRejected": "Employé a signalé que le problème persiste",
 "technicianTookOver": "Technicien a pris en charge le ticket",
   "employeeUpdated": "Modifié par l'employé : {{detail}}",
-  "ticketAssigned": "Ticket assigné à un technicien"
+  "ticketAssigned": "Ticket assigné à un technicien",
+    "employeeReopened": "Ticket réouvert par l'employé"
 }
 }

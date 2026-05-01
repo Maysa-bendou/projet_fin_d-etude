@@ -79,13 +79,14 @@ const S = {
 };
 
 export default function TicketInfo({ ticket, status, savingStatus, isClosed, handleStatusChange, currentUser }) {
-  const { t, i18n } = useTranslation("technicien");
+  const { t }       = useTranslation("technicien");
+  const { t: tC }   = useTranslation("common");
   const emp = ticket.employee ?? {};
   const ini = `${emp.name?.[0] ?? "?"}${emp.surname?.[0] ?? ""}`.toUpperCase();
-  const dateLocale = i18n.language?.startsWith("en") ? "en-GB" : "fr-FR";
+const dateLocale = tC("date.locale") || "fr-FR"; // "fr-FR" or "en-US" from common.json
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) : "N/A";
-
-  const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut, status, ticket.closedAt, ticket.sla_pause_elapsed_ms ?? null);
+const closedAt = ticket.closedAt ?? ticket.closed_at ?? null;
+const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut, status, closedAt, ticket.sla_pause_elapsed_ms ?? null);
 
   const slaColor = !sla ? "#9ca3af"
     : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
@@ -138,27 +139,22 @@ export default function TicketInfo({ ticket, status, savingStatus, isClosed, han
     }
     return <span style={{ color: "#6b7280", fontSize: 12 }}>—</span>;
   })();
-  const IMPACT_NORMALIZE = {
-    "Entreprise":   "high",
-    "Un service":   "medium",
-    "Une personne": "low",
-  };
-  const URGENCY_NORMALIZE = {
-    "Complètement bloqué":  "high",
-    "Partiellement bloqué": "medium",
-    "Peut travailler":      "low",
-  };
+
+console.log("impact raw:", ticket.impact);
+console.log("translated:", tC(`impact.${ticket.impact}`));
+console.log("all common keys:", tC("impact", { returnObjects: true }));
+
   const specCells = [
-  { icon: MdFlag,          label: t("ticketDetail.cols.priority"),                    node: <Pill config={PRIORITY_CONFIG} value={ticket.priority} /> },
-  { icon: MdCategory,      label: t("ticketDetail.cols.category"),                    node: <Pill config={CATEGORY_CONFIG} value={ticket.category} /> },
-  { icon: MdSupportAgent,  label: t("ticketDetail.cols.service"),                     value: ticket.service ?? "N/A" },
-  { icon: MdTrendingUp,    label: t("ticketDetail.cols.impact"),                      node: <Pill config={IMPACT_CONFIG}  value={IMPACT_NORMALIZE[ticket.impact]  ?? ticket.impact}  /> },
-  { icon: MdFlashOn,       label: t("ticketDetail.cols.urgency"),                     node: <Pill config={URGENCY_CONFIG} value={URGENCY_NORMALIZE[ticket.urgency] ?? ticket.urgency} /> },
-  { icon: MdCalendarToday, label: t("components.ticketInfo.fields.createdOn"),        value: fmtDate(ticket.createdAt) },
-  { icon: MdCalendarToday, label: t("components.ticketInfo.fields.assignedOn"),       value: fmtDate(ticket.assignedAt) },
-  { icon: ticket.assigned_action === "taken" ? MdPerson : MdSupportAgent,             label: t("components.ticketInfo.fields.assignedBy"), node: assignedByNode },
-  ...(isClosed && ticket.closedAt ? [{ icon: XCircle, label: t("components.ticketInfo.fields.closedOn"), value: fmtDate(ticket.closedAt) }] : []),
-];
+    { icon: MdFlag,         label: t("ticketDetail.cols.priority"),              node: <Pill config={PRIORITY_CONFIG} value={ticket.priority} label={tC(`priority.${ticket.priority}`, { defaultValue: ticket.priority })} /> },
+    { icon: MdCategory,     label: t("ticketDetail.cols.category"),              node: <Pill config={CATEGORY_CONFIG} value={ticket.category} label={tC(`category.${ticket.category}`, { defaultValue: ticket.category })} /> },
+    { icon: MdSupportAgent, label: t("ticketDetail.cols.service"),               value: ticket.service ?? "N/A" },
+    { icon: MdTrendingUp,   label: t("ticketDetail.cols.impact"),              node: <Pill config={IMPACT_CONFIG}  value={ticket.impact}   label={tC(`impact.${ticket.impact}`,   { defaultValue: ticket.impact })} /> },
+    { icon: MdFlashOn,      label: t("ticketDetail.cols.urgency"),               node: <Pill config={URGENCY_CONFIG} value={ticket.urgency}  label={tC(`urgency.${ticket.urgency}`, { defaultValue: ticket.urgency })} /> },
+    { icon: MdCalendarToday, label: t("components.ticketInfo.fields.createdOn"),  value: fmtDate(ticket.createdAt) },
+    { icon: MdCalendarToday, label: t("components.ticketInfo.fields.assignedOn"), value: fmtDate(ticket.assignedAt) },
+    { icon: ticket.assigned_action === "taken" ? MdPerson : MdSupportAgent,       label: t("components.ticketInfo.fields.assignedBy"), node: assignedByNode },
+    ...(isClosed && closedAt ? [{ icon: XCircle, label: t("components.ticketInfo.fields.closedOn"), value: fmtDate(closedAt) }] : []),
+  ];
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16, alignItems: "stretch" }}>
@@ -213,7 +209,7 @@ export default function TicketInfo({ ticket, status, savingStatus, isClosed, han
             <p style={{ ...S.label, marginBottom: 3 }}>#{ticket.id}</p>
             <h1 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: 0 }}>{ticket.title}</h1>
           </div>
-          <Pill config={STATUS_CONFIG} value={status} />
+          <Pill config={STATUS_CONFIG} value={status} label={tC(`status.${status}`, { defaultValue: status })} />
         </div>
 
         {ticket.redirect_note && (
@@ -271,11 +267,19 @@ export default function TicketInfo({ ticket, status, savingStatus, isClosed, han
                 <div style={{ width: `${Math.round(sla.pct)}%`, background: slaColor, height: "100%", borderRadius: 99, transition: "width 1s ease" }} />
               </div>
               <span style={{ fontSize: 13, fontWeight: 800, color: slaColor, whiteSpace: "nowrap" }}>
-                {sla.mode === "terminal"
-                  ? sla.exceeded ? t("components.ticketInfo.sla.exceededBy", { h: sla.diffH, m: sla.diffM }) : t("components.ticketInfo.sla.respected")
-                  : sla.mode === "paused"
-                  ? t("components.ticketInfo.sla.frozen", { h: sla.diffH, m: sla.diffM })
-                  : sla.exceeded ? t("components.ticketInfo.sla.alertExceeded", { h: sla.diffH, m: sla.diffM }) : t("components.ticketInfo.sla.remaining", { h: sla.diffH, m: sla.diffM })}
+                {(() => {
+                  const isFr = tC("date.locale") === "fr-FR";
+                  const { diffH: h, diffM: m } = sla;
+                  if (sla.mode === "terminal")
+                    return sla.exceeded
+                      ? (isFr ? `Dépassé de ${h}h ${m}m` : `Exceeded by ${h}h ${m}m`)
+                      : (isFr ? "Respecté ✓" : "Respected ✓");
+                  if (sla.mode === "paused")
+                    return isFr ? `⏸ ${h}h ${m}m figé` : `⏸ ${h}h ${m}m frozen`;
+                  return sla.exceeded
+                    ? (isFr ? `⚠ Dépassé de ${h}h ${m}m` : `⚠ Exceeded by ${h}h ${m}m`)
+                    : (isFr ? `${h}h ${m}m restants`      : `${h}h ${m}m remaining`);
+                })()}
               </span>
               <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>
                 {t("components.ticketInfo.sla.deadline")}{" "}
@@ -301,8 +305,8 @@ export default function TicketInfo({ ticket, status, savingStatus, isClosed, han
               onChange={e => handleStatusChange(e.target.value)}
               style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, border: "1px solid #d9d4cc", background: "#faf9f7", color: "#374151", cursor: "pointer", outline: "none" }}
             >
-              {Object.entries(STATUS_KEYS).map(([val, key]) => (
-                <option key={val} value={val}>{t(key)}</option>
+              {Object.entries(STATUS_KEYS).map(([val]) => (
+                <option key={val} value={val}>{tC(`status.${val}`, { defaultValue: val })}</option>
               ))}
             </select>
           )}

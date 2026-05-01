@@ -49,10 +49,10 @@ export default function Actuality({ actuality }) {
                     </p>
                   </div>
                   <p className="text-[10px] text-gray-400 font-mono mb-1.5">{item.date}</p>
-                  <p
-                    className="text-[11px] text-gray-700 leading-snug flex-1 line-clamp-4"
-                    dangerouslySetInnerHTML={{ __html: item.message }}
-                  />
+<p
+  className="text-[11px] text-gray-700 leading-snug flex-1 line-clamp-4"
+  dangerouslySetInnerHTML={{ __html: item.messageKey ? t(item.messageKey) : item.message }}
+/>
                 </div>
               );
             })}

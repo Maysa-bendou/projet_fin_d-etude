@@ -42,7 +42,7 @@
       "countSuffix_one": "ticket",
       "countSuffix_other": "tickets",
       "outOf": "sur {{total}} total",
-      "mois":"mois"
+      "monthAll": "Tous les mois" 
     },
     "table": {
       "id": "ID",
@@ -79,6 +79,8 @@
     "description": "Description de l'incident",
     "info": "Informations du ticket",
     "assignedTech": "Technicien assigné",
+    "assignedByManager": "Assigné par le manager",
+    "aManager":          "un manager",
     "managedByYou": "Vous gérez ce ticket",
     "waitingExpert": "En attente d'expert",
     "assignedOn": "Assigné le",

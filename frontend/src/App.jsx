@@ -30,7 +30,6 @@ import RepartitionPage from "./pages/chefService/RepartitionPage/RepartitionPage
 import StatistiqueGlobal from "./pages/chefService/statistiqueGlobal/statistiqueGlobal";
 
 /* MANAGER */
-import AccueilManager from "./pages/manager/AccueilManager/AccueilManager";
 import PerformancesPage from "./pages/manager/PerformancesPage/PerformancesPage";
 import TicketsService from "./pages/manager/TicketsServicePage/TicketsServicePage";
 import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPage";

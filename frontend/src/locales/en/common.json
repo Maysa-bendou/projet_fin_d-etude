@@ -84,7 +84,7 @@
 },
 "history": {
   "technicianTookOver": "Technician took charge of the ticket",
-  "statusChanged": "Status changed → {{status}}",
+  "statusChanged": "Status changed to: {{status}}",
   "confirmationRequested": "Resolution confirmation requested from employee",
   "ticketClosed": "Ticket closed manually by technician",
   "ticketClosedWithNote": "Ticket closed. Note: {{note}}",

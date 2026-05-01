@@ -163,7 +163,8 @@
       "closureYear": "Année de clôture",
       "reset": "Réinitialiser",
       "count": "{{shown}} ticket{{shownPlural}} sur {{total}} total",
-      "countSimple": "{{shown}} ticket{{shownPlural}}"
+      "countSimple": "{{shown}} ticket{{shownPlural}}",
+      "monthAll": "mois"
     },
     "cols": {
       "id": "ID",
@@ -181,19 +182,36 @@
     "unassigned": "Non assigné",
     "noTickets": "Aucun ticket pour les filtres sélectionnés.",
     "sla": {
+      "na": "N/A",
       "exceeded": "dépassé +{{h}}h {{m}}m",
       "closed": "clôturé ✓",
       "frozen": "{{h}}h {{m}}m figé",
       "remaining": "{{h}}h {{m}}m",
-      "overdue": "⚠ +{{h}}h dépassé"
+      "alert": "⚠ +{{h}}h {{m}}m dépassé",
+      "alertBanner": "{{count}} ticket(s) ont dépassé le délai SLA"
     }
   },
 
   "ticketDetail": {
-    "backToTickets": "Retour aux tickets",
-    "ticketRef": "Référence Ticket",
-    "incidentDesc": "Description de l'incident",
-    "ticketInfo": "Informations du ticket",
+    "back": "Retour aux tickets",
+    "reference": "Référence Ticket",
+    "description": "Description de l'incident",
+    "info": "Informations du ticket",
+    "assignedTech": "Technicien assigné",
+    "assignedByManager": "Assigné par ",
+    "aManager":          " un manager",
+    "managedByYou": "Vous gérez ce ticket",
+    "waitingExpert": "En attente d'expert",
+    "assignedOn": "Assigné le",
+    "closedOn": "Clôturé le",
+    "profile": {
+      "employee": "Employé",
+      "email": "Email",
+      "department": "Département",
+      "position": "Poste",
+      "contact": "Contact",
+      "office": "Bureau"
+    },
     "cols": {
       "priority": "Priorité",
       "category": "Catégorie",
@@ -202,48 +220,35 @@
       "urgency": "Urgence",
       "createdAt": "Date Création"
     },
-    
-    "slaSection": "Temps de résolution (SLA)",
-    "slaPaused": "En pause",
-    "slaClosed": "Clôturé",
-    "slaOverrun": "Dépassement détecté",
-    "slaLimit": "Limite",
-    "redirected": "Ticket redirigé",
-    "redirectService": "Service",
-    "redirectTechnician": "Technicien",
-    "redirectReason": "Raison",
-    "redirectedAt": "Redirigé le",
-    "redirectedAtTime": "à",
-    "assignedTech": "Technicien assigné",
-    "notAssigned": "Non assigné",
-    "assignedOn": "Assigné le :",
-    "closedOn": "Clôturé le :",
-    "ticketClosed": "Ticket clôturé",
-    "cancelBtn": "Annuler",
-    "assignBtn": "Assigner le ticket",
-    "reassignBtn": "Modifier l'expert",
-    "panelChooseNew": "Choisir un nouvel expert",
-    "panelChoose": "Choisir un expert à assigner",
-    "currentBadge": "Actuel",
-    "techRole": "Technicien",
-    "techFields": {
-      "email": "Email",
-      "contact": "Contact",
-      "office": "Bureau",
-      "workload": "Charge"
+    "sla": {
+      "title": "Temps de résolution (SLA)",
+      "paused": "En pause",
+      "closed": "Clôturé",
+      "breachDetected": "Dépassement détecté",
+      "limit": "Limite",
+      "exceeded": "+{{h}}h {{m}}m dépassé",
+      "closedOk": "Clôturé — respecté ✓",
+      "frozen": "⏸ {{h}}h {{m}}m figé",
+      "remaining": "{{h}}h {{m}}m restantes"
     },
-    "activeTickets": "{{count}} actif{{plural}}",
-    "confirmAssign": "Confirmer l'assignation",
-    "confirmReassign": "Confirmer la modification",
+    "redirect": {
+      "title": "Ticket redirigé",
+      "service": "Service",
+      "technician": "Technicien",
+      "redirectedAt": "Date de redirection",
+      "reason": "Raison"
+    },
     "modal": {
-      "assigned": "Ticket assigné à",
-      "reassigned": "Ticket réassigné à",
-      "confirmed": "Assignation confirmée",
-      "whatNext": "Que souhaitez-vous faire ensuite ?",
-      "backToList": "Retour à la liste des tickets",
-      "stayOnTicket": "Rester sur ce ticket",
-      "employee": "Employé",
-      "role": "Employé"
+      "title": "Ticket pris en charge",
+      "status": "En cours",
+      "body": "Vous êtes maintenant responsable de ce ticket. Que souhaitez-vous faire ?",
+      "stayHere": "Rester sur ce ticket",
+      "backToList": "Retour à la liste des tickets"
+    },
+    "btn": {
+      "takeCharge": "Prendre en charge",
+      "alreadyAssigned": "Déjà Assigné",
+      "taking": "Traitement..."
     }
   }
 }

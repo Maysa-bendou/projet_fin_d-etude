@@ -79,8 +79,8 @@
     "description": "Description de l'incident",
     "info": "Informations du ticket",
     "assignedTech": "Technicien assigné",
-    "assignedByManager": "Assigné par le manager",
-    "aManager":          "un manager",
+    "assignedByManager": "Assigné par ",
+    "aManager":          " un manager",
     "managedByYou": "Vous gérez ce ticket",
     "waitingExpert": "En attente d'expert",
     "assignedOn": "Assigné le",
@@ -340,14 +340,14 @@
       "low":      "Basse"
     },
     "impact": {
-      "high":   "Haute",
-      "medium": "Moyen",
-      "low":    "Faible"
+      "low": "Une personne",
+      "medium": "Un service",
+      "high": "Entreprise"
     },
     "urgency": {
-      "high":   "Urgente",
-      "medium": "Normale",
-      "low":    "Faible"
+      "low": "Peut travailler",
+      "medium": "Partiellement bloqué",
+      "high": "Complètement bloqué"
     },
     "category": {
       "hardware": "Matériel",

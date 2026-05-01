@@ -163,7 +163,8 @@
       "closureYear": "Closure Year",
       "reset": "Reset",
       "count": "{{shown}} ticket{{shownPlural}} of {{total}} total",
-      "countSimple": "{{shown}} ticket{{shownPlural}}"
+      "countSimple": "{{shown}} ticket{{shownPlural}}",
+      "monthAll": "months"
     },
     "cols": {
       "id": "ID",
@@ -181,74 +182,73 @@
     "unassigned": "Unassigned",
     "noTickets": "No tickets match the selected filters.",
     "sla": {
+      "na": "N/A",
       "exceeded": "exceeded +{{h}}h {{m}}m",
       "closed": "closed ✓",
       "frozen": "{{h}}h {{m}}m frozen",
       "remaining": "{{h}}h {{m}}m",
-      "overdue": "⚠ +{{h}}h exceeded"
+      "alert": "⚠ +{{h}}h {{m}}m exceeded",
+      "alertBanner": "{{count}} ticket(s) have exceeded the SLA deadline"
     }
   },
 
   "ticketDetail": {
-    "backToTickets": "Back to tickets",
-    "ticketRef": "Ticket Reference",
-    "incidentDesc": "Incident Description",
-    "ticketInfo": "Ticket Information",
+    "back": "Back to tickets",
+    "reference": "Ticket Reference",
+    "description": "Incident Description",
+    "info": "Ticket Information",
+    "assignedTech": "Assigned Technician",
+    "assignedByManager": "Assigned by ",
+    "aManager":          "a manager",
+    "managedByYou": "You are managing this ticket",
+    "waitingExpert": "Waiting for expert",
+    "assignedOn": "Assigned on",
+    "closedOn": "Closed on",
+    "profile": {
+      "employee": "Employee",
+      "email": "Email",
+      "department": "Department",
+      "position": "Position",
+      "contact": "Contact",
+      "office": "Office"
+    },
     "cols": {
       "priority": "Priority",
       "category": "Category",
       "service": "Service",
       "impact": "Impact",
       "urgency": "Urgency",
-      "createdAt": "Creation Date"
+      "createdAt": "Created On"
     },
-     "sla": {
-      "remaining": "Remaining {{h}}h {{m}}m",
-      "exceeded": "Exceeded by {{h}}h {{m}}m",
-      "frozen": "Paused {{h}}h {{m}}m"
+    "sla": {
+      "title": "Resolution Time (SLA)",
+      "paused": "On hold",
+      "closed": "Closed",
+      "breachDetected": "Breach detected",
+      "limit": "Deadline",
+      "exceeded": "+{{h}}h {{m}}m exceeded",
+      "closedOk": "Closed — respected ✓",
+      "frozen": "⏸ {{h}}h {{m}}m frozen",
+      "remaining": "{{h}}h {{m}}m remaining"
     },
-    "slaSection": "Resolution Time (SLA)",
-    "slaPaused": "On Hold",
-    "slaClosed": "Closed",
-    "slaOverrun": "Overrun detected",
-    "slaLimit": "Limit",
-    "redirected": "Redirected Ticket",
-    "redirectService": "Service",
-    "redirectTechnician": "Technician",
-    "redirectReason": "Reason",
-    "redirectedAt": "Redirected on",
-    "redirectedAtTime": "at",
-    "assignedTech": "Assigned Technician",
-    "notAssigned": "Unassigned",
-    "assignedOn": "Assigned on",
-    "closedOn": "Closed on",
-    "ticketClosed": "Ticket closed",
-    "cancelBtn": "Cancel",
-    "assignBtn": "Assign ticket",
-    "reassignBtn": "Change expert",
-    "panelChooseNew": "Choose a new expert",
-    "panelChoose": "Choose an expert to assign",
-    "currentBadge": "Current",
-    "techRole": "Technician",
-    "techFields": {
-      "email": "Email",
-      "contact": "Contact",
-      "office": "Office",
-      "workload": "Workload"
+    "redirect": {
+      "title": "Redirected Ticket",
+      "service": "Service",
+      "technician": "Technician",
+      "redirectedAt": "Redirected on",
+      "reason": "Reason"
     },
-    "activeTickets": "{{count}} active ticket{{plural}}",
-    "confirmAssign": "Confirm assignment",
-    "confirmReassign": "Confirm change",
     "modal": {
-      "assigned": "Ticket assigned to",
-      "reassigned": "Ticket reassigned to",
-      "confirmed": "Assignment confirmed",
-      "whatNext": "What would you like to do next?",
-      "backToList": "Back to ticket list",
-      "stayOnTicket": "Stay on this ticket",
-      "employee": "Employee",
-      "role": "Employee"
+      "title": "Ticket taken over",
+      "status": "In Progress",
+      "body": "You are now responsible for this ticket. What would you like to do?",
+      "stayHere": "Stay on this ticket",
+      "backToList": "Back to ticket list"
+    },
+    "btn": {
+      "takeCharge": "Take charge",
+      "alreadyAssigned": "Already Assigned",
+      "taking": "Processing..."
     }
-    
   }
 }

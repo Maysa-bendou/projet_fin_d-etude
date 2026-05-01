@@ -1,4 +1,5 @@
 import { Paperclip } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // ── Couleurs des bulles ──────────────────────────────────────────────
 const COLORS = {
@@ -29,6 +30,7 @@ function FileList({ files, isMine }) {
 }
 
 export default function ConvBubble({ item, currentUser, empInitials, empName }) {
+  const { t } = useTranslation("technicien");
   var isMine   = item.authorId === currentUser?.id;
   var isSystem = item.type === "status";
 
@@ -56,27 +58,27 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
           <div className="max-w-[78%]">
             <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-2 inline-block tracking-wide"
               style={{ background: COLORS.confirm.bg, color: COLORS.confirm.color, border: `1px solid ${COLORS.confirm.border}` }}>
-              Confirmation envoyée
+              {t("conv.tags.confirm")}
             </span>
             <div className="rounded-2xl rounded-tr-sm px-4 py-3.5 shadow-sm"
               style={{ background: COLORS.confirm.bg, border: `1px solid ${COLORS.confirm.border}` }}>
               <p className="text-[12px] mb-3 font-medium" style={{ color: COLORS.confirm.color }}>
-                Le problème est-il résolu ?
+                {t("conv.confirmQuestion")}
               </p>
               <div className="flex gap-2">
                 <span className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
                   style={{ border: `1px solid ${COLORS.confirm.border}`, color: COLORS.confirm.color }}>
-                  Oui, résolu
+                  {t("conv.confirmYes")}
                 </span>
                 <span className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
                   style={{ border: "1px solid #fecaca", color: "#dc2626" }}>
-                  Non, toujours un problème
+                  {t("conv.confirmNo")}
                 </span>
               </div>
             </div>
           </div>
         </div>
-        <p className="text-[10px] text-slate-400 mt-1.5 mr-10">Vous · {item.date}</p>
+        <p className="text-[10px] text-slate-400 mt-1.5 mr-10">{t("conv.youLabel")} · {item.date}</p>
       </div>
     );
   }
@@ -84,20 +86,20 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
   // ── Choisir la palette selon l'auteur et le type ───────────────────
   var palette;
   if (isMine) {
-    palette =  COLORS.technician;
+    palette = COLORS.technician;
   } else {
     palette = COLORS.employee;
   }
 
   // ── Type tags ─────────────────────────────────────────────────────
   var tags = {
-    solution:         { label: "Solution",             bg: COLORS.technician.bg, color: COLORS.technician.color, border: COLORS.technician.border },
-    info:             { label: "Commentaire",           bg: COLORS.technician.bg,   color: COLORS.technician.color,border: COLORS.technician.border },
-    redirect:         { label: "Redirigé",              bg: "#fdf4ff",             color: "#7e22ce",               border: "#e9d5ff"                 },
-    confirm:          { label: "Confirmation envoyée",  bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
-    emp_reply:        { label: "Réponse employé",       bg: COLORS.employee.bg,   color: COLORS.employee.color,   border: COLORS.employee.border   },
-    confirmed:        { label: "Résolution confirmée",  bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
-    rejected_confirm: { label: "Solution refusée",      bg: "#fef2f2",             color: "#dc2626",               border: "#fecaca"                 },
+    solution:         { label: t("conv.tags.solution"),         bg: COLORS.technician.bg, color: COLORS.technician.color, border: COLORS.technician.border },
+    info:             { label: t("conv.tags.info"),             bg: COLORS.technician.bg, color: COLORS.technician.color, border: COLORS.technician.border },
+    redirect:         { label: t("conv.tags.redirect"),         bg: "#fdf4ff",            color: "#7e22ce",               border: "#e9d5ff"                 },
+    confirm:          { label: t("conv.tags.confirm"),          bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
+    emp_reply:        { label: t("conv.tags.emp_reply"),        bg: COLORS.employee.bg,   color: COLORS.employee.color,   border: COLORS.employee.border   },
+    confirmed:        { label: t("conv.tags.confirmed"),        bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
+    rejected_confirm: { label: t("conv.tags.rejected_confirm"), bg: "#fef2f2",            color: "#dc2626",               border: "#fecaca"                 },
   };
   var typeTag = tags[item.type];
 
@@ -149,7 +151,7 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
 
       {/* Timestamp */}
       <p className={"text-[10px] text-slate-400 mt-1.5 " + (isMine ? "mr-10" : "ml-10")}>
-        {isMine ? "Vous" : empName} · {item.date}
+        {isMine ? t("conv.youLabel") : empName} · {item.date}
       </p>
     </div>
   );

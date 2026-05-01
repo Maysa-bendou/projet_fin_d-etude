@@ -12,10 +12,11 @@ import { ACT_LABEL_KEYS } from "./components/constants";
 const API = "http://localhost:3001/api/tech";
 
 export default function TicketDetailTechnicien() {
-  const { t }       = useTranslation("technicien");
-  const navigate    = useNavigate();
-  const { id }      = useParams();
-  const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  const { t }           = useTranslation("technicien");
+  const { t: tC } = useTranslation("common");
+  const navigate        = useNavigate();
+  const { id }          = useParams();
+  const currentUser     = JSON.parse(localStorage.getItem("user") || "null");
 
   const [ticket, setTicket] = useState(null);
   const [allIds, setAllIds] = useState([]);
@@ -47,7 +48,63 @@ export default function TicketDetailTechnicien() {
 
   const convEndRef = useRef(null);
   const isClosed = status === "closed";
-  const fmt = (d) => new Date(d).toLocaleTimeString("fr-DZ", { hour: "2-digit", minute: "2-digit" });
+
+  // ── Locale-aware time formatter ───────────────────────────────────────────
+  // Reads date.locale from common.json so time format switches with language.
+  const fmt = (d) => new Date(d).toLocaleTimeString(tC("date.locale"), { hour: "2-digit", minute: "2-digit" });
+
+  // ── Translate legacy French DB status messages ────────────────────────────
+  // DB stores status-change messages as French strings e.g. "Statut changé en : Résolu".
+  // Maps them back to raw DB key → reads translated label from common.json status.*
+  // Then uses common.json history.statusChanged for the full sentence.
+  // Only called for comment_type === "status" entries — no logic touched.
+  const FR_TO_DB_STATUS = {
+    "Ouvert":                 "open",
+    "En cours":               "in_progress",
+    "En attente":             "pending",
+    "En attente fournisseur": "pending_supplier",
+    "Résolu":                 "resolved",
+    "Fermé":                  "closed",
+    "Rejeté":                 "rejected",
+  };
+
+const translateStatusMsg = (msg) => {
+  if (!msg) return msg;
+
+  // ── status_changed:open ──────────────────────────────────────────
+  const newMatch = msg.match(/^status_changed:(.+)$/);
+  if (newMatch) {
+    const translatedStatus = tC(`status.${newMatch[1]}`, { defaultValue: newMatch[1] });
+    return tC("history.statusChanged", { status: translatedStatus });
+  }
+
+  // ── technician_took_over ─────────────────────────────────────────
+  if (msg === "technician_took_over")
+    return tC("history.technicianTookOver");
+
+  // ── ticket_assigned ──────────────────────────────────────────────
+  if (msg === "ticket_assigned")
+    return tC("history.ticketAssigned");
+
+  // ── employee_reopened ────────────────────────────────────────────
+  if (msg === "employee_reopened")
+    return tC("history.employeeReopened");
+
+  // ── employee_updated:Titre modifié | Impact: low → high ──────────
+  const updateMatch = msg.match(/^employee_updated:(.+)$/);
+  if (updateMatch)
+    return tC("history.employeeUpdated", { detail: updateMatch[1] });
+
+  // ── Legacy French strings (old DB rows) ──────────────────────────
+  const legacyMap = {
+    "Technicien a pris en charge le ticket": tC("history.technicianTookOver"),
+    "Ticket assigné à un technicien":        tC("history.ticketAssigned"),
+  };
+  if (legacyMap[msg]) return legacyMap[msg];
+
+  // ── Fallback: return as-is ───────────────────────────────────────
+  return msg;
+};
 
   const addActEntry = (type, message, date = new Date()) => ({
     id: `act-${Date.now()}-${Math.random()}`,
@@ -82,7 +139,7 @@ export default function TicketDetailTechnicien() {
 
       actItems.push({
         id: "act-assigned", type: "assigned",
-        message: t("ticketDetailTech.actuality.assigned"),
+        messageKey: "ticketDetailTech.actuality.assigned",
         date: fmt(data.createdAt),
         rawDate: new Date(data.createdAt),
       });
@@ -110,13 +167,13 @@ export default function TicketDetailTechnicien() {
         }
 
         if (type === "status") {
-          actItems.push({ id: `act-${c.id}`, type: "status", message: c.message, date: dateStr, rawDate: dateObj });
+          actItems.push({ id: `act-${c.id}`, type: "status", message: translateStatusMsg(c.message), date: dateStr, rawDate: dateObj });
         } else if (type === "update") {
           actItems.push({ id: `act-${c.id}`, type: "update", message: `✏ ${c.message}`, date: dateStr, rawDate: dateObj });
         } else if (type === "reopen") {
-          actItems.push({ id: `act-${c.id}`, type: "reopen", message: t("ticketDetailTech.actuality.reopened"), date: dateStr, rawDate: dateObj });
+          actItems.push({ id: `act-${c.id}`, type: "reopen", messageKey: "ticketDetailTech.actuality.reopened", date: dateStr, rawDate: dateObj });
 } else if (ACT_LABEL_KEYS[type]) {
-  actItems.push({ id: `act-${c.id}`, type, message: t(ACT_LABEL_KEYS[type]), date: dateStr, rawDate: dateObj });
+actItems.push({ id: `act-${c.id}`, type, messageKey: ACT_LABEL_KEYS[type], date: dateStr, rawDate: dateObj });
 }
       });
 

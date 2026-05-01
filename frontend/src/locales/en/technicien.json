@@ -41,7 +41,8 @@
       "reset": "Reset",
       "countSuffix_one": "ticket",
       "countSuffix_other": "tickets",
-      "outOf": "of {{total}} total"
+      "outOf": "of {{total}} total",
+      "monthAll": "months"
     },
     "table": {
       "id": "ID",
@@ -78,6 +79,8 @@
     "description": "Incident Description",
     "info": "Ticket Information",
     "assignedTech": "Assigned Technician",
+    "assignedByManager": "Assigned by ",
+    "aManager":          "a manager",
     "managedByYou": "You are managing this ticket",
     "waitingExpert": "Waiting for expert",
     "assignedOn": "Assigned on",
@@ -164,7 +167,16 @@
       "priority": "Priority",
       "status": "Status",
       "lastActivity": "Last Activity"
-    }
+    },
+    "activity": {
+  "solution":  "Solution sent",
+  "assigned":  "Ticket assigned",
+  "confirm":   "Confirmation requested",
+  "status":    "Status updated",
+  "info":      "Info requested",
+  "reopen":    "Ticket reopened",
+  "emp_reply": "Employee replied"
+}
   },
 
   "ticketDetailTech": {

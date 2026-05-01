@@ -57,7 +57,7 @@ const employeeConfirmReply = async (req, res) => {
       data: {
         ticket_id: id,
         user_id: parseInt(employeeId),
-        comment: isConfirmed ? "Confirme resolu." : "Probleme persiste.",
+        comment: isConfirmed ? "history.employeeConfirmed" : "history.employeeRejected",
         comment_type: isConfirmed ? "confirmed" : "rejected_confirm",
         created_at: new Date(),
       },

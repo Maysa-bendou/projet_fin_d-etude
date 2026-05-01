@@ -19,18 +19,16 @@ export const CATEGORY_KEYS = {
   messagerie: "category.messagerie",
 };
 
-// ── FIXED: DB stores low/medium/high — not French strings ──────────────────
-export const URGENCY_KEYS = {
-  low:    "urgency.can_work",
-  medium: "urgency.partially_blocked",
-  high:   "urgency.fully_blocked",
-};
-
-// ── FIXED: DB stores low/medium/high — not French strings ──────────────────
 export const IMPACT_KEYS = {
   low:    "impact.one_person",
   medium: "impact.one_service",
   high:   "impact.company",
+};
+
+export const URGENCY_KEYS = {
+  low:    "urgency.can_work",
+  medium: "urgency.partially_blocked",
+  high:   "urgency.fully_blocked",
 };
 
 export const PRIORITY_KEYS = {

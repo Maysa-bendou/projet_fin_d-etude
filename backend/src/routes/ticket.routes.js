@@ -246,7 +246,7 @@ await prisma.ticket_comments.create({
   data: {
     ticket_id: id,
     user_id: req.body.user_id || null,
-    comment: `Statut changé → ${status}`,
+    comment: `status_changed:${status}`,
     comment_type: "status",
   },
 });
@@ -497,10 +497,11 @@ if (impact && urgency) {
     data: {
       ticket_id: id,
       user_id: user_id || null,
-      comment: isReopen
-        ? " Ticket réouvert par l'employé"
-        : ` Modifié par l'employé : ${changes.join(" | ")}`,
-      comment_type: commentType,
+// ✅ AFTER
+comment: isReopen
+  ? "employee_reopened"
+  : `employee_updated:${changes.join(" | ")}`,  // raw changes after ":" — frontend extracts
+comment_type: commentType,   // "reopen" or "update" — already correct
     },
   });
 }
@@ -558,8 +559,8 @@ await prisma.ticket_comments.create({
   data: {
     ticket_id: ticketId,
     user_id: assigned_by || null,
-    comment: action === "taken" ? "Technicien a pris en charge le ticket" : "Ticket assigné à un technicien",
-    comment_type: "status",
+    comment:      action === "taken" ? "technician_took_over" : "ticket_assigned",
+    comment_type: action === "taken" ? "taken"                : "assigned",
   },
 });
 

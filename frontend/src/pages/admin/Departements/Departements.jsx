@@ -10,13 +10,14 @@ import DepartmentModal from "./DepartmentModal";
 
 const Sep = () => <div style={{ width: 1, height: 20, background: "#e8e2d9", flexShrink: 0 }} />;
 
-const SuccessCard = ({ message, onClose }) => (
+// SuccessCard — all strings from admin namespace, no hardcoded text
+const SuccessCard = ({ message, onClose, t }) => (
   <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.3)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 24 }}>
     <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #d9d4cc", padding: "40px 36px", maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
       <div style={{ width: 56, height: 56, background: "#f0fdf4", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 22, color: "#16a34a", border: "2px solid #bbf7d0" }}>✓</div>
-      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Operation Successful</h2>
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{t('departments.success.title')}</h2>
       <p style={{ fontSize: 13, color: "#94a3b8", margin: "0 0 28px" }}>{message}</p>
-      <button onClick={onClose} style={{ width: "100%", background: "#1e3a8a", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Done</button>
+      <button onClick={onClose} style={{ width: "100%", background: "#1e3a8a", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>{t('departments.success.done')}</button>
     </div>
   </div>
 );
@@ -165,7 +166,7 @@ export default function DepartementsPage() {
         />
       )}
 
-      {successMsg && <SuccessCard message={successMsg} onClose={() => setSuccessMsg("")} />}
+      {successMsg && <SuccessCard message={successMsg} onClose={() => setSuccessMsg("")} t={t} />}
     </div>
   );
 }

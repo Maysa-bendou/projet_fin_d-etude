@@ -40,7 +40,7 @@ const FilterSelect = ({ value, onChange, minW = 115, children }) => (
 const Sep = () => <div style={{ width: 1, height: 20, background: "#e8e2d9", flexShrink: 0 }} />;
 
 // ── Success toast ──────────────────────────────────────────────────────────
-const SuccessCard = ({ message, onClose }) => (
+const SuccessCard = ({ message, onClose, t }) => (
   <div style={{
     position: "fixed", inset: 0, background: "rgba(15,23,42,0.3)",
     backdropFilter: "blur(2px)", display: "flex", alignItems: "center",
@@ -61,7 +61,7 @@ const SuccessCard = ({ message, onClose }) => (
 
       {/* Title */}
       <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>
-        Operation Successful
+        {t("departments.title")}
       </h2>
 
       {/* Message */}
@@ -75,7 +75,7 @@ const SuccessCard = ({ message, onClose }) => (
         borderRadius: 10, padding: "12px 0", fontSize: 14, fontWeight: 600,
         cursor: "pointer",
       }}>
-        Done
+        {t("departments.done")}
       </button>
     </div>
   </div>
@@ -83,7 +83,7 @@ const SuccessCard = ({ message, onClose }) => (
 
 // ── Main ───────────────────────────────────────────────────────────────────
 function UsersPage() {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]); // common used for: loading, refresh.label
 
   const [users,          setUsers]          = useState([]);
   const [selectedUser,   setSelectedUser]   = useState(null);
@@ -120,38 +120,34 @@ function UsersPage() {
     setTimeout(() => setSuccessMsg(""), 3500);
   };
 
-  // In UsersPage.jsx — change addUser and updateUser to throw on error:
+  const addUser = async (newUser) => {
+    const res = await fetch("http://localhost:3001/api/users", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newUser),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${res.status}`);
+    }
+    const created = await res.json();
+    setUsers(prev => [created, ...prev]);
+    setIsAddModalOpen(false);
+    showSuccess(t("users.modal.titleAdd") + " ✓");
+  };
 
-const addUser = async (newUser) => {
-  const res = await fetch("http://localhost:3001/api/users", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(newUser),
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    throw new Error(e.error || `HTTP ${res.status}`);   // ← throw, not setError
-  }
-  const created = await res.json();
-  setUsers(prev => [created, ...prev]);
-  setIsAddModalOpen(false);
-  showSuccess(t("users.modal.titleAdd") + " ✓");
-};
-
-const updateUser = async (updatedUser) => {
-  const res = await fetch(`http://localhost:3001/api/users/${updatedUser.id}`, {
-    method: "PUT", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updatedUser),
-  });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    throw new Error(e.error || `HTTP ${res.status}`);   // ← throw, not setError
-  }
-  setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-  setSelectedUser(null);
-  showSuccess(t("users.modal.titleEdit") + " ✓");
-};
-
-  
+  const updateUser = async (updatedUser) => {
+    const res = await fetch(`http://localhost:3001/api/users/${updatedUser.id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedUser),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${res.status}`);
+    }
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    setSelectedUser(null);
+    showSuccess(t("users.modal.titleEdit") + " ✓");
+  };
 
   const toggleActive = async (id) => {
     try {
@@ -159,7 +155,7 @@ const updateUser = async (updatedUser) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: !u.is_active } : u));
       setSelectedUser(null);
-      showSuccess("Status updated ✓");
+      showSuccess(t("users.statusUpdated"));
     } catch (err) { setError(err.message); }
   };
 
@@ -184,21 +180,20 @@ const updateUser = async (updatedUser) => {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
         <div className="w-9 h-9 border-4 border-slate-200 border-t-red-700 rounded-full animate-spin" />
         <span style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 2 }}>
-          {t("users.loadError")}
+          {t("common:loading")}
         </span>
       </div>
     </div>
   );
 
   return (
-    <div style={{ minHeight: "100vh",  fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", fontFamily: "sans-serif" }}>
 
       {/* Header */}
-      <div style={{  borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          
-         <h1 className="text-2xl font-bold text-slate-900">{t("users.pageTitle")}</h1>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
+          <h1 className="text-2xl font-bold text-slate-900">{t("users.pageTitle")}</h1>
+          <p style={{ fontSize: 14, color: '#6b7280', margin: 0, fontWeight: 500 }}>
             {t("users.pageSubtitle")}
           </p>
         </div>
@@ -230,11 +225,11 @@ const updateUser = async (updatedUser) => {
           <FilterInput placeholder={t("users.searchPlaceholder")} value={searchTerm} onChange={setSearchTerm} />
           <Sep />
           <FilterSelect value={filterRole} onChange={setFilterRole} minW={120}>
-            <option value="">{t("users.roles.employee").replace("Employee", "All roles") || "All roles"}</option>
+            <option value="">{t("users.allRoles")}</option>
             {ROLES.map(r => <option key={r} value={r}>{t(`users.roles.${r}`) || r}</option>)}
           </FilterSelect>
           <FilterSelect value={filterStatus} onChange={setFilterStatus} minW={100}>
-            <option value="">All statuses</option>
+            <option value="">{t("users.allStatuses")}</option>
             <option value="active">{t("users.table.active")}</option>
             <option value="inactive">{t("users.table.inactive")}</option>
           </FilterSelect>
@@ -247,7 +242,7 @@ const updateUser = async (updatedUser) => {
             background: hasFilters ? "#fef2f2" : "#fff", cursor: "pointer", flexShrink: 0,
           }}>
             <HiOutlineArrowPath size={12} />
-            {t("users.refresh")}
+            {t("common:refresh.label")}
           </button>
           <span style={{ marginLeft: "auto", fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>
             <span style={{ fontWeight: 700, color: "#0f172a" }}>{filteredUsers.length}</span>
@@ -271,7 +266,7 @@ const updateUser = async (updatedUser) => {
       )}
 
       {/* Success toast */}
-      {successMsg && <SuccessCard message={successMsg} onClose={() => setSuccessMsg("")} />}
+      {successMsg && <SuccessCard message={successMsg} onClose={() => setSuccessMsg("")} t={t} />}
     </div>
   );
 }

@@ -66,9 +66,9 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
       // detect duplicate email
       const msg = err.message || "";
       if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("unique")) {
-        setServerError(t("users.modal.emailExists") || "This email address is already in use.");
+        setServerError(t("users.modal.emailExists"));
       } else {
-        setServerError(msg || "An unexpected error occurred.");
+        setServerError(msg || t("users.modal.unexpectedError"));
       }
     }
 
@@ -95,7 +95,7 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
       {children}
       {missing.includes(fieldKey) && (
         <span style={{ marginLeft: 6, fontWeight: 500, textTransform: "none", fontSize: 10 }}>
-          — {t("users.modal.required") || "required"}
+          — {t("users.modal.required")}
         </span>
       )}
     </label>
@@ -138,7 +138,7 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
                 {serverError && <div style={{ marginBottom: missing.length > 0 ? 4 : 0 }}>{serverError}</div>}
                 {missing.length > 0 && (
                   <div>
-                    {t("users.modal.missingFields") || "Please fill in all required fields"}:&nbsp;
+                    {t("users.modal.missingFields")}:&nbsp;
                     <strong>{missing.join(", ")}</strong>
                   </div>
                 )}
@@ -164,11 +164,11 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <Label fieldKey="role">Role</Label>
+              <Label fieldKey="role">{t("users.modal.role")}</Label>
               <select name="role" value={form.role} onChange={handleChange}
                 style={{ ...inputStyle("role"), cursor: isEditing ? "pointer" : "default", appearance: "none" }}
                 disabled={!isEditing}>
-                {ROLES.map(r => <option key={r} value={r}>{t(`users.roles.${r}`) || r}</option>)}
+                {ROLES.map(r => <option key={r} value={r}>{t(`users.roles.${r}`)}</option>)}
               </select>
             </div>
             <div>
@@ -178,7 +178,7 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
           </div>
 
           <div>
-            <Label fieldKey="department">Département</Label>
+            <Label fieldKey="department">{t("users.modal.department")}</Label>
             <select name="department" value={form.department} onChange={handleChange}
               style={{ ...inputStyle("department"), cursor: isEditing ? "pointer" : "default", appearance: "none" }}
               disabled={!isEditing}>
@@ -207,7 +207,7 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
 
           {isServiceRequired && (
             <div>
-              <Label fieldKey="service_id">Service</Label>
+              <Label fieldKey="service_id">{t("users.modal.service")}</Label>
               <select name="service_id" value={form.service_id} onChange={handleChange}
                 style={{ ...inputStyle("service_id"), cursor: isEditing ? "pointer" : "default", appearance: "none" }}
                 disabled={!isEditing}>

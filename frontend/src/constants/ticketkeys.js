@@ -20,15 +20,15 @@ export const CATEGORY_KEYS = {
 };
 
 export const IMPACT_KEYS = {
-  low:    "impact.one_person",
-  medium: "impact.one_service",
-  high:   "impact.company",
+  low:    "impact.low",
+  medium: "impact.medium",
+  high:   "impact.high",
 };
 
 export const URGENCY_KEYS = {
-  low:    "urgency.can_work",
-  medium: "urgency.partially_blocked",
-  high:   "urgency.fully_blocked",
+  low:    "urgency.low",
+  medium: "urgency.medium",
+  high:   "urgency.high",
 };
 
 export const PRIORITY_KEYS = {

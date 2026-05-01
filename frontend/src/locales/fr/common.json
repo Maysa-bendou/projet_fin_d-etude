@@ -83,7 +83,7 @@
   "loading": "Actualisation…"
 },
 "history": {
-  "statusChanged": "Statut changé → {{status}}",
+  "statusChanged": "Statut changé en : {{status}}",
   "confirmationRequested": "Demande de confirmation envoyée à l'employé",
   "ticketClosed": "Ticket fermé manuellement par le technicien",
   "ticketClosedWithNote": "Ticket fermé. Note : {{note}}",

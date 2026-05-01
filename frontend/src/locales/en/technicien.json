@@ -341,14 +341,14 @@
       "low":      "Low"
     },
     "impact": {
-      "high":   "High",
-      "medium": "Medium",
-      "low":    "Low"
+      "low": "One person",
+      "medium": "A department",
+      "high": "Entire company"
     },
     "urgency": {
-      "high":   "Urgent",
-      "medium": "Normal",
-      "low":    "Low"
+      "low": "Can still work",
+      "medium": "Partially blocked",
+      "high": "Completely blocked"
     },
     "category": {
       "hardware": "Hardware",

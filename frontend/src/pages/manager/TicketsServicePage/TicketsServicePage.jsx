@@ -17,16 +17,20 @@ import Pill from "../../../components/common/Pill";
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const THIS_YEAR = new Date().getFullYear();
-const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
 
-// ── Pure helpers ───────────────────────────────────────────────────────────
-
-const fmtDate = (str) => {
+// FIX: locale-aware date formatter — built from the active locale
+const makeFmtDate = (locale) => (str) => {
   if (!str) return "—";
   const d = new Date(str);
   if (isNaN(d)) return "—";
-  return `${String(d.getDate()).padStart(2,"0")} ${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString(locale, { month: "short" })} ${d.getFullYear()}`;
 };
+
+// FIX: locale-aware month list for the filter dropdown
+const makeMonths = (locale) =>
+  Array.from({ length: 12 }, (_, i) =>
+    new Date(2024, i, 1).toLocaleString(locale, { month: "short" })
+  );
 
 const getArchiveYear  = (t) => t.closed_at  ? new Date(t.closed_at).getFullYear()  : null;
 const getCreatedMonth = (t) => t.created_at ? new Date(t.created_at).getMonth()    : null;
@@ -49,8 +53,10 @@ function useDebounce(value, delay = 220) {
 }
 
 // ── SLA Bar ────────────────────────────────────────────────────────────────
-
+// FIX: useTranslation("manager") — single namespace, NOT array
 const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }) => {
+  const { t } = useTranslation("manager");
+
   if (!slaDueDate)
     return <span style={{ color: "#94a3b8", fontSize: 11, fontStyle: "italic" }}>N/A</span>;
 
@@ -59,14 +65,14 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
   const now      = Date.now();
   const due      = new Date(slaDueDate).getTime();
   const debut    = slaDebut ? new Date(slaDebut).getTime() : due - 86400000;
-  const window   = due - debut;
+  const win      = due - debut;
 
   if (TERMINAL.includes(status)) {
     const closed   = closedAt ? new Date(closedAt).getTime() : due;
     const exceeded = closed > due;
     const delta    = Math.abs(closed - due);
-    const used     = exceeded ? window + delta : window - (due - closed);
-    const pct      = Math.min(100, Math.max(0, (used / window) * 100));
+    const used     = exceeded ? win + delta : win - (due - closed);
+    const pct      = Math.min(100, Math.max(0, (used / win) * 100));
     const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -74,15 +80,15 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
           <div style={{ height: "100%", width: `${pct}%`, background: exceeded ? "#f87171" : "#34d399" }} />
         </div>
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#6b7280" }}>
-          {exceeded ? `dépassé +${h}h ${m}m` : `clôturé ✓`}
+          {exceeded ? t("ticketsService.sla.exceeded", { h, m }) : t("ticketsService.sla.closed")}
         </span>
       </div>
     );
   }
 
   if (PAUSED.includes(status)) {
-    const frozen = slaPauseElapsed != null ? window - slaPauseElapsed : Math.max(0, due - now);
-    const pct    = Math.min(100, Math.max(0, ((window - frozen) / window) * 100));
+    const frozen = slaPauseElapsed != null ? win - slaPauseElapsed : Math.max(0, due - now);
+    const pct    = Math.min(100, Math.max(0, ((win - frozen) / win) * 100));
     const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -90,7 +96,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
           <div style={{ height: "100%", width: `${pct}%`, background: "#a78bfa" }} />
         </div>
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: "#7c3aed" }}>
-          ⏸ {h}h {m}m figé
+          ⏸ {t("ticketsService.sla.frozen", { h, m })}
         </span>
       </div>
     );
@@ -98,7 +104,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
 
   const diffMs   = due - now;
   const exceeded = diffMs <= 0;
-  const pct      = Math.max(0, Math.min(100, ((window - Math.max(0, diffMs)) / window) * 100));
+  const pct      = Math.max(0, Math.min(100, ((win - Math.max(0, diffMs)) / win) * 100));
   const abs      = Math.abs(diffMs);
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
   const barColor = exceeded ? "#ef4444" : h < 2 ? "#f87171" : h < 6 ? "#fbbf24" : "#34d399";
@@ -108,7 +114,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
         <div style={{ height: "100%", width: `${pct}%`, background: barColor }} />
       </div>
       <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#94a3b8" }}>
-        {exceeded ? `⚠ +${h}h dépassé` : `${h}h ${m}m`}
+        {exceeded ? t("ticketsService.sla.alert", { h, m }) : t("ticketsService.sla.remaining", { h, m })}
       </span>
     </div>
   );
@@ -147,17 +153,16 @@ const TabSwitch = memo(({ activeTab, setActiveTab, actuelCount, archiveCount }) 
           }}>
             <Icon size={14} style={{ color: on ? "#1d4ed8" : "#c4bfb8" }} />
             {label}
-        
-             <span style={{
-        background: on ? "#eff6ff" : "#f3f4f6",
-        color: on ? "#1d4ed8" : "#94a3b8",
-        borderRadius: 20,
-        padding: "0 7px",
-        fontSize: 11,
-        fontWeight: 700
-      }}>
-        {count}
-      </span>
+            <span style={{
+              background: on ? "#eff6ff" : "#f3f4f6",
+              color: on ? "#1d4ed8" : "#94a3b8",
+              borderRadius: 20,
+              padding: "0 7px",
+              fontSize: 11,
+              fontWeight: 700
+            }}>
+              {count}
+            </span>
           </button>
         );
       })}
@@ -203,8 +208,16 @@ const Sep = () => <div style={{ width: 1, height: 20, background: "#e8e2d9", fle
 
 // ── TicketRow ──────────────────────────────────────────────────────────────
 
-const TicketRow = memo(({ ticket, navigate, role, activeTab, isLast }) => {
-  const { t } = useTranslation("manager");
+const TicketRow = memo(({ ticket, navigate, role, activeTab, isLast, ticketIds }) => {
+  // FIX: two separate useTranslation calls — one per namespace, no array
+  const { t }    = useTranslation("manager");
+  const { t: tc } = useTranslation("common");
+  // FIX: locale-aware date formatter
+  const fmtDate = makeFmtDate(tc("date.locale"));
+  // FIX: translation helpers for Pill labels
+  const tStatus   = (key) => tc(`status.${key}`,   { defaultValue: key });
+  const tPriority = (key) => tc(`priority.${key}`, { defaultValue: key });
+  const tCategory = (key) => tc(`category.${key}`, { defaultValue: key });
 
   const technician = ticket.assignedTo || ticket.assigned_to || ticket.users_tickets_assigned_toTousers;
   const empName  = ticket.employee ? `${ticket.employee.name || ""} ${ticket.employee.surname || ""}`.trim() : null;
@@ -220,7 +233,10 @@ const TicketRow = memo(({ ticket, navigate, role, activeTab, isLast }) => {
 
   return (
     <tr
-      onClick={() => navigate(`/manager/tickets-service/${ticket.id}`)}
+      onClick={() => {
+        localStorage.setItem("ticketIds", JSON.stringify(ticketIds));
+        navigate(`/${role}/tickets-service/${ticket.id}`, { state: { ticketIds } });
+      }}
       style={{ background: "#fff", borderBottom: isLast ? "none" : "1px solid #f4f0ec", cursor: "pointer" }}
       onMouseOver={e => e.currentTarget.style.background = "#faf8f5"}
       onMouseOut={e  => e.currentTarget.style.background = "#fff"}
@@ -233,9 +249,10 @@ const TicketRow = memo(({ ticket, navigate, role, activeTab, isLast }) => {
         </span>
       </td>
 
-      <TD><Pill config={CATEGORY_CONFIG} value={ticket.category || ticket.categorie} /></TD>
-      <TD><Pill config={PRIORITY_CONFIG} value={ticket.priority} /></TD>
-      <TD><Pill config={STATUS_CONFIG}   value={ticket.status} /></TD>
+      {/* FIX: pass translated label to Pill */}
+      <TD><Pill config={CATEGORY_CONFIG} value={ticket.category || ticket.categorie} label={tCategory(ticket.category || ticket.categorie)} /></TD>
+      <TD><Pill config={PRIORITY_CONFIG} value={ticket.priority}                     label={tPriority(ticket.priority)} /></TD>
+      <TD><Pill config={STATUS_CONFIG}   value={ticket.status}                       label={tStatus(ticket.status)} /></TD>
 
       <td style={{ padding: "9px 10px" }}>
         {activeTab === "archives"
@@ -294,6 +311,7 @@ const COLS = [
 
 const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
   const { t } = useTranslation("manager");
+  const ticketIds = tickets.map(tk => tk.id);
   return (
     <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", overflow: "hidden" }}>
       {tickets.length === 0 ? (
@@ -325,6 +343,7 @@ const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
                   role={role}
                   activeTab={activeTab}
                   isLast={idx === tickets.length - 1}
+                  ticketIds={ticketIds}
                 />
               ))}
             </tbody>
@@ -339,7 +358,14 @@ const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
 
 const TicketsServicePage = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation("manager");
+  // FIX: two separate useTranslation calls — one per namespace, no array
+  const { t }    = useTranslation("manager");
+  const { t: tc } = useTranslation("common");
+  // FIX: locale-aware helpers derived from the active language
+  const dateLocale = tc("date.locale");
+  const MONTHS_LOC = makeMonths(dateLocale);
+  const tStatus   = (key) => tc(`status.${key}`,   { defaultValue: key });
+  const tCategory = (key) => tc(`category.${key}`, { defaultValue: key });
 
   const { role, serviceId } = useMemo(() => {
     const u = JSON.parse(localStorage.getItem("user") || "null");
@@ -457,22 +483,21 @@ const TicketsServicePage = () => {
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ minHeight: "100vh",  fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", fontFamily: "sans-serif" }}>
 
       {/* Header */}
       <div style={{ borderBottom: "1px solid #e8e2d9", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div>
-              <h1 style={{ fontSize: 22, fontWeight: 750, color: "#0f172a", margin: 0 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 750, color: "#0f172a", margin: 0 }}>
               {serviceName
                 ? <>{t("ticketsService.service")} <span style={{ color: "#0f172a" }}>{serviceName}</span></>
                 : t("ticketsService.allTickets")}
             </h1>
-             <p style={{ fontSize: 14, fontWeight: 530, color: "#3a424c",  margin: "0 px" }}>
+            <p style={{ fontSize: 14, fontWeight: 530, color: "#3a424c", margin: "0px" }}>
               {role === "manager" ? t("ticketsService.headerManage") : t("ticketsService.headerService")}
             </p>
           </div>
-          
         </div>
         <RefreshButton onRefresh={fetchData} />
       </div>
@@ -497,22 +522,25 @@ const TicketsServicePage = () => {
             onChange={setFilterSearch}
           />
           <Sep />
+          {/* FIX: translated category options from common namespace */}
           <FilterSelect icon={HiOutlineTag} value={filterCategory} onChange={setFilterCategory} minW={110}>
             <option value="">{t("ticketsService.filters.allCategories")}</option>
-            {dbEnums.categories?.map(c => <option key={c} value={c}>{CATEGORY_CONFIG[c]?.label || c}</option>)}
+            {dbEnums.categories?.map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
           </FilterSelect>
+          {/* FIX: translated status options from common namespace */}
           <FilterSelect icon={HiOutlineExclamationCircle} value={filterStatus} onChange={setFilterStatus} minW={100}>
             <option value="">{t("ticketsService.filters.allStatuses")}</option>
-            {dbEnums.statuts?.map(s => <option key={s} value={s}>{STATUS_CONFIG[s]?.label || s}</option>)}
+            {dbEnums.statuts?.map(s => <option key={s} value={s}>{tStatus(s)}</option>)}
           </FilterSelect>
           <FilterSelect icon={HiOutlineCheckCircle} value={filterAssignment} onChange={setFilterAssignment} minW={110}>
             <option value="">{t("ticketsService.filters.all")}</option>
             <option value="assigned">{t("ticketsService.filters.assigned")}</option>
             <option value="unassigned">{t("ticketsService.filters.unassigned")}</option>
           </FilterSelect>
+          {/* FIX: locale-aware month dropdown */}
           <FilterSelect icon={HiOutlineCalendarDays} value={filterMonth} onChange={setFilterMonth} minW={90}>
-            <option value="">{t("ticketsService.filters.allMonths") || "Tous les mois"}</option>
-            {MONTHS_FR.map((m, i) => <option key={i} value={i}>{m}</option>)}
+            <option value="">{t("ticketsService.filters.monthAll")}</option>
+            {MONTHS_LOC.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </FilterSelect>
           {activeTab === "archives" && archiveYears.length > 0 && (
             <FilterSelect value={filterYear} onChange={setFilterYear} minW={75}>

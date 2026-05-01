@@ -118,56 +118,64 @@ export default function TicketDetailsPage() {
     attachment:       { label: t('ticketDetails.types.attachment'),       dot:"#0369a1", bg:"#f0f9ff", border:"#bae6fd", text:"#0369a1", Icon: HiOutlinePaperClip },
   };
 
-  // Add this INSIDE your component, after the TYPE_META block
-const LEGACY_MSG_MAP = {
-  "Technicien a pris en charge le ticket": t("history.technicianTookOver", { ns:"common" }),
-  "Ticket assigné à un technicien": t("history.ticketAssigned", { ns:"common" }),
-  "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns:"common" }),
-  "Ticket fermé manuellement par le technicien.": t("history.ticketClosed", { ns:"common" }),
-  "Confirme resolu.": t("history.employeeConfirmed", { ns:"common" }),
-  "Probleme persiste.": t("history.employeeRejected", { ns:"common" }),
-};
-
-// For messages like "Statut changé en : En cours" → need a regex
 const translateLegacyMsg = (msg) => {
   if (!msg) return "";
 
-  // Check exact matches first
-  if (LEGACY_MSG_MAP[msg]) return LEGACY_MSG_MAP[msg];
+  // Short keys saved by backend
+  if (msg === "technician_took_over")   return t("history.technicianTookOver",    { ns: "common" });
+  if (msg === "ticket_assigned")        return t("history.ticketAssigned",         { ns: "common" });
+  if (msg === "confirmation_requested") return t("history.confirmationRequested",  { ns: "common" });
+  if (msg === "history.confirmationRequested") return t("history.confirmationRequested", { ns: "common" });
+  if (msg === "ticket_closed")          return t("history.ticketClosed",           { ns: "common" });
+  if (msg === "employee_confirmed")     return t("history.employeeConfirmed",      { ns: "common" });
+  if (msg === "employee_rejected")      return t("history.employeeRejected",       { ns: "common" });
+  if (msg === "employee_reopened")      return t("history.employeeReopened",       { ns: "common" });
+if (msg === "ticket_closed")          return t("history.ticketClosed",           { ns: "common" });
 
-  // "Statut changé en : Résolu" etc.
-  const statusMatch = msg.match(/^Statut changé en : (.+)$/);
-  if (statusMatch) {
-    const rawStatus = statusMatch[1];
-    // reverse lookup STATUS_FR to get the key
-    const STATUS_KEY = Object.entries({
-      open:"Ouvert", in_progress:"En cours", pending:"En attente",
-      pending_supplier:"Att. fournisseur", resolved:"Résolu",
-      closed:"Fermé", rejected:"Rejeté"
-    }).find(([k,v]) => v === rawStatus)?.[0] ?? rawStatus;
-    return t("history.statusChanged", { ns:"common", status: t(`common.statuses.${STATUS_KEY}`, { ns:"common" }) });
+if (msg.startsWith("ticket_closed_with_note:")) {
+  const note = msg.split(":").slice(1).join(":");
+  return t("history.ticketClosedWithNote", { ns: "common", note });
+}
+
+if (msg.startsWith("ticket_redirected:")) {
+  const parts = msg.split(":");
+  return t("history.ticketRedirected", { ns: "common", by: parts[1], reason: parts[2] });
+}
+  // "status_changed:in_progress" etc.
+  if (msg.startsWith("status_changed:")) {
+    const statusKey = msg.split(":")[1];
+    const translatedStatus = t(`status.${statusKey}`, { ns: "common", defaultValue: statusKey });
+    return t("history.statusChanged", { ns: "common", status: translatedStatus });
   }
 
-  // "[REDIRECTION] Redirigé par Karim Haddad : mauvais"
-  const redirMatch = msg.match(/^\[REDIRECTION\] Redirigé par (.+?) : (.+)$/);
-  if (redirMatch) {
-    return t("history.ticketRedirected", { ns:"common", by: redirMatch[1], reason: redirMatch[2] });
+  // "history.statusChanged:in_progress" (old bad data already in DB)
+  if (msg.startsWith("history.statusChanged:")) {
+    const statusKey = msg.split(":")[1];
+    const translatedStatus = t(`status.${statusKey}`, { ns: "common", defaultValue: statusKey });
+    return t("history.statusChanged", { ns: "common", status: translatedStatus });
   }
 
-  // "Ticket fermé. Note : ..."
-  const closedNoteMatch = msg.match(/^Ticket fermé\. Note : (.+)$/);
-  if (closedNoteMatch) {
-    return t("history.ticketClosedWithNote", { ns:"common", note: closedNoteMatch[1] });
+  // "employee_updated:Titre modifié | Description modifiée"
+  if (msg.startsWith("employee_updated:")) {
+    const detail = msg.split(":").slice(1).join(":");
+    return t("history.employeeUpdated", { ns: "common", detail });
   }
 
-  // "Modifié par l'employé : ..."
-  const updateMatch = msg.match(/^Modifié par l'employé : (.+)$/);
-  if (updateMatch) {
-    return t("history.employeeUpdated", { ns:"common", detail: updateMatch[1] });
-  }
+  // Legacy French sentences (old DB data)
+  const LEGACY = {
+    "Technicien a pris en charge le ticket":                      t("history.technicianTookOver",    { ns: "common" }),
+    "Ticket assigné à un technicien":                             t("history.ticketAssigned",         { ns: "common" }),
+    "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns: "common" }),
+    "Ticket fermé manuellement par le technicien.":               t("history.ticketClosed",           { ns: "common" }),
+    "Confirme resolu.":                                           t("history.employeeConfirmed",      { ns: "common" }),
+    "Probleme persiste.":                                         t("history.employeeRejected",       { ns: "common" }),
+  };
+  const norm = (s) => s.replace(/[''`]/g, "'").trim();
+  const legacy = Object.entries(LEGACY).find(([k]) => norm(k) === norm(msg));
+  if (legacy) return legacy[1];
 
-  // free text (typed by user like "HELLO", "cv !!")
-  return null; // null = render as HTML
+  // Free-text (user typed) — render as HTML
+  return null;
 };
 
 

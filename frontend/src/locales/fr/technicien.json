@@ -41,7 +41,8 @@
       "reset": "Réinitialiser",
       "countSuffix_one": "ticket",
       "countSuffix_other": "tickets",
-      "outOf": "sur {{total}} total"
+      "outOf": "sur {{total}} total",
+      "mois":"mois"
     },
     "table": {
       "id": "ID",
@@ -164,7 +165,16 @@
       "priority": "Priorité",
       "status": "Statut",
       "lastActivity": "Dernière activité"
-    }
+    },
+    "activity": {
+  "solution":  "Solution envoyée",
+  "assigned":  "Ticket assigné",
+  "confirm":   "Confirmation demandée",
+  "status":    "Statut mis à jour",
+  "info":      "Info demandée",
+  "reopen":    "Ticket rouvert",
+  "emp_reply": "Réponse employé"
+}
   },
 
   "ticketDetailTech": {

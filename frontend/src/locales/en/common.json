@@ -38,7 +38,7 @@
   },
 
   "date": {
-    "locale": "en-GB",
+    "locale": "en-US" ,
     "short": "MM/DD/YYYY",
     "long": "MMMM D, YYYY",
     "withTime": "MM/DD/YYYY at HH:mm",
@@ -82,5 +82,17 @@
 "refresh": {
   "label": "Refresh",
   "loading": "Refreshing…"
+},
+"history": {
+  "technicianTookOver": "Technician took charge of the ticket",
+  "statusChanged": "Status changed → {{status}}",
+  "confirmationRequested": "Resolution confirmation requested from employee",
+  "ticketClosed": "Ticket closed manually by technician",
+  "ticketClosedWithNote": "Ticket closed. Note: {{note}}",
+  "ticketRedirected": "Redirected by {{by}}: {{reason}}",
+  "employeeConfirmed": "Employee confirmed the resolution",
+  "employeeRejected": "Employee reported the problem persists",
+  "employeeUpdated": "Updated by employee: {{detail}}",
+  "ticketAssigned": "Ticket assigned to a technician"
 }
 }

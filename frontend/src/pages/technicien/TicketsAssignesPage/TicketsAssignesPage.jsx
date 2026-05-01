@@ -79,11 +79,12 @@ const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct"
 const getCreatedMonth = (t) => t.createdAt ? new Date(t.createdAt).getMonth() : null;
 
 // ── Helpers ───────────────────────────────────────
-const fmtDate = (str) => {
+// fmtDate is now a hook-friendly function — called inside the component with locale
+const makeFmtDate = (locale) => (str) => {
   if (!str) return "—";
   const d = new Date(str);
   if (isNaN(d)) return "—";
-  return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("fr-FR", { month: "short" })} ${d.getFullYear()}`;
+  return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString(locale, { month: "short" })} ${d.getFullYear()}`;
 };
 
 const isArchived = (t) => {
@@ -260,7 +261,41 @@ const Sep = () => <div style={{ width: 1, height: 20, background: "#e8e2d9", fle
 // ── Main ──────────────────────────────────────────
 export default function TicketsAssignesPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation("technicien");
+  const { t, i18n } = useTranslation(["technicien", "common"]);
+  const currentLang = i18n.language; // triggers re-render on language switch
+
+  // FIX: locale-aware date formatter
+  const dateLocale = t("date.locale", { ns: "common" });
+  const fmtDate = makeFmtDate(dateLocale);
+
+  // FIX: translate DB key → display label using common namespace
+  // Internal state still uses French keys (statusFR values) for filter/SLA logic — unchanged
+  // These helpers are ONLY for display in the table cells and filter dropdowns
+  const tStatus = (frLabel) => {
+    const dbKey = statusEN[frLabel];
+    if (!dbKey) return frLabel;
+    return t(`status.${dbKey}`, { ns: "common", defaultValue: frLabel });
+  };
+  const tPriority = (frLabel) => {
+    const map = { "Basse": "low", "Normale": "medium", "Haute": "high" };
+    const key = map[frLabel];
+    if (!key) return frLabel;
+    return t(`priority.${key}`, { ns: "common", defaultValue: frLabel });
+  };
+  const tCategory = (frLabel) => {
+    const map = {
+      "Hardware": "hardware", "Logiciels": "software", "Réseau": "network",
+      "Accès": "access", "Sécurité": "security", "Messagerie": "messagerie",
+    };
+    const key = map[frLabel];
+    if (!key) return frLabel;
+    return t(`category.${key}`, { ns: "common", defaultValue: frLabel });
+  };
+
+  // FIX: month names for filter dropdown — language-aware
+  const MONTHS_LOCALIZED = Array.from({ length: 12 }, (_, i) =>
+    new Date(2024, i, 1).toLocaleString(dateLocale, { month: "short" })
+  );
   const user = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
   const [ticketsData,     setTicketsData]     = useState([]);
@@ -525,20 +560,20 @@ export default function TicketsAssignesPage() {
           <Sep />
           <FilterSelect icon={HiOutlineTag} value={filterCategorie} onChange={setFilterCategorie} minW={120}>
             <option value="">{t("ticketsService.filters.categoryAll")}</option>
-            {enumCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            {enumCategories.map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
           </FilterSelect>
           <FilterSelect icon={HiOutlineExclamationCircle} value={filterStatut} onChange={setFilterStatut} minW={110}>
             <option value="">{t("ticketsService.filters.statusAll")}</option>
-            {enumStatuts.map(s => <option key={s} value={s}>{s}</option>)}
+            {enumStatuts.map(s => <option key={s} value={s}>{tStatus(s)}</option>)}
           </FilterSelect>
           <FilterSelect icon={HiOutlineFunnel} value={filterPriorite} onChange={setFilterPriorite} minW={110}>
             <option value="">{t("ticketsService.filters.priorityAll")}</option>
-            {enumPriorites.map(p => <option key={p} value={p}>{p}</option>)}
+            {enumPriorites.map(p => <option key={p} value={p}>{tPriority(p)}</option>)}
           </FilterSelect>
 
           <FilterSelect icon={HiOutlineCalendarDays} value={filterMonth} onChange={setFilterMonth} minW={90}>
-            <option value="">Mois</option>
-            {MONTHS_FR.map((m, i) => <option key={i} value={i}>{m}</option>)}
+            <option value="">{t("ticketsService.filters.mois")}</option>
+            {MONTHS_LOCALIZED.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </FilterSelect>
 
           {/* Filtre année — archives seulement */}
@@ -641,14 +676,14 @@ export default function TicketsAssignesPage() {
                         {/* Catégorie */}
                         <td style={{ padding: "9px 10px" }}>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categorieStyle[tk.categorie] ?? "bg-gray-100 text-gray-600"}`}>
-                            {tk.categorie ?? "N/A"}
+                            {tCategory(tk.categorie) ?? "N/A"}
                           </span>
                         </td>
 
                         {/* Priorité */}
                         <td style={{ padding: "9px 10px" }}>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${prioriteStyle[tk.priorite] ?? "bg-gray-100 text-gray-600"}`}>
-                            {tk.priorite ?? "N/A"}
+                            {tPriority(tk.priorite) ?? "N/A"}
                           </span>
                         </td>
 
@@ -660,7 +695,7 @@ export default function TicketsAssignesPage() {
                             className={`border-none rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer focus:outline-none ${statutStyle[statutCurrent] ?? "bg-gray-100 text-gray-600"}`}
                           >
                             {Object.keys(statusEN).map(s => (
-                              <option key={s} value={s}>{s}</option>
+                              <option key={s} value={s}>{tStatus(s)}</option>
                             ))}
                           </select>
                         </td>

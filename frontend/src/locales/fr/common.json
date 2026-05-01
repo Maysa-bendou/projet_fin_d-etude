@@ -82,5 +82,17 @@
   "refresh": {
   "label": "Actualiser",
   "loading": "Actualisation…"
+},
+"history": {
+  "statusChanged": "Statut changé → {{status}}",
+  "confirmationRequested": "Demande de confirmation envoyée à l'employé",
+  "ticketClosed": "Ticket fermé manuellement par le technicien",
+  "ticketClosedWithNote": "Ticket fermé. Note : {{note}}",
+  "ticketRedirected": "Redirigé par {{by}} : {{reason}}",
+  "employeeConfirmed": "Employé a confirmé la résolution",
+  "employeeRejected": "Employé a signalé que le problème persiste",
+"technicianTookOver": "Technicien a pris en charge le ticket",
+  "employeeUpdated": "Modifié par l'employé : {{detail}}",
+  "ticketAssigned": "Ticket assigné à un technicien"
 }
 }

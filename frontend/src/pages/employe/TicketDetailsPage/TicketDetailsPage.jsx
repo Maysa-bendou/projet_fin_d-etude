@@ -118,6 +118,59 @@ export default function TicketDetailsPage() {
     attachment:       { label: t('ticketDetails.types.attachment'),       dot:"#0369a1", bg:"#f0f9ff", border:"#bae6fd", text:"#0369a1", Icon: HiOutlinePaperClip },
   };
 
+  // Add this INSIDE your component, after the TYPE_META block
+const LEGACY_MSG_MAP = {
+  "Technicien a pris en charge le ticket": t("history.technicianTookOver", { ns:"common" }),
+  "Ticket assigné à un technicien": t("history.ticketAssigned", { ns:"common" }),
+  "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns:"common" }),
+  "Ticket fermé manuellement par le technicien.": t("history.ticketClosed", { ns:"common" }),
+  "Confirme resolu.": t("history.employeeConfirmed", { ns:"common" }),
+  "Probleme persiste.": t("history.employeeRejected", { ns:"common" }),
+};
+
+// For messages like "Statut changé en : En cours" → need a regex
+const translateLegacyMsg = (msg) => {
+  if (!msg) return "";
+
+  // Check exact matches first
+  if (LEGACY_MSG_MAP[msg]) return LEGACY_MSG_MAP[msg];
+
+  // "Statut changé en : Résolu" etc.
+  const statusMatch = msg.match(/^Statut changé en : (.+)$/);
+  if (statusMatch) {
+    const rawStatus = statusMatch[1];
+    // reverse lookup STATUS_FR to get the key
+    const STATUS_KEY = Object.entries({
+      open:"Ouvert", in_progress:"En cours", pending:"En attente",
+      pending_supplier:"Att. fournisseur", resolved:"Résolu",
+      closed:"Fermé", rejected:"Rejeté"
+    }).find(([k,v]) => v === rawStatus)?.[0] ?? rawStatus;
+    return t("history.statusChanged", { ns:"common", status: t(`common.statuses.${STATUS_KEY}`, { ns:"common" }) });
+  }
+
+  // "[REDIRECTION] Redirigé par Karim Haddad : mauvais"
+  const redirMatch = msg.match(/^\[REDIRECTION\] Redirigé par (.+?) : (.+)$/);
+  if (redirMatch) {
+    return t("history.ticketRedirected", { ns:"common", by: redirMatch[1], reason: redirMatch[2] });
+  }
+
+  // "Ticket fermé. Note : ..."
+  const closedNoteMatch = msg.match(/^Ticket fermé\. Note : (.+)$/);
+  if (closedNoteMatch) {
+    return t("history.ticketClosedWithNote", { ns:"common", note: closedNoteMatch[1] });
+  }
+
+  // "Modifié par l'employé : ..."
+  const updateMatch = msg.match(/^Modifié par l'employé : (.+)$/);
+  if (updateMatch) {
+    return t("history.employeeUpdated", { ns:"common", detail: updateMatch[1] });
+  }
+
+  // free text (typed by user like "HELLO", "cv !!")
+  return null; // null = render as HTML
+};
+
+
   const [ticket, setTicket]             = useState(null);
   const [allIds, setAllIds]             = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -511,7 +564,13 @@ export default function TicketDetailsPage() {
                       </div>
                       <div style={{ marginTop:7, padding:"7px 9px", borderRadius:8, background:meta.bg, border:`1px solid ${meta.border}`, width:"calc(100% - 14px)", fontSize:11, textAlign:"center" }}>
                         <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".05em", color:meta.text, marginBottom:2 }}>{meta.label}</div>
-                        <div style={{ fontSize:11, lineHeight:1.4, color:meta.text, opacity:.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.message) }} />
+<div style={{ fontSize:11, lineHeight:1.4, color:meta.text, opacity:.9 }}>
+  {(() => {
+    const translated = translateLegacyMsg(c.message ?? "");
+    if (translated !== null) return translated;
+    return <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.message) }} />;
+  })()}
+</div>
                         {c.files?.length > 0 && (
                           <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:3, marginTop:4 }}>
                             {c.files.map((f, fi) => (

@@ -222,7 +222,7 @@ const updateTicketStatus = async (req, res) => {
         data: {
           ticket_id: id,
           user_id: parseInt(technicianId),
-          comment: `Statut changé en : ${STATUS_FR[status] ?? status}`,
+          comment: `history.statusChanged:${status}`,
           comment_type: "status",
           created_at: now,
         },
@@ -327,7 +327,7 @@ const requestConfirmation = async (req, res) => {
       data: {
         ticket_id: id,
         user_id: parseInt(technicianId),
-        comment: "Demande de confirmation de résolution envoyée à l'employé.",
+        comment: "history.confirmationRequested",
         comment_type: "confirm",
         created_at: new Date(),
       },
@@ -371,9 +371,9 @@ const closeTicketManually = async (req, res) => {
       data: {
         ticket_id: id,
         user_id: parseInt(technicianId),
-        comment: closingNote
-          ? `Ticket fermé. Note : ${closingNote}`
-          : "Ticket fermé manuellement par le technicien.",
+comment: closingNote
+  ? `history.ticketClosedWithNote:${closingNote}`
+  : "history.ticketClosed",
         comment_type: "comment",
         created_at: now,
       },
@@ -467,7 +467,7 @@ const redirectTicket = async (req, res) => {
       data: {
         ticket_id:    id,
         user_id:      assignedById ? parseInt(assignedById) : null,
-        comment:      `[REDIRECTION] Redirigé par ${redirectedByName} : ${note}`,
+        comment: `history.ticketRedirected:${redirectedByName}:${note}`,
         comment_type: "redirect",
         created_at:   new Date(),
       },

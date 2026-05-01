@@ -168,14 +168,21 @@ function useOnClickOutside(ref, handler) {
 export default function TopNavbar({ pageTitle = "" }) {
   const { t, i18n } = useTranslation("topnavbar");
   const navigate    = useNavigate();
-  const user        = JSON.parse(localStorage.getItem("user") || "null");
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "null"));
+
+   useEffect(() => {
+   const stored = JSON.parse(localStorage.getItem("user") || "null");
+  if (stored) setUser(stored);}, []);
+
+
+ const initials = user ? `${user?.name?.[0] || "?"}${user?.surname?.[0] || ""}`.toUpperCase() : "?";
   const rolePath    = ROLE_PATH[user?.role] || "";
 
   // Role label is now resolved via i18n so it reacts to language changes
   const roleI18nKey = ROLE_I18N_KEY[user?.role];
   const roleLabel   = roleI18nKey ? t(roleI18nKey) : (user?.role || "");
 
-  const initials    = `${user?.name?.[0] || "?"}${user?.surname?.[0] || ""}`.toUpperCase();
+  
 
   const [notifOpen,   setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -384,7 +391,7 @@ export default function TopNavbar({ pageTitle = "" }) {
                 {/* roleLabel now uses t() so it updates on language switch */}
                 <span className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{roleLabel}</span>
               </div>
-              <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-lg shadow-blue-100">
+              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-lg shadow-blue-100">
                 {initials}
               </div>
               <ChevronDown size={14} className={`text-slate-300 transition-transform ${profileOpen ? "rotate-180" : ""}`} />

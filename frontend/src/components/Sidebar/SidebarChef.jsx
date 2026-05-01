@@ -58,7 +58,7 @@ export default function SidebarChef() {
       relative flex flex-col h-[96vh] my-[2vh] ml-[2vh]
       transition-all duration-500 ease-in-out rounded-[2.5rem] py-6 shrink-0 z-50
       bg-white text-gray-800 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)]
-      ${isOpen ? "w-64" : "w-20"}
+      ${isOpen ? "w-64" : "w-17"}
     `}>
       
       {/* ── LOGO ── */}
@@ -76,58 +76,47 @@ export default function SidebarChef() {
 
       {/* ── MENU CHEF ── */}
       <div className="flex flex-col gap-6 w-full flex-1 items-center px-2">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+       {menuItems.map((item) => {
+  const Icon = item.icon;
+  const isActive = location.pathname === item.path;
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`
-                group relative flex items-center transition-all duration-300 rounded-2xl
-                ${isOpen ? "w-full px-5 py-3.5 gap-4" : "w-16 h-16 justify-center"}
-                ${isActive
-                  ? "bg-[#fff5f5] text-[#ff0113]" 
-                  : "text-gray-400 hover:bg-gray-50"
-                }
-              `}
-            >
-              {/* Tooltip (Menu réduit) */}
-              {!isOpen && (
-                <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 z-[70] origin-left">
-                   <div className="bg-[#fff5f5] text-[#ff0113] text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm border border-red-50 whitespace-nowrap">
-                     {item.label}
-                   </div>
-                </div>
-              )}
-
-              {/* Indicateur vertical à gauche */}
-              {isActive && isOpen && (
-                <div className="absolute left-0 top-1/4 bottom-1/4 w-1.5 bg-[#ff0113] rounded-r-full" />
-              )}
-              
-              {/* ICÔNE + BADGE DE NOTIFICATION */}
-              <div className="relative flex items-center justify-center shrink-0">
-                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                
-                {item.hasNotify && (
-                  <span className={`
-                    absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#ff0113]
-                    border-2 border-white
-                    ${isActive ? "border-[#fff5f5]" : "border-white"}
-                  `} />
-                )}
-              </div>
-              
-              {isOpen && (
-                <span className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-500"}`}>
-                  {item.label}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+  return (
+    <Link
+      key={item.path}
+      to={item.path}
+      className={`
+        group relative flex items-center transition-all duration-300 rounded-2xl
+        ${isOpen ? "w-full px-5 py-3.5 gap-4" : "w-16 h-16 justify-center"}
+        ${isActive
+          ? "bg-[#fff5f5] text-[#ff0113]" 
+          : "text-gray-400 hover:bg-gray-50"
+        }
+      `}
+    >
+      {!isOpen && (
+        <div className="absolute left-16 scale-0 group-hover:scale-100 transition-all duration-200 z-[70] origin-left">
+           <div className="bg-[#fff5f5] text-[#ff0113] text-[12px] font-bold px-3 py-2 rounded-lg shadow-sm border border-red-50 whitespace-nowrap">
+             {item.label}
+           </div>
+        </div>
+      )}
+      {isActive && isOpen && (
+        <div className="absolute left-0 top-1/4 bottom-1/4 w-1.5 bg-[#ff0113] rounded-r-full" />
+      )}
+      <div className="relative flex items-center justify-center shrink-0">
+        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+        {item.hasNotify && (
+          <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#ff0113] border-2 border-white ${isActive ? "border-[#fff5f5]" : "border-white"}`} />
+        )}
+      </div>
+      {isOpen && (
+        <span className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-500"}`}>
+          {item.label}
+        </span>
+      )}
+    </Link>
+  );
+})}
       </div>
 
       {/* ── DÉCONNEXION ── */}

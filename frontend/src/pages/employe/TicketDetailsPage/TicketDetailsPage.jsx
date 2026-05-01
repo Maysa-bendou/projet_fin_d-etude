@@ -257,7 +257,7 @@ export default function TicketDetailsPage() {
 
   const card       = { background:"#fff", borderRadius:12, border:"1px solid #e2ddd7" };
   const sLabel     = { fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", color:"#94a3b8", marginBottom:10, display:"block" };
-  const btnPrimary = { background:"#534ab7", border:"none", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:5 };
+  const btnPrimary = { background:"#1e3a8a", border:"none", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:5 };
   const btnOutline = { background:"#fff", border:"1px solid #d9d4cc", borderRadius:8, padding:"7px 12px", fontSize:12, fontWeight:500, color:"#1e293b", cursor:"pointer", display:"flex", alignItems:"center", gap:5 };
   const inputStyle = { width:"100%", padding:"8px 12px", border:"1px solid #d9d4cc", borderRadius:8, fontSize:13, color:"#1e293b", outline:"none", fontFamily:"inherit", background:"#fff" };
 
@@ -326,38 +326,7 @@ export default function TicketDetailsPage() {
       </div>
 
       {/* ── BODY : 2-column grid ── */}
-      <div style={{ padding:"20px 28px", maxWidth:"100%", margin:"0 auto", display:"grid", gridTemplateColumns:"270px 1fr", gap:18, alignItems:"start" }}>
-        {/* ── COLONNE GAUCHE : PROFIL EMPLOYÉ ── */}
-        <div style={{ ...card, padding:"24px 18px", display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
-          {/* Avatar */}
-          <div style={{ width:64, height:64, borderRadius:"50%", background:"linear-gradient(135deg,#f9a8d4,#ec4899)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:22, color:"#fff" }}>
-            {empInitials}
-          </div>
-          <div style={{ fontWeight:700, fontSize:15, color:"#0f172a", textAlign:"center" }}>{empName}</div>
-          <span style={{ fontSize:11, fontWeight:600, padding:"2px 14px", borderRadius:99, background:"#fce7f3", color:"#be185d", border:"1px solid #fbcfe8" }}>
-            EMPLOYEE
-          </span>
-
-          <div style={{ width:"100%", borderTop:"1px solid #f1ede8", marginTop:4 }} />
-
-          {/* Méta employé — static labels unchanged */}
-          {[
-{ icon: HiOutlinePaperAirplane,     label: t('ticketDetails.employeeInfo.email'),   value: emp.email      ?? currentUser?.email      ?? "—" },
-{ icon: HiOutlineWrenchScrewdriver, label: t('ticketDetails.employeeInfo.service'), value: emp.department ?? currentUser?.department ?? "—" },
-{ icon: HiOutlineUser,              label: t('ticketDetails.employeeInfo.poste'),   value: emp.poste      ?? currentUser?.poste      ?? "—" },
-{ icon: HiOutlineInformationCircle, label: t('ticketDetails.employeeInfo.contact'), value: emp.phone      ?? currentUser?.phone      ?? "—" },
-{ icon: HiOutlineCalendarDays,      label: t('ticketDetails.employeeInfo.office'),  value: emp.office     ?? currentUser?.office     ?? "—" },
-          ].map(({ icon: Ic, label, value }) => (
-            <div key={label} style={{ width:"100%", display:"flex", alignItems:"flex-start", gap:10, padding:"3px 0" }}>
-              <Ic size={13} color="#94a3b8" style={{ marginTop:2, flexShrink:0 }} />
-              <div>
-                <div style={{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".06em", color:"#94a3b8" }}>{label}</div>
-                <div style={{ fontSize:12, fontWeight:600, color:"#1e293b", marginTop:1, wordBreak:"break-all" }}>{value}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
+      <div style={{ padding:"20px 28px", maxWidth:"100%", margin:"0 auto" }}>
         {/* ── COLONNE DROITE ── */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
 
@@ -483,11 +452,7 @@ export default function TicketDetailsPage() {
                   </div>
                 )}
               </div>
-              {!isClosed && (
-                <button style={{ background:"#fff", border:"1.5px solid #f97316", borderRadius:9, padding:"8px 16px", fontSize:12, fontWeight:700, color:"#f97316", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-                  <HiOutlineArrowPath size={13}/> {t('ticketDetails.changeTech') || "Change expert"}
-                </button>
-              )}
+        
             </div>
           </div>
 
@@ -595,7 +560,7 @@ export default function TicketDetailsPage() {
                 </div>
               )}
 
-              {!isClosed ? (
+               {!isClosed ? (
                 <div style={{ border:"1px solid #d9d4cc", borderRadius:10, overflow:"hidden" }}>
                   <textarea rows={3} value={replyMsg} onChange={e => setReplyMsg(e.target.value)}
                     placeholder={t('ticketDetails.conversation.placeholder')}

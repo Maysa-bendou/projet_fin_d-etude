@@ -115,6 +115,8 @@
   },
 
   "departments": {
+    "title": "Opération réussie", 
+    "done":  "Terminer"  ,  
     "pageTitle":         "Gestion Des Départements",
     "pageSubtitle":      "Structure organisationnelle de l'entreprise",
     "addButton":         "Ajouter un département",
@@ -146,10 +148,18 @@
       "notConnected":       "Non connecté. Veuillez vous reconnecter.",
       "nameRequired":       "Le nom est obligatoire !",
       "notConnectedDelete": "Non connecté."
+      
     }
   },
 
   "users": {
+    "allRoles":      "Tous les rôles",
+"allStatuses":   "Tous les statuts",
+"statusUpdated": "Statut mis à jour",
+    "role": "Rôle",   
+    "department":        "Département", 
+    "service":           "Service",     
+    "unexpectedError":     "Une erreur inattendue s'est produite." ,
     "pageTitle":         "Gestion Des Utilisateurs",
     "pageSubtitle":      "Administration de l'annuaire et des rôles",
     "addButton":         "Ajouter un utilisateur",
@@ -179,6 +189,8 @@
       "emptySubtitle": "Ajustez vos filtres ou ajoutez un nouveau membre."
     },
     "modal": {
+          "role": "Rôle",   
+    "department":        "Département", 
       "titleAdd":        "Ajouter un utilisateur",
       "titleEdit":       "Détails de l'utilisateur",
       "surname":         "Prénom",

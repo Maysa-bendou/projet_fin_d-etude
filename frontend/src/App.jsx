@@ -36,8 +36,6 @@ import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPag
 
 /* ADMIN */
 import UsersPage from "./pages/admin/GestionUtilisateurs/UsersPage";
-import AccueilAdmin from "./pages/admin/AccueilAdmin/AccueilAdmin";
-import TicketsAdmin from "./pages/admin/Tickets/Tickets";
 import departement from "./pages/admin/Departements/Departements";
 import ParametresAdmin from "./pages/admin/Parametres/Parametres";
 import Departements from "./pages/admin/Departements/Departements";
@@ -126,7 +124,6 @@ export default function App() {
         }>
         <Route index element={<Navigate to="utilisateurs" replace />} />
           <Route path="utilisateurs" element={<UsersPage />} />
-          <Route path="tickets" element={<TicketsAdmin />} />
 <Route path="departements" element={<Departements />} />
           <Route path="parametres" element={<ParametresAdmin />} />
           <Route path="profile" element={<ProfilePage />} /> 

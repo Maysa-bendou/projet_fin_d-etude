@@ -1,7 +1,12 @@
 import { useTranslation } from "react-i18next";
 
 function DepartmentsTable({ departments = [], onRowClick }) {
-  const { t } = useTranslation('admin');
+  const { t }       = useTranslation('admin');
+  const { t: tc }   = useTranslation('common');
+
+  // Date locale comes from common.json → "date.locale"
+  // EN: "en-US" / FR: "fr-FR" / AR: "ar-DZ"
+  const dateLocale = tc("date.locale", { defaultValue: "fr-FR" });
 
   if (!departments.length) {
     return (
@@ -68,9 +73,9 @@ function DepartmentsTable({ departments = [], onRowClick }) {
                   </span>
                 </td>
 
-                {/* Date */}
+                {/* Date — locale from common.json */}
                 <td style={{ padding: '14px 20px', fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>
-                  {new Date(d.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  {new Date(d.created_at).toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
               </tr>
             ))}

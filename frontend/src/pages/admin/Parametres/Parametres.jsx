@@ -30,20 +30,20 @@ const SLA_PRIORITY_CONFIG = {
 };
 
 const ROLE_CONFIG = {
-    employee:     {bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
-  technician:   {  bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  employee:     { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
+  technician:   { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
   chef_service: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
   manager:      { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
   admin:        { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
 };
 
 const CATEGORY_ICONS = {
-  hardware:   <MdBuild   size={13} />,
+  hardware:   <MdBuild    size={13} />,
   software:   <MdComputer size={13} />,
-  network:    <MdWifi    size={13} />,
-  access:     <MdLock    size={13} />,
-  security:   <MdShield  size={13} />,
-  messagerie: <MdEmail   size={13} />,
+  network:    <MdWifi     size={13} />,
+  access:     <MdLock     size={13} />,
+  security:   <MdShield   size={13} />,
+  messagerie: <MdEmail    size={13} />,
 };
 
 const ROLE_ICONS = {
@@ -65,10 +65,10 @@ const STATUS_ICONS = {
 };
 
 const PRIORITY_ICONS = {
-  critical: <MdError   size={13} />,
-  high:     <MdWarning size={13} />,
-  medium:   <HiOutlineMinus size={13} />,
-  low:      <MdInfo    size={13} />,
+  critical: <MdError         size={13} />,
+  high:     <MdWarning       size={13} />,
+  medium:   <HiOutlineMinus  size={13} />,
+  low:      <MdInfo          size={13} />,
 };
 
 const IMPACT_ICONS = {
@@ -78,8 +78,8 @@ const IMPACT_ICONS = {
 };
 
 const URGENCY_ICONS = {
-  high:   <MdError           size={13} />,
-  medium: <HiOutlineArrowTrendingUp size={13} />,
+  high:   <MdError                   size={13} />,
+  medium: <HiOutlineArrowTrendingUp  size={13} />,
   low:    <HiOutlineArrowTrendingDown size={13} />,
 };
 
@@ -147,7 +147,9 @@ const Divider = () => <div style={{ height: 1, background: "#f1f5f9" }} />;
 // ── Main ───────────────────────────────────────────────────────────────────
 
 export default function ParametresAdmin() {
-  const { t } = useTranslation("admin");
+  // Load BOTH namespaces: "admin" for page-level strings, "common" for shared enums
+  const { t }  = useTranslation("admin");
+  const { t: tc } = useTranslation("common");
 
   const [stats,    setStats]    = useState({});
   const [sla,      setSla]      = useState([]);
@@ -208,8 +210,27 @@ export default function ParametresAdmin() {
     roles:      config?.enums?.roles      || ["employee", "technician", "chef_service", "manager", "admin"],
   };
 
+  // ── Translated enum label helpers (using common.json) ──────────────────
+  // Keys match your exact common.json structure.
+  // tc() reads from the "common" namespace so all pages stay in sync.
+
+  // priority.low / medium / high / critical
+  const tPriority    = (v) => tc(`priority.${v}`,  { defaultValue: v });
+  // status.open / in_progress / pending / pending_supplier / resolved / closed / rejected
+  const tStatus      = (v) => tc(`status.${v}`,    { defaultValue: v });
+  // category.hardware / software / network / access / security / messagerie
+  const tCategory    = (v) => tc(`category.${v}`,  { defaultValue: v });
+  // impact.low / medium / high — value IS the human description in common.json
+  const tImpactLabel = (v) => v.charAt(0).toUpperCase() + v.slice(1);
+  const tImpactDesc  = (v) => tc(`impact.${v}`,    { defaultValue: v });
+  // urgency.low / medium / high — same pattern
+  const tUrgencyLabel= (v) => v.charAt(0).toUpperCase() + v.slice(1);
+  const tUrgencyDesc = (v) => tc(`urgency.${v}`,   { defaultValue: v });
+  // Roles are NOT in common.json → kept in admin namespace
+  const tRole        = (v) => t(`adminParams.enums.roles.${v}`, { defaultValue: v });
+
   if (loading) return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh",  }}>
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
       <div style={{ width: 36, height: 36, border: "3px solid #e2e8f0", borderTopColor: "#b91c1c", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
@@ -217,27 +238,25 @@ export default function ParametresAdmin() {
 
   return (
     <div style={{ minHeight: "100vh", fontFamily: "sans-serif" }}>
-      
 
-        {/* HEADER */}
-       <div style={{ borderBottom: "1px solid #e8e2d9", padding: "14px 28px", marginBottom: 0 }}>
-  <h1 className="text-2xl font-bold text-slate-900">{t("adminParams.title")}</h1>
-  <p style={{ fontSize: 14, color: "#6b7280", margin: 0, fontWeight: 500 }}>{t("adminParams.subtitle")}</p>
-</div>
+      {/* HEADER */}
+      <div style={{ borderBottom: "1px solid #e8e2d9", padding: "14px 28px", marginBottom: 0 }}>
+        <h1 className="text-2xl font-bold text-slate-900">{t("adminParams.title")}</h1>
+        <p style={{ fontSize: 14, color: "#6b7280", margin: 0, fontWeight: 500 }}>{t("adminParams.subtitle")}</p>
+      </div>
 
-       
-
-     <div style={{ padding: "20px 28px" }}>
+      <div style={{ padding: "20px 28px" }}>
 
         {error && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 16px", color: "#dc2626", fontSize: 13, marginBottom: 20 }}>
             {error}
           </div>
         )}
+
         {/* KPI CARDS */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
           {[
-            { icon: <MdPeople size={24} color="#2563eb" />,     bg: "#eff6ff", label: t("adminAccueil.stats.users"),   value: stats.totalUsers   },
+            { icon: <MdPeople    size={24} color="#2563eb" />, bg: "#eff6ff", label: t("adminAccueil.stats.users"),   value: stats.totalUsers   },
             { icon: <MdAssignment size={24} color="#b91c1c" />, bg: "#fef2f2", label: t("adminAccueil.stats.tickets"), value: stats.totalTickets },
           ].map(({ icon, bg, label, value }) => (
             <div key={label} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "20px 24px", display: "flex", alignItems: "center", gap: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
@@ -253,9 +272,9 @@ export default function ParametresAdmin() {
         {/* SLA */}
         <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", marginBottom: 24 }}>
           <div style={{ padding: "16px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
-  <MdTimer size={17} color="#b91c1c" />
-</div>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <MdTimer size={17} color="#b91c1c" />
+            </div>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: 0 }}>{t("adminParams.sla.title")}</h2>
           </div>
           <div style={{ padding: "20px 24px" }}>
@@ -269,7 +288,7 @@ export default function ParametresAdmin() {
                       t("adminParams.sla.colDeadline"),
                       t("adminParams.sla.colStatus"),
                     ].map((col, i) => (
-                      <th key={i}  style={{ padding: "9px 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", textAlign: "left" }}>{col}</th>
+                      <th key={i} style={{ padding: "9px 10px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", whiteSpace: "nowrap", textAlign: "left" }}>{col}</th>
                     ))}
                   </tr>
                 </thead>
@@ -277,10 +296,11 @@ export default function ParametresAdmin() {
                   {slaOrdered.map((s, idx) => (
                     <tr key={s.id} style={{ borderBottom: idx < slaOrdered.length - 1 ? "1px solid #f8f8f8" : "none" }}>
                       <td style={{ padding: "12px 20px" }}>
+                        {/* Priority label comes from common.json — shared across pages */}
                         <Badge
                           cfg={SLA_PRIORITY_CONFIG}
                           value={s.priority}
-                          label={t(`adminParams.enums.priorities.${s.priority}`)}
+                          label={tPriority(s.priority)}
                           icon={PRIORITY_ICONS[s.priority]}
                         />
                       </td>
@@ -329,11 +349,12 @@ export default function ParametresAdmin() {
           </div>
           <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 0 }}>
 
+            {/* PRIORITIES — from common.json */}
             <div style={{ paddingBottom: 20 }}>
               <SectionGroup title={t("adminParams.systemValues.priorities")}>
                 {DB.priorities.map(v => (
                   <Badge key={v} cfg={PRIORITY_CONFIG} value={v}
-                    label={t(`adminParams.enums.priorities.${v}`)}
+                    label={tPriority(v)}
                     icon={PRIORITY_ICONS[v]}
                   />
                 ))}
@@ -342,11 +363,12 @@ export default function ParametresAdmin() {
 
             <Divider />
 
+            {/* STATUSES — from common.json */}
             <div style={{ paddingTop: 20, paddingBottom: 20 }}>
               <SectionGroup title={t("adminParams.systemValues.statuses")}>
                 {DB.statuses.map(v => (
                   <Badge key={v} cfg={STATUS_CONFIG} value={v}
-                    label={t(`adminParams.enums.statuses.${v}`)}
+                    label={tStatus(v)}
                     icon={STATUS_ICONS[v]}
                   />
                 ))}
@@ -355,11 +377,12 @@ export default function ParametresAdmin() {
 
             <Divider />
 
+            {/* CATEGORIES — from common.json */}
             <div style={{ paddingTop: 20, paddingBottom: 20 }}>
               <SectionGroup title={t("adminParams.systemValues.categories")}>
                 {DB.categories.map(v => (
                   <Badge key={v} cfg={CATEGORY_CONFIG} value={v}
-                    label={t(`adminParams.enums.categories.${v}`)}
+                    label={tCategory(v)}
                     icon={CATEGORY_ICONS[v]}
                   />
                 ))}
@@ -368,12 +391,13 @@ export default function ParametresAdmin() {
 
             <Divider />
 
+            {/* IMPACTS — label = capitalized key, desc = translated human string from common.json */}
             <div style={{ paddingTop: 20, paddingBottom: 20 }}>
               <SectionGroup title={t("adminParams.systemValues.impacts")}>
                 {DB.impacts.map(v => (
                   <BadgeWithDesc key={v} cfg={IMPACT_CONFIG} value={v}
-                    label={t(`adminParams.enums.impacts.${v}`)}
-                    desc={t(`adminParams.enums.impactDesc.${v}`)}
+                    label={tImpactLabel(v)}
+                    desc={tImpactDesc(v)}
                     icon={IMPACT_ICONS[v]}
                   />
                 ))}
@@ -382,12 +406,13 @@ export default function ParametresAdmin() {
 
             <Divider />
 
+            {/* URGENCIES — label = capitalized key, desc = translated human string from common.json */}
             <div style={{ paddingTop: 20, paddingBottom: 20 }}>
               <SectionGroup title={t("adminParams.systemValues.urgencies")}>
                 {DB.urgencies.map(v => (
                   <BadgeWithDesc key={v} cfg={URGENCY_CONFIG} value={v}
-                    label={t(`adminParams.enums.urgencies.${v}`)}
-                    desc={t(`adminParams.enums.urgencyDesc.${v}`)}
+                    label={tUrgencyLabel(v)}
+                    desc={tUrgencyDesc(v)}
                     icon={URGENCY_ICONS[v]}
                   />
                 ))}
@@ -396,11 +421,12 @@ export default function ParametresAdmin() {
 
             <Divider />
 
+            {/* ROLES — from common.json */}
             <div style={{ paddingTop: 20 }}>
               <SectionGroup title={t("adminParams.systemValues.roles")}>
                 {DB.roles.map(v => (
                   <Badge key={v} cfg={ROLE_CONFIG} value={v}
-                    label={t(`adminParams.enums.roles.${v}`)}
+                    label={tRole(v)}
                     icon={ROLE_ICONS[v]}
                   />
                 ))}
@@ -409,8 +435,7 @@ export default function ParametresAdmin() {
 
           </div>
         </div>
-    </div>
       </div>
-   
+    </div>
   );
 }

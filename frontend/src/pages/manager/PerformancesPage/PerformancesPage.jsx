@@ -14,7 +14,8 @@ import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
 import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
 import { MdCalendarMonth, MdOutlineInfo } from 'react-icons/md';
-import {  MdCalendarViewMonth } from 'react-icons/md';
+import { MdCalendarViewMonth } from 'react-icons/md';
+
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
   const map = {
@@ -84,8 +85,46 @@ export default function PerformancesPage() {
     }));
   }, [i18n.language]);
 
-  // ── Month order for sorting ────────────────────────────────────────────────
-  const MONTH_ORDER = useMemo(() => MONTHS.map(m => m.label), [MONTHS]);
+
+  // ── Translation helpers using common.json keys ────────────────────────────
+  // These translate backend raw keys (e.g. "open", "high", "hardware") to the
+  // current language label. Falls back to the original name if no key found.
+  const tStatus   = useCallback((key) => t(`common:status.${key?.toLowerCase()}`,   { defaultValue: key }), [t]);
+  const tPriority = useCallback((key) => t(`common:priority.${key?.toLowerCase()}`, { defaultValue: key }), [t]);
+  const tCategory = useCallback((key) => t(`common:category.${key?.toLowerCase()}`, { defaultValue: key }), [t]);
+  const tUrgency  = useCallback((key) => t(`common:urgency.${key?.toLowerCase()}`,  { defaultValue: key }), [t]);
+  const tImpact   = useCallback((key) => t(`common:impact.${key?.toLowerCase()}`,   { defaultValue: key }), [t]);
+
+  // ── Resolve any month string (in any language) → 0-based index ───────────
+  // We build a lookup table of ALL 12 months in BOTH supported locales so
+  // switching language never breaks the match.
+  const monthStringToIndex = useMemo(() => {
+    const map = {};
+    ['fr-FR', 'en-US'].forEach(locale => {
+      for (let i = 0; i < 12; i++) {
+        const label = new Date(2000, i, 1).toLocaleString(locale, { month: 'long' }).toLowerCase();
+        map[label] = i; // 0-based
+      }
+    });
+    return map;
+  }, []);
+
+  // Convert a raw month label (from backend, any locale) → current-locale label
+  const tMonth = useCallback((rawLabel) => {
+    if (!rawLabel) return rawLabel;
+    const idx = monthStringToIndex[rawLabel.toLowerCase()];
+    if (idx !== undefined) return MONTHS[idx]?.label ?? rawLabel;
+    return rawLabel;
+  }, [monthStringToIndex, MONTHS]);
+
+  // ── Translate stat arrays (add a `label` field for display) ───────────────
+  const translateStatArray = useCallback((arr, translateFn) => {
+    if (!arr) return [];
+    return arr.map((item) => ({
+      ...item,
+      label: translateFn(item.name),
+    }));
+  }, []);
 
   const fetchStats = useCallback(async (year, month) => {
     setLoading(true);
@@ -121,8 +160,21 @@ export default function PerformancesPage() {
   const sortedMonthlyStats = useMemo(() => {
     if (!stats?.monthlyStats) return [];
     if (selectedMonth) return stats.monthlyStats;
-    return [...stats.monthlyStats].sort((a, b) => MONTH_ORDER.indexOf(a.month) - MONTH_ORDER.indexOf(b.month));
-  }, [stats, selectedMonth, MONTH_ORDER]);
+    // Sort using the language-agnostic monthStringToIndex map
+    return [...stats.monthlyStats].sort((a, b) => {
+      const idxA = monthStringToIndex[a.month?.toLowerCase()] ?? 99;
+      const idxB = monthStringToIndex[b.month?.toLowerCase()] ?? 99;
+      return idxA - idxB;
+    });
+  }, [stats, selectedMonth, monthStringToIndex]);
+
+  // ── Translated monthly stats: re-map `month` field to current locale ──────
+  const translatedMonthlyStats = useMemo(() => {
+    return sortedMonthlyStats.map((item) => ({
+      ...item,
+      month: tMonth(item.month),
+    }));
+  }, [sortedMonthlyStats, tMonth]);
 
   const avgMonthly = useMemo(() => {
     if (!sortedMonthlyStats.length) return 0;
@@ -147,6 +199,18 @@ export default function PerformancesPage() {
     slaIn:         { motCle: t("performances.kpi.slaIn"),        desc: '' },
     slaOut:        { motCle: t("performances.kpi.slaOut"),       desc: '' },
   }), [t]);
+
+  // ── Translated chart data ─────────────────────────────────────────────────
+  // We create display-ready arrays with a `label` field for XAxis & legends.
+  // The original `name` (raw key) is preserved for color lookup.
+  const translatedStatusStats   = useMemo(() => translateStatArray(stats?.statusStats,   tStatus),   [stats, tStatus, translateStatArray]);
+  const translatedPriorityStats = useMemo(() => translateStatArray(stats?.priorityStats, tPriority), [stats, tPriority, translateStatArray]);
+  const translatedCategoryStats = useMemo(() => translateStatArray(stats?.categoryStats, tCategory), [stats, tCategory, translateStatArray]);
+  // typeStats names may be 'incident', 'demande', 'problem' etc. — translate via t() with common namespace fallback
+  const translatedTypeStats     = useMemo(() => translateStatArray(stats?.typeStats, (name) => t('common:type.' + name?.toLowerCase(), { defaultValue: name })), [stats, t, translateStatArray]);
+  // For urgency / impact — translate if your backend sends those arrays:
+  const translatedUrgencyStats  = useMemo(() => translateStatArray(stats?.urgencyStats,  tUrgency),  [stats, tUrgency, translateStatArray]);
+  const translatedImpactStats   = useMemo(() => translateStatArray(stats?.impactStats,   tImpact),   [stats, tImpact, translateStatArray]);
 
   // ── Export PDF ────────────────────────────────────────────────────────────
   const exportPDF = () => {
@@ -180,14 +244,15 @@ export default function PerformancesPage() {
         t("performances.techDetail.rejected"),
         t("performances.techDetail.resolutionRate"),
       ]],
-      body: stats.techPerformance.map(t => [t.name, t.totalAssigned, t.resolu, t.ferme, t.rejete, `${t.resolutionRate}%`]),
+      body: stats.techPerformance.map(tech => [tech.name, tech.totalAssigned, tech.resolu, tech.ferme, tech.rejete, `${tech.resolutionRate}%`]),
       headStyles: { fillColor: [99, 102, 241] }
     });
     doc.text(t("performances.statusDistribution"), 40, doc.lastAutoTable.finalY + 30);
     autoTable(doc, {
       startY: doc.lastAutoTable.finalY + 40,
       head: [[t("table.status"), t("performances.export.count")]],
-      body: stats.statusStats.map(s => [s.name, s.value]),
+      // Use translated labels in the PDF export
+      body: translatedStatusStats.map(s => [s.label, s.value]),
       headStyles: { fillColor: [99, 102, 241] }
     });
     doc.save(`Performance_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.pdf`);
@@ -205,7 +270,10 @@ export default function PerformancesPage() {
       { [t("performances.export.indicator")]: t("performances.export.slaOut"),             [t("performances.export.value")]: stats.slaStats[1].value },
       { [t("performances.export.indicator")]: t("performances.filter.allPeriods"),         [t("performances.export.value")]: filterLabel },
     ]), "KPIs");
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.statusStats), t("performances.sheets.statuses"));
+    // Use translated labels for status sheet
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+      translatedStatusStats.map(s => ({ name: s.label, value: s.value }))
+    ), t("performances.sheets.statuses"));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
       stats.techPerformance.map(tech => ({
         [t("performances.techDetail.tech")]:          tech.name,
@@ -216,8 +284,11 @@ export default function PerformancesPage() {
         [t("performances.techDetail.resolutionRate")]: `${tech.resolutionRate}%`,
       }))
     ), t("performances.sheets.technicians"));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stats.priorityStats), t("performances.sheets.priorities"));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sortedMonthlyStats), t("performances.sheets.trends"));
+    // Use translated priority labels
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+      translatedPriorityStats.map(p => ({ name: p.label, value: p.value }))
+    ), t("performances.sheets.priorities"));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(translatedMonthlyStats), t("performances.sheets.trends"));
     XLSX.writeFile(wb, `Stats_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.xlsx`);
   };
 
@@ -261,345 +332,405 @@ export default function PerformancesPage() {
       `}</style>
 
       {/* ── Header ── */}
-        <div style={{ borderBottom: '1px solid #e8e2d9', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-    <div>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 0px' }}>{t("performances.title")}</h1>
-      <p style={{ fontSize: 14, color: '#53575c', margin: 0, fontWeight: 530 }}>{stats.serviceName} · {t("performances.managerView")}</p>
-    </div>
-    <div style={{ display: 'flex', gap: 10 }}>
-      <button className="pp-btn" onClick={exportExcel} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe' }}>
-        <MdFileDownload size={17} /> {t("performances.export.excel")}
-      </button>
-      <button className="pp-btn" onClick={exportPDF} style={{ background: '#1e3a8a', color: '#fff', border: 'none' }}>
-        <MdFileDownload size={17} /> {t("performances.export.pdf")}
-      </button>
-    </div>
-  </div>
-        <div style={{ padding: '20px 28px' }}>
-      {/* ── Filter Bar ── */}
-     <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: 13, fontWeight: 700 }}>
-          <MdFilterList size={18} color="#1e3a8a" />
-          {t("performances.filter.filterBy")}
+      <div style={{ borderBottom: '1px solid #e8e2d9', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: '0 0 0px' }}>{t("performances.title")}</h1>
+          <p style={{ fontSize: 14, color: '#53575c', margin: 0, fontWeight: 530 }}>{stats.serviceName} · {t("performances.managerView")}</p>
         </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-  <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
-    <MdCalendarMonth size={12} color="#94a3b8" /> {t("performances.filter.year")}
-  </label>
-  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-    <MdCalendarMonth size={14} color="#94a3b8" style={{ position: 'absolute', left: 9, pointerEvents: 'none', zIndex: 1 }} />
-    <select className="pp-filter-select" value={selectedYear} onChange={handleYearChange} style={{ paddingLeft: 28 }}>
-      <option value="">{t("performances.filter.all")}</option>
-      {(stats.availableYears || []).map(y => <option key={y} value={y}>{y}</option>)}
-    </select>
-  </div>
-</div>
-
-       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-  <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
-    <MdCalendarViewMonth size={12} color="#94a3b8" /> {t("performances.filter.month")}
-  </label>
-  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-    <MdCalendarViewMonth size={14} color="#94a3b8" style={{ position: 'absolute', left: 9, pointerEvents: 'none', zIndex: 1 }} />
-    <select className="pp-filter-select" value={selectedMonth} onChange={handleMonthChange} disabled={!selectedYear} style={{ paddingLeft: 28 }}>
-      <option value="">{t("performances.filter.all")}</option>
-      {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-    </select>
-  </div>
-</div>
-
-        {(selectedYear || selectedMonth) && (
-          <button className="pp-clear-btn" onClick={clearFilters} style={{ marginTop: 18 }}>
-            ✕ {t("performances.filter.reset")}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="pp-btn" onClick={exportExcel} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe' }}>
+            <MdFileDownload size={17} /> {t("performances.export.excel")}
           </button>
-        )}
+          <button className="pp-btn" onClick={exportPDF} style={{ background: '#1e3a8a', color: '#fff', border: 'none' }}>
+            <MdFileDownload size={17} /> {t("performances.export.pdf")}
+          </button>
+        </div>
+      </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5 }}>
-  <MdCalendarMonth size={14} color="#94a3b8" /> {filterLabel}
-</span>
-          {loading && (
-            <span style={{ width: 18, height: 18, border: '2.5px solid #6366f1', borderTop: '2.5px solid transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+      <div style={{ padding: '20px 28px' }}>
+        {/* ── Filter Bar ── */}
+        <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#475569', fontSize: 13, fontWeight: 700 }}>
+            <MdFilterList size={18} color="#1e3a8a" />
+            {t("performances.filter.filterBy")}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MdCalendarMonth size={12} color="#94a3b8" /> {t("performances.filter.year")}
+            </label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <MdCalendarMonth size={14} color="#94a3b8" style={{ position: 'absolute', left: 9, pointerEvents: 'none', zIndex: 1 }} />
+              <select className="pp-filter-select" value={selectedYear} onChange={handleYearChange} style={{ paddingLeft: 28 }}>
+                <option value="">{t("performances.filter.all")}</option>
+                {(stats.availableYears || []).map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MdCalendarViewMonth size={12} color="#94a3b8" /> {t("performances.filter.month")}
+            </label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <MdCalendarViewMonth size={14} color="#94a3b8" style={{ position: 'absolute', left: 9, pointerEvents: 'none', zIndex: 1 }} />
+              <select className="pp-filter-select" value={selectedMonth} onChange={handleMonthChange} disabled={!selectedYear} style={{ paddingLeft: 28 }}>
+                <option value="">{t("performances.filter.all")}</option>
+                {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {(selectedYear || selectedMonth) && (
+            <button className="pp-clear-btn" onClick={clearFilters} style={{ marginTop: 18 }}>
+              ✕ {t("performances.filter.reset")}
+            </button>
           )}
-        </div>
-      </div>
 
-      {/* ── KPI Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
-  <KpiCard meta={KPI_META.total}         value={stats.totalTickets}         color="#6366f1" bg="#eff0ff" border="#c7d2fe" Icon={MdConfirmationNumber} />
-  <KpiCard meta={KPI_META.serviceRate}   value={`${stats.resolutionRate}%`} color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" Icon={MdPercent}            />
-  <KpiCard meta={KPI_META.resolvedCount} value={stats.resolvedCount}        color="#0891b2" bg="#ecfeff" border="#a5f3fc" Icon={MdCheckCircle}         />
-  <KpiCard meta={KPI_META.slaIn}         value={slaIn}                      color="#10b981" bg="#f0fdf4" border="#a7f3d0" Icon={MdTimer}              />
-  <KpiCard meta={KPI_META.slaOut}        value={slaOut}                     color="#ef4444" bg="#fef2f2" border="#fecaca" Icon={MdTimerOff}            />
-</div>
-
-      {/* ── Section: Team Efficiency ── */}
-      <p className="pp-section-title">{t("performances.sections.teamEfficiency")}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
-
-        {/* Bar chart: Volume par Technicien */}
-        <div className="pp-card">
-          <p className="pp-chart-title">{t("performances.charts.workVolume")}</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={stats.techPerformance} barCategoryGap="30%" barGap={3}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }} interval={0} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <Bar dataKey="ferme" name={t("performances.techDetail.closed")} fill="#06b6d4" radius={[5, 5, 0, 0]} maxBarSize={22}>
-                <LabelList content={<BarTopLabel />} />
-              </Bar>
-              <Bar dataKey="rejete" name={t("performances.techDetail.rejected")} fill="#f43f5e" radius={[5, 5, 0, 0]} maxBarSize={22}>
-                <LabelList content={<BarTopLabel />} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', marginTop: 10 }}>
-            <Indicator color="#06b6d4" label={t("performances.techDetail.closed")} />
-            <Indicator color="#f43f5e" label={t("performances.techDetail.rejected")} />
-          </div>
-        </div>
-
-        {/* Technician Table */}
-        <div className="pp-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <MdPeople color="#6366f1" size={17} /> {t("performances.techDetail.title")}
-            </p>
-            <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>
-              {t("performances.techDetail.rateNote")}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <MdCalendarMonth size={14} color="#94a3b8" /> {filterLabel}
             </span>
-          </div>
-          <div style={{ overflowY: 'auto', maxHeight: 280 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
-                  {[
-                    t("performances.techDetail.tech"),
-                    t("performances.techDetail.assigned"),
-                    t("performances.techDetail.resolved"),
-                    t("performances.techDetail.resolutionRate"),
-                  ].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: h === t("performances.techDetail.tech") ? 'left' : 'center', color: '#64748b', fontWeight: 700, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {techTableData.map((tech, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
-                    <td style={{ padding: '11px 14px', fontWeight: 600, color: '#1e293b' }}>{tech.name}</td>
-                    <td style={{ padding: '11px 14px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>{tech.totalAssigned}</td>
-                    <td style={{ padding: '11px 14px', textAlign: 'center' }}>
-                      <span style={{ background: '#d1fae5', color: '#059669', borderRadius: 7, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>{tech.resolu}</span>
-                    </td>
-                    <td style={{ padding: '11px 14px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
-                        <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 3, maxWidth: 70 }}>
-                          <div style={{
-                            width: `${tech.resolutionRate}%`, height: '100%', borderRadius: 3,
-                            background: tech.resolutionRate >= 70 ? '#10b981' : tech.resolutionRate >= 40 ? '#f59e0b' : '#ef4444',
-                            transition: 'width 0.6s ease'
-                          }} />
-                        </div>
-                        <span style={{ fontWeight: 700, fontSize: 12, minWidth: 36, color: tech.resolutionRate >= 70 ? '#059669' : tech.resolutionRate >= 40 ? '#d97706' : '#dc2626' }}>
-                          {tech.resolutionRate}%
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {techTableData.length === 0 && (
-                  <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>{t("performances.techDetail.noTech")}</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ padding: '10px 16px', borderTop: '1px solid #f1f5f9', display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
-            <Indicator color="#10b981" label={`≥ 70% ${t("performances.techDetail.excellent")}`} />
-            <Indicator color="#f59e0b" label={`40–69% ${t("performances.techDetail.average")}`} />
-            <Indicator color="#ef4444" label={`< 40% ${t("performances.techDetail.weak")}`} />
-          </div>
-        </div>
-      </div>
-
-      {/* ── Section: Flux Distribution ── */}
-      <p className="pp-section-title">{t("performances.sections.fluxDistribution")}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
-
-        {/* État Actuel des Tickets */}
-        <div className="pp-card">
-          <p className="pp-chart-title">{t("performances.charts.currentStatus")}</p>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={stats.statusStats} barCategoryGap="35%" margin={{ bottom: 50 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis
-                dataKey="name"
-                axisLine={false}
-                tickLine={false}
-                interval={0}
-                tick={{ fontSize: 10, fill: '#64748b' }}
-                angle={-35}
-                textAnchor="end"
-                height={60}
-              />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36}>
-                {stats.statusStats.map((entry, index) => (
-                  <Cell key={index} fill={getDynamicColor(entry.name, index)} />
-                ))}
-                <LabelList content={<BarTopLabel />} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{ display: 'grid', gridTemplateColumns: stats.statusStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
-            {stats.statusStats.map((s, i) => (
-              <Indicator key={i} color={getDynamicColor(s.name, i)} label={`${s.name}: ${s.value}`} />
-            ))}
+            {loading && (
+              <span style={{ width: 18, height: 18, border: '2.5px solid #6366f1', borderTop: '2.5px solid transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+            )}
           </div>
         </div>
 
-        {/* Distribution par Type */}
-        <div className="pp-card">
-          <p className="pp-chart-title">{t("performances.charts.typeDistribution")}</p>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={stats.typeStats} barCategoryGap="40%" margin={{ bottom: 10 }}>
-              <defs>
-                {stats.typeStats.map((entry, index) => (
-                  <linearGradient key={index} id={`typeGrad${index}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={getDynamicColor(entry.name, index)} stopOpacity={0.9} />
-                    <stop offset="100%" stopColor={getDynamicColor(entry.name, index)} stopOpacity={0.5} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={60}>
-                {stats.typeStats.map((entry, index) => (
-                  <Cell key={index} fill={`url(#typeGrad${index})`} />
-                ))}
-                <LabelList content={<BarTopLabel />} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <div style={{ display: 'grid', gridTemplateColumns: stats.typeStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 10 }}>
-            {stats.typeStats.map((tp, i) => (
-              <Indicator key={i} color={getDynamicColor(tp.name, i)} label={`${tp.name}: ${tp.value} (${tp.percentage}%)`} />
-            ))}
-          </div>
+        {/* ── KPI Cards ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
+          <KpiCard meta={KPI_META.total}         value={stats.totalTickets}         color="#6366f1" bg="#eff0ff" border="#c7d2fe" Icon={MdConfirmationNumber} />
+          <KpiCard meta={KPI_META.serviceRate}   value={`${stats.resolutionRate}%`} color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" Icon={MdPercent}            />
+          <KpiCard meta={KPI_META.resolvedCount} value={stats.resolvedCount}        color="#0891b2" bg="#ecfeff" border="#a5f3fc" Icon={MdCheckCircle}         />
+          <KpiCard meta={KPI_META.slaIn}         value={slaIn}                      color="#10b981" bg="#f0fdf4" border="#a7f3d0" Icon={MdTimer}              />
+          <KpiCard meta={KPI_META.slaOut}        value={slaOut}                     color="#ef4444" bg="#fef2f2" border="#fecaca" Icon={MdTimerOff}            />
         </div>
-      </div>
 
-      {/* ── Section: Category Distribution ── */}
-      {stats.categoryStats?.length > 0 && (
-        <>
-          <p className="pp-section-title">{t("performances.sections.categoryDistribution")}</p>
-          <div className="pp-card" style={{ marginBottom: 22 }}>
-            <p className="pp-chart-title">{t("performances.charts.ticketsByCategory")}</p>
-            <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={stats.categoryStats} barCategoryGap="35%">
+        {/* ── Section: Team Efficiency ── */}
+        <p className="pp-section-title">{t("performances.sections.teamEfficiency")}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
+
+          {/* Bar chart: Volume par Technicien */}
+          <div className="pp-card">
+            <p className="pp-chart-title">{t("performances.charts.workVolume")}</p>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={stats.techPerformance} barCategoryGap="30%" barGap={3}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }} interval={0} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                  {stats.categoryStats.map((entry, index) => (
+                <Bar dataKey="ferme" name={t("performances.techDetail.closed")} fill="#06b6d4" radius={[5, 5, 0, 0]} maxBarSize={22}>
+                  <LabelList content={<BarTopLabel />} />
+                </Bar>
+                <Bar dataKey="rejete" name={t("performances.techDetail.rejected")} fill="#f43f5e" radius={[5, 5, 0, 0]} maxBarSize={22}>
+                  <LabelList content={<BarTopLabel />} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', marginTop: 10 }}>
+              <Indicator color="#06b6d4" label={t("performances.techDetail.closed")} />
+              <Indicator color="#f43f5e" label={t("performances.techDetail.rejected")} />
+            </div>
+          </div>
+
+          {/* Technician Table */}
+          <div className="pp-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <MdPeople color="#6366f1" size={17} /> {t("performances.techDetail.title")}
+              </p>
+              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>
+                {t("performances.techDetail.rateNote")}
+              </span>
+            </div>
+            <div style={{ overflowY: 'auto', maxHeight: 280 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
+                    {[
+                      t("performances.techDetail.tech"),
+                      t("performances.techDetail.assigned"),
+                      t("performances.techDetail.resolved"),
+                      t("performances.techDetail.resolutionRate"),
+                    ].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: h === t("performances.techDetail.tech") ? 'left' : 'center', color: '#64748b', fontWeight: 700, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {techTableData.map((tech, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
+                      <td style={{ padding: '11px 14px', fontWeight: 600, color: '#1e293b' }}>{tech.name}</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>{tech.totalAssigned}</td>
+                      <td style={{ padding: '11px 14px', textAlign: 'center' }}>
+                        <span style={{ background: '#d1fae5', color: '#059669', borderRadius: 7, padding: '2px 10px', fontWeight: 700, fontSize: 12 }}>{tech.resolu}</span>
+                      </td>
+                      <td style={{ padding: '11px 14px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                          <div style={{ flex: 1, height: 5, background: '#f1f5f9', borderRadius: 3, maxWidth: 70 }}>
+                            <div style={{
+                              width: `${tech.resolutionRate}%`, height: '100%', borderRadius: 3,
+                              background: tech.resolutionRate >= 70 ? '#10b981' : tech.resolutionRate >= 40 ? '#f59e0b' : '#ef4444',
+                              transition: 'width 0.6s ease'
+                            }} />
+                          </div>
+                          <span style={{ fontWeight: 700, fontSize: 12, minWidth: 36, color: tech.resolutionRate >= 70 ? '#059669' : tech.resolutionRate >= 40 ? '#d97706' : '#dc2626' }}>
+                            {tech.resolutionRate}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {techTableData.length === 0 && (
+                    <tr><td colSpan={4} style={{ padding: 24, textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>{t("performances.techDetail.noTech")}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding: '10px 16px', borderTop: '1px solid #f1f5f9', display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
+              <Indicator color="#10b981" label={`≥ 70% ${t("performances.techDetail.excellent")}`} />
+              <Indicator color="#f59e0b" label={`40–69% ${t("performances.techDetail.average")}`} />
+              <Indicator color="#ef4444" label={`< 40% ${t("performances.techDetail.weak")}`} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Section: Flux Distribution ── */}
+        <p className="pp-section-title">{t("performances.sections.fluxDistribution")}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
+
+          {/* État Actuel des Tickets — uses translatedStatusStats for translated X-axis & legend */}
+          <div className="pp-card">
+            <p className="pp-chart-title">{t("performances.charts.currentStatus")}</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={translatedStatusStats} barCategoryGap="35%" margin={{ bottom: 50 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="label"
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  angle={-35}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36}>
+                  {translatedStatusStats.map((entry, index) => (
                     <Cell key={index} fill={getDynamicColor(entry.name, index)} />
                   ))}
                   <LabelList content={<BarTopLabel />} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <div style={{ display: 'grid', gridTemplateColumns: stats.categoryStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
-              {stats.categoryStats.map((c, i) => (
-                <Indicator key={i} color={getDynamicColor(c.name, i)} label={`${c.name}: ${c.value}`} />
+            <div style={{ display: 'grid', gridTemplateColumns: translatedStatusStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
+              {translatedStatusStats.map((s, i) => (
+                <Indicator key={i} color={getDynamicColor(s.name, i)} label={`${s.label}: ${s.value}`} />
               ))}
             </div>
           </div>
-        </>
-      )}
 
-      {/* ── Section: Time Trends ── */}
-      <p className="pp-section-title">{t("performances.sections.timeTrends")}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
-
-        {/* Area chart */}
-        <div className="pp-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-            <div>
-              <p className="pp-chart-title" style={{ marginBottom: 2 }}>
-                {selectedMonth
-                  ? `${t("performances.charts.dailyEvolution")} — ${MONTHS.find(m => m.value === parseInt(selectedMonth))?.label} ${selectedYear}`
-                  : `${t("performances.charts.monthlyEvolution")} ${selectedYear || new Date().getFullYear()}`}
-              </p>
-              <span style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
-  <MdCalendarMonth size={12} color="#94a3b8" /> {filterLabel}
-</span>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>
-                {t("performances.charts.total")}: <strong style={{ color: '#1e293b' }}>{stats.totalTickets}</strong>
-              </p>
+          {/* Distribution par Type — type names are not in common.json so kept as-is */}
+          <div className="pp-card">
+            <p className="pp-chart-title">{t("performances.charts.typeDistribution")}</p>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={translatedTypeStats} barCategoryGap="40%" margin={{ bottom: 10 }}>
+                <defs>
+                  {translatedTypeStats.map((entry, index) => (
+                    <linearGradient key={index} id={`typeGrad${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={getDynamicColor(entry.name, index)} stopOpacity={0.9} />
+                      <stop offset="100%" stopColor={getDynamicColor(entry.name, index)} stopOpacity={0.5} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} interval={0} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 500 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={60}>
+                  {translatedTypeStats.map((entry, index) => (
+                    <Cell key={index} fill={`url(#typeGrad${index})`} />
+                  ))}
+                  <LabelList content={<BarTopLabel />} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div style={{ display: 'grid', gridTemplateColumns: translatedTypeStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 10 }}>
+              {translatedTypeStats.map((tp, i) => (
+                <Indicator key={i} color={getDynamicColor(tp.name, i)} label={`${tp.label}: ${tp.value} (${tp.percentage}%)`} />
+              ))}
             </div>
           </div>
-
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={sortedMonthlyStats} margin={{ top: 24, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="gradIndigo" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e0e7ff" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10.5, fill: '#6366f1', fontWeight: 500 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <ReferenceLine y={avgMonthly} stroke="#a5b4fc" strokeDasharray="4 3"
-                label={{ position: 'right', value: t("performances.charts.avg"), fill: '#a5b4fc', fontSize: 10 }} />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#6366f1"
-                strokeWidth={2.5}
-                fillOpacity={1}
-                fill="url(#gradIndigo)"
-                dot={<AreaDot />}
-                activeDot={false}
-                label={<AreaValueLabel />}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
         </div>
 
-        {/* Priority Pie Chart */}
-        <div className="pp-card">
-          <p className="pp-chart-title">{t("performances.charts.priorityDistribution")}</p>
-          <ResponsiveContainer width="100%" height={230}>
-            <PieChart>
-              <Pie
-                data={stats.priorityStats}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={85}
-                paddingAngle={3}
-                dataKey="value"
-                labelLine={false}
-                label={renderPieLabel}
-              >
-                {stats.priorityStats.map((entry, index) => (
-                  <Cell key={index} fill={getDynamicColor(entry.name, index)} />
+        {/* ── Section: Category Distribution ── */}
+        {translatedCategoryStats?.length > 0 && (
+          <>
+            <p className="pp-section-title">{t("performances.sections.categoryDistribution")}</p>
+            <div className="pp-card" style={{ marginBottom: 22 }}>
+              <p className="pp-chart-title">{t("performances.charts.ticketsByCategory")}</p>
+              <ResponsiveContainer width="100%" height={230}>
+                {/* Uses translatedCategoryStats: X-axis shows translated category names */}
+                <BarChart data={translatedCategoryStats} barCategoryGap="35%">
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                    {translatedCategoryStats.map((entry, index) => (
+                      <Cell key={index} fill={getDynamicColor(entry.name, index)} />
+                    ))}
+                    <LabelList content={<BarTopLabel />} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ display: 'grid', gridTemplateColumns: translatedCategoryStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
+                {translatedCategoryStats.map((c, i) => (
+                  <Indicator key={i} color={getDynamicColor(c.name, i)} label={`${c.label}: ${c.value}`} />
                 ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ display: 'grid', gridTemplateColumns: stats.priorityStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 10 }}>
-            {stats.priorityStats.map((p, i) => (
-              <Indicator key={i} color={getDynamicColor(p.name, i)} label={`${p.name}: ${p.value}`} />
-            ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Section: Time Trends ── */}
+        <p className="pp-section-title">{t("performances.sections.timeTrends")}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
+
+          {/* Area chart — X-axis uses translated month names via translatedMonthlyStats */}
+          <div className="pp-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+              <div>
+                <p className="pp-chart-title" style={{ marginBottom: 2 }}>
+                  {selectedMonth
+                    ? `${t("performances.charts.dailyEvolution")} — ${MONTHS.find(m => m.value === parseInt(selectedMonth))?.label} ${selectedYear}`
+                    : `${t("performances.charts.monthlyEvolution")} ${selectedYear || new Date().getFullYear()}`}
+                </p>
+                <span style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <MdCalendarMonth size={12} color="#94a3b8" /> {filterLabel}
+                </span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 2px' }}>
+                  {t("performances.charts.total")}: <strong style={{ color: '#1e293b' }}>{stats.totalTickets}</strong>
+                </p>
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={280}>
+              {/* translatedMonthlyStats has `month` field already re-mapped to current locale */}
+              <AreaChart data={translatedMonthlyStats} margin={{ top: 24, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradIndigo" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e0e7ff" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10.5, fill: '#6366f1', fontWeight: 500 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <ReferenceLine y={avgMonthly} stroke="#a5b4fc" strokeDasharray="4 3"
+                  label={{ position: 'right', value: t("performances.charts.avg"), fill: '#a5b4fc', fontSize: 10 }} />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#6366f1"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#gradIndigo)"
+                  dot={<AreaDot />}
+                  activeDot={false}
+                  label={<AreaValueLabel />}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Priority Pie Chart — uses translatedPriorityStats for translated legend */}
+          <div className="pp-card">
+            <p className="pp-chart-title">{t("performances.charts.priorityDistribution")}</p>
+            <ResponsiveContainer width="100%" height={230}>
+              <PieChart>
+                <Pie
+                  data={translatedPriorityStats}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  dataKey="value"
+                  labelLine={false}
+                  label={renderPieLabel}
+                >
+                  {translatedPriorityStats.map((entry, index) => (
+                    <Cell key={index} fill={getDynamicColor(entry.name, index)} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Legend shows translated priority label */}
+            <div style={{ display: 'grid', gridTemplateColumns: translatedPriorityStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 10 }}>
+              {translatedPriorityStats.map((p, i) => (
+                <Indicator key={i} color={getDynamicColor(p.name, i)} label={`${p.label}: ${p.value}`} />
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* ── Section: Urgency & Impact (if provided by backend) ── */}
+        {(translatedUrgencyStats?.length > 0 || translatedImpactStats?.length > 0) && (
+          <>
+            <p className="pp-section-title">{t("performances.sections.urgencyImpact", { defaultValue: "Urgency & Impact" })}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
+              {translatedUrgencyStats?.length > 0 && (
+                <div className="pp-card">
+                  <p className="pp-chart-title">{t("performances.charts.urgencyDistribution", { defaultValue: "Urgency Distribution" })}</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={translatedUrgencyStats} barCategoryGap="35%">
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                        {translatedUrgencyStats.map((entry, index) => (
+                          <Cell key={index} fill={getDynamicColor(entry.name, index)} />
+                        ))}
+                        <LabelList content={<BarTopLabel />} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', marginTop: 10 }}>
+                    {translatedUrgencyStats.map((u, i) => (
+                      <Indicator key={i} color={getDynamicColor(u.name, i)} label={`${u.label}: ${u.value}`} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {translatedImpactStats?.length > 0 && (
+                <div className="pp-card">
+                  <p className="pp-chart-title">{t("performances.charts.impactDistribution", { defaultValue: "Impact Distribution" })}</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={translatedImpactStats} barCategoryGap="35%">
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                        {translatedImpactStats.map((entry, index) => (
+                          <Cell key={index} fill={getDynamicColor(entry.name, index)} />
+                        ))}
+                        <LabelList content={<BarTopLabel />} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', marginTop: 10 }}>
+                    {translatedImpactStats.map((imp, i) => (
+                      <Indicator key={i} color={getDynamicColor(imp.name, i)} label={`${imp.label}: ${imp.value}`} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
       </div>
-     </div>
     </div>
   );
 }

@@ -55,7 +55,7 @@ function FileLinks({ files, dark }) {
 }
 
 // ── FIX 2: ConvBubble receives t so it can format dates per language ──────────
-function ConvBubble({ item, t }) {
+function ConvBubble({ item, t, translateLegacyMsg }) {
   const isEmployee = ["emp_reply","confirmed","rejected_confirm"].includes(item.comment_type);
   const techStyle = {
     solution: { background:"#eff6ff", border:"1px solid #bfdbfe", color:"#1d4ed8" },
@@ -69,7 +69,23 @@ function ConvBubble({ item, t }) {
     <div style={{ display:"flex", marginBottom:10, justifyContent: isEmployee ? "flex-end" : "flex-start" }}>
       <div style={{ maxWidth:"75%", display:"flex", flexDirection:"column", alignItems: isEmployee ? "flex-end" : "flex-start" }}>
         <div style={{ padding:"9px 13px", borderRadius:14, fontSize:13, lineHeight:1.55, ...bubbleStyle }}>
-          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.message) }} />
+<div>
+  {(() => {
+    const translated = translateLegacyMsg(item.message ?? "");
+
+    if (translated !== null) {
+      return translated;
+    }
+
+    return (
+      <span
+        dangerouslySetInnerHTML={{
+          __html: DOMPurify.sanitize(item.message),
+        }}
+      />
+    );
+  })()}
+</div>
           <FileLinks files={item.files} dark={isEmployee} />
         </div>
         {/* FIX: use formatDate with "withTime" so bubble timestamps follow the selected language */}
@@ -596,7 +612,14 @@ if (msg.startsWith("ticket_redirected:")) {
                       );
                     }
                     // FIX 12: pass t to ConvBubble for language-aware timestamps
-                    return <ConvBubble key={c.id} item={c} t={t} />;
+                    return (
+  <ConvBubble
+    key={c.id}
+    item={c}
+    t={t}
+    translateLegacyMsg={translateLegacyMsg}
+  />
+);
                   })
                 )}
                 <div ref={convEndRef} />

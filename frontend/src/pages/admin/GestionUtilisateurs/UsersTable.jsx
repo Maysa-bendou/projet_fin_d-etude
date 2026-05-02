@@ -10,15 +10,23 @@ const ROLE_AVATAR = {
 };
 
 const ROLE_PILL = {
-  employee:     {bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
-  technician:   {  bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  employee:     { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
+  technician:   { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
   chef_service: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
   manager:      { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
   admin:        { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
 };
 
 function UsersTable({ users = [], onRowClick }) {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
+
+  // Date locale & format from common.json
+  const dateLocale = t("common:date.locale"); // e.g. "fr-FR" or "en-US"
+
+  const formatDate = (dateStr) =>
+    new Date(dateStr).toLocaleDateString(dateLocale, {
+      day: "2-digit", month: "short", year: "numeric",
+    });
 
   if (!users.length) return (
     <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", padding: "48px 24px", textAlign: "center" }}>
@@ -28,12 +36,12 @@ function UsersTable({ users = [], onRowClick }) {
   );
 
   const COLS = [
-    { key: "id",            label: t("users.table.id"),           w: 55  },
-    { key: "collaborator",  label: t("users.table.collaborator"), w: 200 },
-    { key: "role",          label: t("users.table.role"),         w: 130 },
-    { key: "department",    label: t("users.table.department"),   w: 150 },
-    { key: "createdAt",     label: t("users.table.createdAt"),    w: 110 },
-    { key: "status",        label: t("users.table.status"),       w: 100 },
+    { key: "id",           label: t("users.table.id"),          w: 55  },
+    { key: "collaborator", label: t("users.table.collaborator"), w: 200 },
+    { key: "role",         label: t("users.table.role"),         w: 130 },
+    { key: "department",   label: t("users.table.department"),   w: 150 },
+    { key: "createdAt",    label: t("users.table.createdAt"),    w: 110 },
+    { key: "status",       label: t("users.table.status"),       w: 100 },
   ];
 
   return (
@@ -97,9 +105,9 @@ function UsersTable({ users = [], onRowClick }) {
                     {u.department || <span style={{ color: "#d1d5db" }}>—</span>}
                   </td>
 
-                  {/* Created */}
+                  {/* Created — locale from common:date.locale */}
                   <td style={{ padding: "9px 10px", fontSize: 11, color: "#94a3b8" }}>
-                    {new Date(u.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
+                    {formatDate(u.created_at)}
                   </td>
 
                   {/* Status */}

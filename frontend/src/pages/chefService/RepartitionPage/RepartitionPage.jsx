@@ -10,6 +10,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { MdFileDownload, MdPeople, MdFilterList, MdDashboard, MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff, MdArrowBack } from 'react-icons/md';
 import { MdCalendarMonth, MdCalendarViewMonth, MdOutlineInfo  } from 'react-icons/md';
+
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
   const map = {
@@ -91,17 +92,41 @@ function KpiCard({ label, desc, value, color, bg, border, Icon }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function RepartitionPage() {
+  // Single namespace — access common via "common:key" prefix, same as PerformancesPage
   const { t, i18n } = useTranslation('chef');
 
-  // Month list built from translation keys so it reacts to language switches
-  const MONTHS = useMemo(() => [
-    { value: 1,  label: t('months.jan') }, { value: 2,  label: t('months.feb') },
-    { value: 3,  label: t('months.mar') }, { value: 4,  label: t('months.apr') },
-    { value: 5,  label: t('months.may') }, { value: 6,  label: t('months.jun') },
-    { value: 7,  label: t('months.jul') }, { value: 8,  label: t('months.aug') },
-    { value: 9,  label: t('months.sep') }, { value: 10, label: t('months.oct') },
-    { value: 11, label: t('months.nov') }, { value: 12, label: t('months.dec') },
-  ], [i18n.language]);
+  // Translation helpers — use "common:" prefix through the same t() function
+  // This is the pattern that works in PerformancesPage
+  const tStatus   = useCallback((key) => t(`common:status.${key?.toLowerCase()}`,   { defaultValue: key }), [t]);
+  const tPriority = useCallback((key) => t(`common:priority.${key?.toLowerCase()}`, { defaultValue: key }), [t]);
+  const tCategory = useCallback((key) => t(`common:category.${key?.toLowerCase()}`, { defaultValue: key }), [t]);
+
+  // Month list — use i18n.language directly, same as PerformancesPage
+  const MONTHS = useMemo(() => Array.from({ length: 12 }, (_, i) => ({
+    value: i + 1,
+    label: new Date(2000, i, 1).toLocaleString(i18n.language, { month: 'long' }),
+  })), [i18n.language]);
+
+  // Abbreviated month labels for X-axis
+  const MONTH_SHORT = useMemo(() => Array.from({ length: 12 }, (_, i) =>
+    new Date(2000, i, 1).toLocaleString(i18n.language, { month: 'short' })
+  ), [i18n.language]);
+
+  // Lookup table for ALL month names in both locales — same robust approach as PerformancesPage
+  const monthStringToIndex = useMemo(() => {
+    const map = {};
+    ['fr-FR', 'en-US'].forEach(locale => {
+      for (let i = 0; i < 12; i++) {
+        const label = new Date(2000, i, 1).toLocaleString(locale, { month: 'long' }).toLowerCase();
+        map[label] = i;
+        const short = new Date(2000, i, 1).toLocaleString(locale, { month: 'short' }).toLowerCase();
+        map[short] = i;
+      }
+    });
+    // Also map numeric strings "1"–"12"
+    for (let i = 0; i < 12; i++) map[String(i + 1)] = i;
+    return map;
+  }, []);
 
   const MONTH_ORDER = MONTHS.map(m => m.label);
 
@@ -175,11 +200,19 @@ export default function RepartitionPage() {
   };
 
   // ── Derived data ──────────────────────────────────────────────────────────
+
+  // Same robust approach as PerformancesPage: sort + translate month labels
   const sortedMonthlyStats = useMemo(() => {
     if (!stats?.monthlyStats) return [];
-    if (selectedMonth) return stats.monthlyStats;
-    return [...stats.monthlyStats].sort((a, b) => MONTH_ORDER.indexOf(a.month) - MONTH_ORDER.indexOf(b.month));
-  }, [stats, selectedMonth, MONTH_ORDER]);
+    const toIdx = (raw) => monthStringToIndex[raw?.toLowerCase()] ?? 99;
+    const toLabel = (raw) => MONTH_SHORT[monthStringToIndex[raw?.toLowerCase()] ?? 0] ?? raw;
+    if (selectedMonth) {
+      return stats.monthlyStats.map(entry => ({ ...entry, month: toLabel(entry.month) }));
+    }
+    return [...stats.monthlyStats]
+      .sort((a, b) => toIdx(a.month) - toIdx(b.month))
+      .map(entry => ({ ...entry, month: toLabel(entry.month) }));
+  }, [stats, selectedMonth, monthStringToIndex, MONTH_SHORT]);
 
   const filterLabel = useMemo(() => {
     if (!selectedYear && !selectedMonth) return t('filter.allPeriods');
@@ -190,6 +223,12 @@ export default function RepartitionPage() {
     if (selectedYear) return `${t('filter.year')} ${selectedYear}`;
     return '';
   }, [selectedYear, selectedMonth, t, MONTHS]);
+
+  // Translate stat arrays — same helper pattern as PerformancesPage
+  const translateStatArray = useCallback((arr, translateFn) => {
+    if (!arr) return [];
+    return arr.map(item => ({ ...item, label: translateFn(item.name) }));
+  }, []);
 
   // ── Export PDF ────────────────────────────────────────────────────────────
   const exportPDF = () => {
@@ -337,31 +376,31 @@ export default function RepartitionPage() {
         </div>
 
         {/* Name */}
-<h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>
-  {s.name}
-</h3>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>
+          {s.name}
+        </h3>
 
-        {/* Stats avec Icône (comme sur la capture) */}
-<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-  <p style={{ fontSize: 12, color: '#64748b', margin: 0, fontWeight: 500 }}>
-    {s.resolutionRate ?? 0}% {t('repartition.resolved')}
-  </p>
-</div>
+        {/* Stats avec Icône */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <p style={{ fontSize: 12, color: '#64748b', margin: 0, fontWeight: 500 }}>
+            {s.resolutionRate ?? 0}% {t('repartition.resolved')}
+          </p>
+        </div>
 
-          {/* Barre de progression (le trait) */}
-  <div style={{ width: '100%', height: 6, background: '#f1f5f9', borderRadius: 10, marginBottom: 16, overflow: 'hidden' }}>
-   <div style={{ 
-    width: `${s.resolutionRate ?? 0}%`, 
-    height: '100%', 
-    background: '#10b981', // Vert comme sur la capture
-    borderRadius: 10,
-    transition: 'width 1s ease-in-out'
-  }} />
-</div>
+        {/* Barre de progression */}
+        <div style={{ width: '100%', height: 6, background: '#f1f5f9', borderRadius: 10, marginBottom: 16, overflow: 'hidden' }}>
+          <div style={{ 
+            width: `${s.resolutionRate ?? 0}%`, 
+            height: '100%', 
+            background: '#10b981',
+            borderRadius: 10,
+            transition: 'width 1s ease-in-out'
+          }} />
+        </div>
 
         {/* Divider */}
         <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -379,7 +418,7 @@ export default function RepartitionPage() {
       </div>
     );
   })}
-</div>  {/* closes grid */}
+</div>
   </div>     
 </div>       
     
@@ -410,6 +449,13 @@ export default function RepartitionPage() {
     tauxParService: stats.totalTickets > 0 ? Math.round((tech.totalAssigned / stats.totalTickets) * 100) : 0,
   }));
 
+  // FIX: pre-translate all chart data sets so X-axis labels + legends both use active language
+  // Pre-translate all chart arrays — using translateStatArray + common: prefix helpers
+  const statusStatsT   = translateStatArray(stats.statusStats,   tStatus);
+  const categoryStatsT = translateStatArray(stats.categoryStats, tCategory);
+  const priorityStatsT = translateStatArray(stats.priorityStats, tPriority);
+  const typeStatsT     = translateStatArray(stats.typeStats,     (name) => t(`common:type.${name?.toLowerCase()}`, { defaultValue: name }));
+
   // ── VIEW 2: FULL STATS DASHBOARD ─────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#faf9f7', fontFamily: "sans-serif" }}>
@@ -437,14 +483,15 @@ export default function RepartitionPage() {
       </p>
     </div>
     <div style={{ display: 'flex', gap: 10 }}>
-     <button className="pp-btn" onClick={exportExcel} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe' }}>
-  <MdFileDownload size={17} /> {t('export.excel')}
-</button>
-<button className="pp-btn" onClick={exportPDF} style={{ background: '#1e3a8a', color: '#fff', border: 'none' }}>
-  <MdFileDownload size={17} /> {t('export.pdf')}
-</button>
+      <button className="pp-btn" onClick={exportExcel} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe' }}>
+        <MdFileDownload size={17} /> {t('export.excel')}
+      </button>
+      <button className="pp-btn" onClick={exportPDF} style={{ background: '#1e3a8a', color: '#fff', border: 'none' }}>
+        <MdFileDownload size={17} /> {t('export.pdf')}
+      </button>
     </div>
   </div>
+
  <div style={{ padding: '20px 28px' }}>
       {/* ── Filter Bar ── */}
       <div className="pp-card" style={{ marginBottom: 22, display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
@@ -473,6 +520,7 @@ export default function RepartitionPage() {
     </label>
     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
       <MdCalendarViewMonth size={14} color="#94a3b8" style={{ position: 'absolute', left: 9, pointerEvents: 'none', zIndex: 1 }} />
+      {/* FIX: month dropdown uses locale-aware MONTHS array */}
       <select className="pp-filter-select" value={selectedMonth} onChange={handleMonthChange} disabled={!selectedYear} style={{ paddingLeft: 28 }}>
         <option value="">{t('filter.allMonths')}</option>
         {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -499,12 +547,13 @@ export default function RepartitionPage() {
 
       {/* ── KPI Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
-  <KpiCard label={t('kpi.total')}         value={stats.totalTickets}         color="#6366f1" bg="#eff0ff" border="#c7d2fe" Icon={MdConfirmationNumber} />
-  <KpiCard label={t('kpi.resolutionRate')} value={`${stats.resolutionRate}%`} color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" Icon={MdPercent}            />
-  <KpiCard label={t('kpi.resolved')}       value={stats.resolvedCount}        color="#0891b2" bg="#ecfeff" border="#a5f3fc" Icon={MdCheckCircle}         />
-  <KpiCard label={t('kpi.slaIn')}          value={slaIn}                      color="#10b981" bg="#f0fdf4" border="#a7f3d0" Icon={MdTimer}              />
-  <KpiCard label={t('kpi.slaOut')}         value={slaOut}                     color="#ef4444" bg="#fef2f2" border="#fecaca" Icon={MdTimerOff}            />
-</div>
+        {/* FIX: KPI labels already come from chef namespace — no change needed */}
+        <KpiCard label={t('kpi.total')}         value={stats.totalTickets}         color="#6366f1" bg="#eff0ff" border="#c7d2fe" Icon={MdConfirmationNumber} />
+        <KpiCard label={t('kpi.resolutionRate')} value={`${stats.resolutionRate}%`} color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" Icon={MdPercent}            />
+        <KpiCard label={t('kpi.resolved')}       value={stats.resolvedCount}        color="#0891b2" bg="#ecfeff" border="#a5f3fc" Icon={MdCheckCircle}         />
+        <KpiCard label={t('kpi.slaIn')}          value={slaIn}                      color="#10b981" bg="#f0fdf4" border="#a7f3d0" Icon={MdTimer}              />
+        <KpiCard label={t('kpi.slaOut')}         value={slaOut}                     color="#ef4444" bg="#fef2f2" border="#fecaca" Icon={MdTimerOff}            />
+      </div>
 
       {/* ── Section: Efficacité Équipe ── */}
       <p className="pp-section-title">{t('section.teamEfficiency')}</p>
@@ -594,47 +643,51 @@ export default function RepartitionPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
 
         {/* État Actuel des Tickets — Bar Chart */}
+        {/* FIX: use statusStatsT with translated `label` field for X-axis and legend */}
         <div className="pp-card">
           <p className="pp-chart-title">{t('chart.currentStatus')}</p>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={stats.statusStats} barCategoryGap="35%" margin={{ bottom: 50 }}>
+            <BarChart data={statusStatsT} barCategoryGap="35%" margin={{ bottom: 50 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis
-                dataKey="name" axisLine={false} tickLine={false} interval={0}
+                dataKey="label"
+                axisLine={false} tickLine={false} interval={0}
                 tick={{ fontSize: 10, fill: '#64748b' }} angle={-35} textAnchor="end" height={60}
               />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36}>
-                {(stats.statusStats || []).map((entry, index) => (
+                {statusStatsT.map((entry, index) => (
                   <Cell key={index} fill={getDynamicColor(entry.name, index)} />
                 ))}
                 <LabelList content={<BarTopLabel />} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <div style={{ display: 'grid', gridTemplateColumns: (stats.statusStats?.length || 0) > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
-            {(stats.statusStats || []).map((s, i) => (
-              <Indicator key={i} color={getDynamicColor(s.name, i)} label={`${s.name}: ${s.value}`} />
+          <div style={{ display: 'grid', gridTemplateColumns: statusStatsT.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
+            {statusStatsT.map((s, i) => (
+              // FIX: legend label uses translated s.label instead of raw s.name
+              <Indicator key={i} color={getDynamicColor(s.name, i)} label={`${s.label}: ${s.value}`} />
             ))}
           </div>
         </div>
 
         {/* Distribution par Type — Pie Chart */}
+        {/* FIX: use typeStatsT with translated `label` field for legend */}
         <div className="pp-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <p className="pp-chart-title">{t('chart.typeDistribution')}</p>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
-                data={stats.typeStats ?? []}
+                data={typeStatsT}
                 dataKey="value"
-                nameKey="name"
+                nameKey="label"
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
                 labelLine={false}
                 label={renderPieLabel}
               >
-                {(stats.typeStats ?? []).map((entry, index) => (
+                {typeStatsT.map((entry, index) => (
                   <Cell key={index} fill={getDynamicColor(entry.name, index)} />
                 ))}
               </Pie>
@@ -645,35 +698,38 @@ export default function RepartitionPage() {
             </PieChart>
           </ResponsiveContainer>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px 12px', marginTop: 12 }}>
-            {(stats.typeStats ?? []).map((item, i) => (
-              <Indicator key={i} color={getDynamicColor(item.name, i)} label={`${item.name}: ${item.value} (${item.percentage}%)`} />
+            {typeStatsT.map((item, i) => (
+              // FIX: legend label uses translated item.label
+              <Indicator key={i} color={getDynamicColor(item.name, i)} label={`${item.label}: ${item.value} (${item.percentage}%)`} />
             ))}
           </div>
         </div>
       </div>
 
       {/* ── Section: Répartition par Catégorie ── */}
-      {(stats.categoryStats?.length > 0) && (
+      {/* FIX: use categoryStatsT with translated `label` field for X-axis and legend */}
+      {(categoryStatsT.length > 0) && (
         <>
           <p className="pp-section-title">{t('section.categoryDistribution')}</p>
           <div className="pp-card" style={{ marginBottom: 22 }}>
             <p className="pp-chart-title">{t('chart.ticketsByCategory')}</p>
             <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={stats.categoryStats} barCategoryGap="35%">
+              <BarChart data={categoryStatsT} barCategoryGap="35%">
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                  {stats.categoryStats.map((entry, index) => (
+                  {categoryStatsT.map((entry, index) => (
                     <Cell key={index} fill={getDynamicColor(entry.name, index)} />
                   ))}
                   <LabelList content={<BarTopLabel />} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <div style={{ display: 'grid', gridTemplateColumns: stats.categoryStats.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
-              {stats.categoryStats.map((c, i) => (
-                <Indicator key={i} color={getDynamicColor(c.name, i)} label={`${c.name}: ${c.value}`} />
+            <div style={{ display: 'grid', gridTemplateColumns: categoryStatsT.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 12 }}>
+              {categoryStatsT.map((c, i) => (
+                // FIX: legend label uses translated c.label
+                <Indicator key={i} color={getDynamicColor(c.name, i)} label={`${c.label}: ${c.value}`} />
               ))}
             </div>
           </div>
@@ -685,6 +741,7 @@ export default function RepartitionPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
 
         {/* Area chart — Monthly / Daily trend */}
+        {/* FIX: sortedMonthlyStats already has locale-aware `month` labels for X-axis */}
         <div className="pp-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
             <div>
@@ -711,6 +768,7 @@ export default function RepartitionPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e0e7ff" />
+              {/* FIX: dataKey is "month" — already translated to locale-aware short labels */}
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10.5, fill: '#6366f1', fontWeight: 500 }} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
               <Area
@@ -723,29 +781,31 @@ export default function RepartitionPage() {
         </div>
 
         {/* Priorités — Pie Chart */}
+        {/* FIX: use priorityStatsT with translated `label` field for legend */}
         <div className="pp-card">
           <p className="pp-chart-title">{t('chart.priorityDistribution')}</p>
           <ResponsiveContainer width="100%" height={230}>
             <PieChart>
               <Pie
-                data={stats.priorityStats} cx="50%" cy="50%"
+                data={priorityStatsT} cx="50%" cy="50%"
                 innerRadius={55} outerRadius={85} paddingAngle={3}
                 dataKey="value" labelLine={false} label={renderPieLabel}
               >
-                {(stats.priorityStats || []).map((entry, index) => (
+                {priorityStatsT.map((entry, index) => (
                   <Cell key={index} fill={getDynamicColor(entry.name, index)} />
                 ))}
               </Pie>
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ display: 'grid', gridTemplateColumns: (stats.priorityStats?.length || 0) > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 10 }}>
-            {(stats.priorityStats || []).map((p, i) => (
-              <Indicator key={i} color={getDynamicColor(p.name, i)} label={`${p.name}: ${p.value}`} />
+          <div style={{ display: 'grid', gridTemplateColumns: priorityStatsT.length > 3 ? 'repeat(2, 1fr)' : '1fr', gap: '4px 12px', marginTop: 10 }}>
+            {priorityStatsT.map((p, i) => (
+              // FIX: legend label uses translated p.label
+              <Indicator key={i} color={getDynamicColor(p.name, i)} label={`${p.label}: ${p.value}`} />
             ))}
           </div>
         </div>
       </div>
-</div>
+    </div>
     </div>
   );
 }

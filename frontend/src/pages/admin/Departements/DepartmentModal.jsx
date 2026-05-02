@@ -52,7 +52,7 @@ function DepartmentModal({ department, setDepartment, setDepartments, department
         const e = await res.json().catch(() => ({}));
         const msg = e.error || `HTTP ${res.status}`;
         if (msg.toLowerCase().includes("name") || msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate")) {
-          setServerError(t('departments.modal.nameExists') || "A department with this name already exists.");
+          setServerError(t('departments.modal.nameExists'));
         } else {
           setServerError(msg);
         }
@@ -127,7 +127,7 @@ function DepartmentModal({ department, setDepartment, setDepartments, department
                 {serverError && <div style={{ marginBottom: missing.length > 0 ? 4 : 0 }}>{serverError}</div>}
                 {missing.length > 0 && (
                   <div>
-                    {t('departments.modal.nameRequired') || "Please fill in all required fields"}:&nbsp;
+                    {t('departments.modal.nameRequired')}:&nbsp;
                     <strong>{missing.join(", ")}</strong>
                   </div>
                 )}
@@ -140,7 +140,7 @@ function DepartmentModal({ department, setDepartment, setDepartments, department
               {t('departments.modal.nameLabel')}
               {missing.includes("name") && (
                 <span style={{ marginLeft: 6, fontWeight: 500, textTransform: "none", fontSize: 10 }}>
-                  — {t('departments.modal.required') || "required"}
+                  — {t('departments.modal.required')}
                 </span>
               )}
             </label>

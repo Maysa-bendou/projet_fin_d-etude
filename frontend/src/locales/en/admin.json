@@ -114,6 +114,8 @@
   },
 
   "departments": {
+    "title": "Operation Successful",
+    "done":  "Done",
     "pageTitle":         "Department Management",
     "pageSubtitle":      "Organizational structure of the company",
     "addButton":         "Add Department",
@@ -149,6 +151,13 @@
   },
 
   "users": {
+    "allRoles":      "All roles",
+"allStatuses":   "All statuses",
+"statusUpdated": "Status updated",
+    "role":              "Role",    
+    "department":        "Département", 
+    "service":           "Service",      
+    "unexpectedError":   "An unexpected error occurred." , 
     "pageTitle":         "User Management",
     "pageSubtitle":      "Directory administration and roles",
     "addButton":         "Add user",
@@ -178,6 +187,8 @@
       "emptySubtitle": "Adjust your filters or add a new member."
     },
     "modal": {
+  "role":       "Role",
+  "department": "Department",
       "titleAdd":        "Add user",
       "titleEdit":       "User details",
       "surname":         "First name",

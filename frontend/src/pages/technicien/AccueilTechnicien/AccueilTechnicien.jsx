@@ -43,11 +43,11 @@ const PRIO_STYLE = {
   critical: { c: "#ef4444", bg: "#fef2f2" },
 };
 const STA_STYLE = {
-  open:             { c: "#3b82f6", bg: "#eff6ff" },
-  in_progress:      { c: "#10b981", bg: "#f0fdf4" },
-  pending:          { c: "#8b5cf6", bg: "#f5f3ff" },
-  pending_supplier: { c: "#f97316", bg: "#fff7ed" },
-  resolved:         { c: "#6b7280", bg: "#f9fafb" },
+  open:             { c: "#1d4ed8", bg: "#eff6ff" },
+  in_progress:      { c: "#7c3aed", bg: "#f5f3ff" },
+  pending:          { c: "#a16207", bg: "#fefce8" },
+  pending_supplier: { c: "#c2410c", bg: "#fff7ed" },
+  resolved:         { c: "#15803d", bg: "#f0fdf4" },
 };
 const ACT_COLOR  = { assigned: "#3b82f6", confirm: "#8b5cf6", solution: "#10b981", info: "#f97316", status: "#94a3b8", reopen: "#ef4444" };
 const CAT_COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f97316", "#ef4444"];
@@ -240,13 +240,12 @@ const translateMonthName = (name) => {
     return map[type] || fallback || type;
   };
 
-  const STATS = [
-    { labelKey: 'accueilTech.stats.overdue',    val: stats.overdue,    Icon: AlertTriangle, c: "#ef4444", bg: "#fef2f2", border: "#fecaca" },
-    { labelKey: 'accueilTech.stats.inProgress', val: stats.inProgress, Icon: Loader,        c: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
-    { labelKey: 'accueilTech.stats.pending',    val: stats.pending,    Icon: Clock,         c: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe" },
-    { labelKey: 'accueilTech.stats.activeTotal',val: stats.total,      Icon: LayoutGrid,    c: "#10b981", bg: "#f0fdf4", border: "#a7f3d0" },
-  ];
-
+const STATS = [
+  { labelKey: 'accueilTech.stats.overdue',    val: stats.overdue,    Icon: AlertTriangle, c: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+  { labelKey: 'accueilTech.stats.inProgress', val: stats.inProgress, Icon: Loader,        c: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
+  { labelKey: 'accueilTech.stats.pending',    val: stats.pending,    Icon: Clock,         c: "#a16207", bg: "#fefce8", border: "#fde68a" },
+  { labelKey: 'accueilTech.stats.activeTotal',val: stats.total,      Icon: LayoutGrid,    c: "#10b981", bg: "#f0fdf4", border: "#a7f3d0" },
+];
   const sparkLabels = {
     assigned:  t('accueilTech.spark.assigned'),
     resolved:  t('accueilTech.spark.resolved'),

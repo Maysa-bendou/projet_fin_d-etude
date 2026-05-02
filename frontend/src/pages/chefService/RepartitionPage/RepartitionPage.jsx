@@ -14,10 +14,10 @@ import { MdCalendarMonth, MdCalendarViewMonth, MdOutlineInfo  } from 'react-icon
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
   const map = {
-    'open': '#3b82f6', 'in_progress': '#8b5cf6', 'resolved': '#10b981',
-    'closed': '#06b6d4', 'rejected': '#ef4444', 'pending': '#f59e0b',
-    'pending_supplier': '#0284c7', 'critical': '#ef4444', 'high': '#f97316',
-    'medium': '#f59e0b', 'low': '#10b981', 'incident': '#e11d48', 'demande': '#0ea5e9',
+    'open': '#1d4ed8', 'in_progress': '#7c3aed', 'resolved': '#15803d',
+    'closed': '#6b7280', 'rejected': '#dc2626', 'pending': '#a16207',
+    'pending_supplier': '#c2410c', 'critical': '#dc2626', 'high': '#ea580c',
+    'medium': '#ca8a04', 'low': '#16a34a', 'incident': '#e11d48', 'demande': '#0ea5e9',
     'problem': '#7c3aed', 'problème': '#7c3aed'
   };
   const palette = ['#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#f97316'];

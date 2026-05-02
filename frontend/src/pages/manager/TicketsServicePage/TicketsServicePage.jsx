@@ -33,7 +33,7 @@ const makeMonths = (locale) =>
   );
 
 const getArchiveYear  = (t) => t.closed_at  ? new Date(t.closed_at).getFullYear()  : null;
-const getCreatedMonth = (t) => t.created_at ? new Date(t.created_at).getMonth()    : null;
+const getMonth = (dateStr) => dateStr ? new Date(dateStr).getMonth() : null;
 
 const isArchived = (t) => {
   if (t.status !== "closed" && t.status !== "rejected") return false;
@@ -442,7 +442,7 @@ const TicketsServicePage = () => {
     return list.filter(tk => {
       const cat      = tk.category || tk.categorie || "";
       const assigned = !!(tk.assignedTo || tk.assigned_to || tk.users_tickets_assigned_toTousers);
-      const month    = getCreatedMonth(tk);
+      const month    = isArchive ? getMonth(tk.closed_at) : getMonth(tk.created_at);
       return (
         (!q                || String(tk.id).includes(q) || (tk.title || "").toLowerCase().includes(q)) &&
         (!filterStatus     || tk.status === filterStatus) &&

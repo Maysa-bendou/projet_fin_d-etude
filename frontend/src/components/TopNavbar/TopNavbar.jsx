@@ -246,14 +246,12 @@ export default function TopNavbar({ pageTitle = "" }) {
   const closeAll = () => { setNotifOpen(false); setProfileOpen(false); setLangOpen(false); };
 
   return (
-    <header className="w-full px-6 py-4" style={{ backgroundColor: "#faf9f7" }}>
+    <header className="w-full px-6 py-4" >
       <div className="flex items-center justify-between bg-white px-8 h-16 rounded-[40px] border border-[#e2e8f0] shadow-sm">
 
         {/* ── LEFT ── */}
         <div className="flex items-center gap-6">
-          <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest border-r border-slate-100 pr-6">
-            {t("brand")}
-          </span>
+          
         </div>
 
         {/* ── RIGHT ── */}
@@ -391,7 +389,7 @@ export default function TopNavbar({ pageTitle = "" }) {
                 {/* roleLabel now uses t() so it updates on language switch */}
                 <span className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{roleLabel}</span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-lg shadow-blue-100">
+              <div className="w-10 h-10 rounded-full bg-blue-600 text-white text-xs font-black flex items-center justify-center shadow-lg ">
                 {initials}
               </div>
               <ChevronDown size={14} className={`text-slate-300 transition-transform ${profileOpen ? "rotate-180" : ""}`} />

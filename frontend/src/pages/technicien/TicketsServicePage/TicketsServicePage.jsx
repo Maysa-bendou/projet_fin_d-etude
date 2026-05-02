@@ -30,7 +30,7 @@ const makeMonths = (locale) =>
   );
 
 const getArchiveYear  = (t) => t.closed_at  ? new Date(t.closed_at).getFullYear()  : null;
-const getCreatedMonth = (t) => t.created_at ? new Date(t.created_at).getMonth()    : null;
+const getMonth = (dateStr) => dateStr ? new Date(dateStr).getMonth() : null;
 
 const isArchived = (t) => {
   if (t.status !== "closed" && t.status !== "rejected") return false;
@@ -383,23 +383,25 @@ const TicketsServicePage = () => {
     return { actuelsList:actuals, archivesList:archives, archiveYears:[...yearsSet].sort((a,b)=>b-a) };
   }, [tickets]);
 
-  const filterList = useCallback((list, isArchive=false) => {
-    const q = debouncedSearch.trim().toLowerCase();
-    return list.filter(t => {
-      const cat      = t.category||t.categorie||"";
-      const assigned = !!(t.assignedTo||t.assigned_to||t.users_tickets_assigned_toTousers);
-      const month    = getCreatedMonth(t);
-      return (
-        (!q                || String(t.id).includes(q) || (t.title||"").toLowerCase().includes(q)) &&
-        (!filterStatus     || t.status === filterStatus) &&
-        (!filterCategory   || cat === filterCategory) &&
-        (!filterAssignment || (filterAssignment==="assigned" ? assigned : !assigned)) &&
-        (!filterMonth      || month === parseInt(filterMonth)) &&
-        (!isArchive        || !filterYear || getArchiveYear(t) === parseInt(filterYear))
-      );
-    });
-  }, [debouncedSearch, filterStatus, filterCategory, filterAssignment, filterYear, filterMonth]);
+ const filterList = useCallback((list, isArchive=false) => {
+  const q = debouncedSearch.trim().toLowerCase();
 
+  return list.filter(t => {
+    const cat      = t.category || t.categorie || "";
+    const assigned = !!(t.assignedTo || t.assigned_to || t.users_tickets_assigned_toTousers);
+
+   const month = isArchive ? getMonth(t.closed_at) : getMonth(t.created_at);
+
+    return (
+      (!q                || String(t.id).includes(q) || (t.title||"").toLowerCase().includes(q)) &&
+      (!filterStatus     || t.status === filterStatus) &&
+      (!filterCategory   || cat === filterCategory) &&
+      (!filterAssignment || (filterAssignment==="assigned" ? assigned : !assigned)) &&
+      (!filterMonth      || month === parseInt(filterMonth)) &&
+      (!isArchive        || !filterYear || getArchiveYear(t) === parseInt(filterYear))
+    );
+  });
+}, [debouncedSearch, filterStatus, filterCategory, filterAssignment, filterYear, filterMonth]);
   const filteredActuels  = useMemo(() => filterList(actuelsList,  false), [filterList, actuelsList]);
   const filteredArchives = useMemo(() => filterList(archivesList, true),  [filterList, archivesList]);
   const displayedTickets = activeTab==="actuels" ? filteredActuels : filteredArchives;

@@ -10,7 +10,18 @@ import {
   HiOutlinePauseCircle, HiOutlineXCircle, HiOutlineArchiveBoxArrowDown,
   HiOutlineShieldExclamation,
 } from "react-icons/hi2";
+import { STATUS_CONFIG } from "../../../config/styles";
 
+const STAT_CARD_DEFS = [
+  { key: null,                     Icon: HiOutlineTicket,              color: "#374151", bg: "#f9fafb", border: "#e5e7eb" },
+  { key: "Ouvert",                 Icon: HiOutlineShieldExclamation,   ...STATUS_CONFIG.open             },
+  { key: "En cours",               Icon: HiOutlineClock,               ...STATUS_CONFIG.in_progress      },
+  { key: "En attente",             Icon: HiOutlinePauseCircle,         ...STATUS_CONFIG.pending          },
+  { key: "En attente fournisseur", Icon: HiOutlinePauseCircle,         ...STATUS_CONFIG.pending_supplier },
+  { key: "Résolu",                 Icon: HiOutlineCheckCircle,         ...STATUS_CONFIG.resolved         },
+  { key: "Fermé",                  Icon: HiOutlineArchiveBoxArrowDown,  ...STATUS_CONFIG.closed           },
+  { key: "Rejeté",                 Icon: HiOutlineXCircle,             ...STATUS_CONFIG.rejected         },
+];
 // ── Constants ─────────────────────────────────────
 const THIS_YEAR = new Date().getFullYear();
 
@@ -23,7 +34,16 @@ const statutStyle = {
   "Fermé":                  "bg-gray-100 text-gray-500",
   "Rejeté":                 "bg-red-100 text-red-600",
 };
-
+// Ajoute après statutStyle
+const statutColors = {
+  "Ouvert":                 { background: "#dbeafe", color: "#1d4ed8" },
+  "En cours":               { background: "#ede9fe", color: "#7c3aed" },
+  "En attente":             { background: "#fef9c3", color: "#a16207" },
+  "En attente fournisseur": { background: "#ffedd5", color: "#c2410c" },
+  "Résolu":                 { background: "#dcfce7", color: "#15803d" },
+  "Fermé":                  { background: "#f3f4f6", color: "#6b7280" },
+  "Rejeté":                 { background: "#fee2e2", color: "#dc2626" },
+};
 const prioriteStyle = {
   "Haute":   "bg-orange-100 text-orange-600",
   "Normale": "bg-yellow-100 text-yellow-600",
@@ -64,16 +84,7 @@ const priorityFR  = { low: "Basse", medium: "Normale", high: "Haute" };
 const categoryFR  = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", messagerie: "Messagerie" };
 
 // STAT_CARDS icons stay the same; labels are translated in the component via useMemo
-const STAT_CARD_DEFS = [
-  { key: null,                     cls: "#374151", Icon: HiOutlineTicket             },
-  { key: "Ouvert",                 cls: "#1d4ed8", Icon: HiOutlineShieldExclamation  },
-  { key: "En cours",               cls: "#7c3aed", Icon: HiOutlineClock              },
-  { key: "En attente",             cls: "#a16207", Icon: HiOutlinePauseCircle        },
-  { key: "En attente fournisseur", cls: "#c2410c", Icon: HiOutlinePauseCircle        },
-  { key: "Résolu",                 cls: "#15803d", Icon: HiOutlineCheckCircle        },
-  { key: "Fermé",                  cls: "#6b7280", Icon: HiOutlineArchiveBoxArrowDown },
-  { key: "Rejeté",                 cls: "#dc2626", Icon: HiOutlineXCircle            },
-];
+
 
 const MONTHS_FR = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
 const getCreatedMonth = (t) => t.createdAt ? new Date(t.createdAt).getMonth() : null;
@@ -317,17 +328,15 @@ export default function TicketsAssignesPage() {
 
   // STAT_CARDS: icons/colors from doc1 + translated labels from doc2
   const STAT_CARDS = useMemo(() => [
-    { label: t("ticketsService.stats.total"),           ...STAT_CARD_DEFS[0] },
-    { label: t("ticketsService.stats.open"),            ...STAT_CARD_DEFS[1] },
-    { label: t("ticketsService.stats.inProgress"),      ...STAT_CARD_DEFS[2] },
-    { label: t("ticketsService.stats.pending"),         ...STAT_CARD_DEFS[3] },
-    { label: t("ticketsService.stats.pendingSupplier"), ...STAT_CARD_DEFS[4] },
-    { label: t("ticketsService.stats.resolved"),        ...STAT_CARD_DEFS[5] },
-    { label: t("ticketsService.stats.closed"),          ...STAT_CARD_DEFS[6] },
-    { label: t("ticketsService.stats.rejected"),        ...STAT_CARD_DEFS[7] },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [t]);
-
+  { label: t("ticketsService.stats.total"),           ...STAT_CARD_DEFS[0] },
+  { label: t("ticketsService.stats.open"),            ...STAT_CARD_DEFS[1] },
+  { label: t("ticketsService.stats.inProgress"),      ...STAT_CARD_DEFS[2] },
+  { label: t("ticketsService.stats.pending"),         ...STAT_CARD_DEFS[3] },
+  { label: t("ticketsService.stats.pendingSupplier"), ...STAT_CARD_DEFS[4] },
+  { label: t("ticketsService.stats.resolved"),        ...STAT_CARD_DEFS[5] },
+  { label: t("ticketsService.stats.closed"),          ...STAT_CARD_DEFS[6] },
+  { label: t("ticketsService.stats.rejected"),        ...STAT_CARD_DEFS[7] },
+], [t]);
   useEffect(() => {
     fetch("http://localhost:3001/api/tech/enums")
       .then(r => r.json())
@@ -425,8 +434,8 @@ export default function TicketsAssignesPage() {
       fmtDate(tk.createdAt).includes(q);
 
     const month = withYear
-      ? getMonthFromDate(tk.closedAt || tk.createdAt) // 🔥 FIX HERE
-      : getMonthFromDate(tk.createdAt);
+  ? (tk.closedAt || tk.createdAt ? new Date(tk.closedAt || tk.createdAt).getMonth() : null)
+  : (tk.createdAt ? new Date(tk.createdAt).getMonth() : null);
 
     return (
       matchSearch &&
@@ -508,9 +517,7 @@ export default function TicketsAssignesPage() {
         {/* ── Alerte SLA ── */}
         {slaDepasses.length > 0 && (
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", flexShrink: 0, animation: "pulse 1.5s ease-in-out infinite" }} />
-            <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#b91c1c" }}>
+             <span style={{ fontSize: 13, fontWeight: 600, color: "#b91c1c" }}>
               {t("ticketsService.sla.alertBanner", { count: slaDepasses.length })}
             </span>
             <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -528,21 +535,30 @@ export default function TicketsAssignesPage() {
         )}
 
         {/* ── Stat Cards ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 8, marginBottom: 20 }}>
-          {STAT_CARDS.map(({ label, key, cls, Icon }) => (
-            <div key={label} style={{ background: "#fff", borderRadius: 10, border: "1px solid #e8e2d9", padding: "10px 12px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {label}
-                </p>
-                <Icon size={13} color={cls} style={{ flexShrink: 0, opacity: 0.7 }} />
-              </div>
-              <p style={{ fontSize: 22, fontWeight: 900, color: cls, margin: 0, lineHeight: 1 }}>
-                {key === null ? actuelsList.length : (counts[key] ?? 0)}
-              </p>
-            </div>
-          ))}
+        {/* ── Stat Cards ── */}
+<div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 8, marginBottom: 20 }}>
+  {STAT_CARDS.map(({ label, key, color, bg, border, Icon }) => (
+    <div key={label} style={{
+      background: bg,
+      borderRadius: 10,
+      border: `1.5px solid ${border}`,
+      padding: "10px 12px",
+      boxShadow: `inset 0 0 0 999px ${bg}30`,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {label}
+        </p>
+        <div style={{ background: "#fff", border: `1.5px solid ${border}`, borderRadius: 6, padding: 4, display: "flex", flexShrink: 0 }}>
+          <Icon size={11} color={color} />
         </div>
+      </div>
+      <p style={{ fontSize: 22, fontWeight: 900, color: color, margin: 0, lineHeight: 1 }}>
+        {key === null ? actuelsList.length : (counts[key] ?? 0)}
+      </p>
+    </div>
+  ))}
+</div>
 
         {/* ── Tabs ── */}
         <TabSwitch
@@ -692,17 +708,49 @@ export default function TicketsAssignesPage() {
                         </td>
 
                         {/* Statut — select inline */}
-                        <td style={{ padding: "9px 10px" }} onClick={e => e.stopPropagation()}>
-                          <select
-                            value={statutCurrent}
-                            onChange={e => changerStatut(e, tk.id, e.target.value)}
-                            className={`border-none rounded-full px-2 py-0.5 text-xs font-medium cursor-pointer focus:outline-none ${statutStyle[statutCurrent] ?? "bg-gray-100 text-gray-600"}`}
-                          >
-                            {Object.keys(statusEN).map(s => (
-                              <option key={s} value={s}>{tStatus(s)}</option>
-                            ))}
-                          </select>
-                        </td>
+                       {/* Statut — select inline */}
+<td style={{ padding: "9px 10px" }} onClick={e => e.stopPropagation()}>
+  <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+    <select
+      value={statutCurrent}
+      onChange={e => changerStatut(e, tk.id, e.target.value)}
+      style={{
+        border: "none",
+        borderRadius: 99,
+        padding: "2px 24px 2px 8px",
+        fontSize: 11,
+        fontWeight: 600,
+        cursor: "pointer",
+        outline: "none",
+        appearance: "none",
+        WebkitAppearance: "none",
+        ...(statutColors[statutCurrent] ?? { background: "#f3f4f6", color: "#6b7280" }),
+      }}
+    >
+      {Object.keys(statusEN).map(s => (
+        <option key={s} value={s}>{tStatus(s)}</option>
+      ))}
+    </select>
+    {/* Custom arrow */}
+    <svg
+      style={{
+        position: "absolute",
+        right: 7,
+        pointerEvents: "none",
+        flexShrink: 0,
+      }}
+      width="10" height="10" viewBox="0 0 10 10" fill="none"
+    >
+      <path
+        d="M2 3.5L5 6.5L8 3.5"
+        stroke={statutColors[statutCurrent]?.color ?? "#6b7280"}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </div>
+</td>
 
                         {/* SLA */}
                         <td style={{ padding: "9px 10px" }}>

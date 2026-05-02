@@ -52,12 +52,12 @@ const AccueilPage = () => {
     <div style={{ padding: 40, textAlign: 'center', color: '#faf9f7' }}>{t('common.loading')}</div>
   );
 
-  const STATS = [
-    { label: t('accueil.stats.total'),       val: stats.total,       Icon: MdHistory,        c: "#ef4444", bg: "#fef2f2", border: "#fecaca" },
-    { label: t('accueil.stats.open'),        val: stats.open,        Icon: MdHourglassEmpty, c: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
-    { label: t('accueil.stats.in_progress'), val: stats.in_progress, Icon: MdAutorenew,      c: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe" },
-    { label: t('accueil.stats.resolved'),    val: stats.resolved,    Icon: MdCheckCircle,    c: "#10b981", bg: "#f0fdf4", border: "#a7f3d0" },
-  ];
+const STATS = [
+  { label: t('accueil.stats.total'),       val: stats.total,       Icon: MdHistory,        c: "#ef4444", bg: "#fef2f2", border: "#fecaca" },
+  { label: t('accueil.stats.open'),        val: stats.open,        Icon: MdHourglassEmpty, c: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
+  { label: t('accueil.stats.in_progress'), val: stats.in_progress, Icon: MdAutorenew,      c: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
+  { label: t('accueil.stats.resolved'),    val: stats.resolved,    Icon: MdCheckCircle,    c: "#15803d", bg: "#f0fdf4", border: "#a7f3d0" },
+];
 
   return (
     <div style={{ padding: '15px', background: '#faf9f7', minHeight: '100vh' }}>

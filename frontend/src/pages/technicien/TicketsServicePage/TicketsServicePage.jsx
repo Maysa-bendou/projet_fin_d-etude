@@ -79,7 +79,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
   }
 
   if (PAUSED.includes(status)) {
-    const frozen = slaPauseElapsed != null ? win - slaPauseElapsed : Math.max(0, due - now);
+    const frozen = slaPauseElapsed != null ? slaPauseElapsed : Math.max(0, due - now);
     const pct = Math.min(100, Math.max(0, ((win - frozen) / win) * 100));
     const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
     return (
@@ -96,7 +96,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
 
   const diffMs = due - now;
   const exceeded = diffMs <= 0;
-  const pct = Math.max(0, Math.min(100, ((win - Math.max(0, diffMs)) / win) * 100));
+  const pct = exceeded ? 100 : Math.max(0, Math.min(100, (Math.max(0, diffMs) / win) * 100));
   const abs = Math.abs(diffMs);
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
   const barColor = exceeded ? "#ef4444" : h < 2 ? "#f87171" : h < 6 ? "#fbbf24" : "#34d399";

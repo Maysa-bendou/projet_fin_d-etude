@@ -60,10 +60,10 @@ function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElaps
     return { mode: "terminal", exceeded, diffH: Math.floor(delta / 3600000), diffM: Math.floor((delta % 3600000) / 60000), pct: Math.min(100, Math.max(0, (used / win) * 100)), deadline: new Date(slaDateLimite) };
   }
   if (PAUSED.includes(statut)) {
-    const frozen = slaPauseElapsed != null ? win - slaPauseElapsed : Math.max(0, due - now);
-    const elapsed = win - frozen;
-    return { mode: "paused", diffH: Math.floor(frozen / 3600000), diffM: Math.floor((frozen % 3600000) / 60000), pct: Math.min(100, Math.max(0, (elapsed / win) * 100)), deadline: new Date(slaDateLimite) };
-  }
+  const frozen  = slaPauseElapsed != null ? slaPauseElapsed : Math.max(0, due - now); // ← remove "win -"
+  const elapsed = win - frozen;
+  return { mode: "paused", diffH: Math.floor(frozen / 3600000), diffM: Math.floor((frozen % 3600000) / 60000), pct: Math.min(100, Math.max(0, (elapsed / win) * 100)), deadline: new Date(slaDateLimite) };
+}
   const remaining = due - now;
   const exceeded  = remaining <= 0;
   const abs = Math.abs(remaining);

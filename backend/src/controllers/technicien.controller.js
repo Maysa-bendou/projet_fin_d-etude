@@ -180,25 +180,26 @@ const updateTicketStatus = async (req, res) => {
     const wasPaused = PAUSED.includes(ticket.status);
     let extra = {};
 
-    if (PAUSED.includes(status) && !wasPaused) {
-      // → mise en pause : on sauvegarde les ms déjà consommées
-      const elapsed = now.getTime() - new Date(ticket.sla_date_debut).getTime();
-      extra.sla_pause_elapsed_ms = BigInt(Math.max(0, elapsed));
-      extra.sla_statut = "pause";
-    }
+   if (PAUSED.includes(status) && !wasPaused) {
+  // Save remaining time at pause moment
+  const elapsed = now.getTime() - new Date(ticket.sla_date_debut).getTime();
+  const slaWindow = ticket.sla_date_limite
+    ? new Date(ticket.sla_date_limite).getTime() - new Date(ticket.sla_date_debut).getTime()
+    : 24 * 3600 * 1000;
+  const remaining = Math.max(0, slaWindow - elapsed);
 
-    else if (!PAUSED.includes(status) && wasPaused) {
-      // → reprise : on recalcule sla_date_limite avec le temps restant réel
-      const slaWindow = ticket.sla_date_limite
-        ? new Date(ticket.sla_date_limite).getTime() - new Date(ticket.sla_date_debut).getTime()
-        : 24 * 3600 * 1000;
-      const elapsed   = Number(ticket.sla_pause_elapsed_ms ?? 0);
-      const remaining = Math.max(0, slaWindow - elapsed);
-      extra.sla_date_limite        = new Date(now.getTime() + remaining);
-      extra.sla_date_debut         = now;
-      extra.sla_pause_elapsed_ms   = null;
-      extra.sla_statut             = "en_cours";
-    }
+  extra.sla_pause_elapsed_ms = BigInt(remaining); // ← store REMAINING not elapsed
+  extra.sla_statut           = "pause";
+  // leave sla_date_debut and sla_date_limite untouched
+}
+
+else if (!PAUSED.includes(status) && wasPaused) {
+  // Restore from saved remaining
+  const remaining = Number(ticket.sla_pause_elapsed_ms ?? 0);
+  extra.sla_date_limite      = new Date(now.getTime() + remaining);
+  extra.sla_pause_elapsed_ms = null;
+  extra.sla_statut           = "en_cours";
+}
 
     else if (TERMINAL.includes(status)) {
       const exceeded = ticket.sla_date_limite && now > new Date(ticket.sla_date_limite);

@@ -183,20 +183,24 @@ export default function MesTicketsPage() {
   }, [ticketsData]);
 
   const filterList = (list, isArchive = false) => {
-    const q = filterSearch.trim().toLowerCase();
-    return list
-      .filter(ticket => {
-        const month = getCreatedMonth(ticket);
-        return (
-          (!q              || String(ticket.id).includes(q) || (ticket.title || "").toLowerCase().includes(q)) &&
-          (!filterStatus   || ticket.status   === filterStatus)   &&
-          (!filterPriority || ticket.priority === filterPriority) &&
-          (!filterService  || ticket.service  === filterService)  &&
-          (!filterCategory || ticket.category === filterCategory) &&
-          (filterMonth === "" || month === parseInt(filterMonth))    &&
-          (!isArchive || filterYear === "" || getArchiveYear(ticket) === parseInt(filterYear))
-        );
-      })
+  const q = filterSearch.trim().toLowerCase();
+  return list
+    .filter(ticket => {
+      // ✅ Use closed_at for archives, created_at for actuels
+      const relevantDate = isArchive ? ticket.closed_at : ticket.created_at;
+      const month = relevantDate ? new Date(relevantDate).getMonth() + 1 : null;
+
+      return (
+        (!q              || String(ticket.id).includes(q) || (ticket.title || "").toLowerCase().includes(q)) &&
+        (!filterStatus   || ticket.status   === filterStatus)   &&
+        (!filterPriority || ticket.priority === filterPriority) &&
+        (!filterService  || ticket.service  === filterService)  &&
+        (!filterCategory || ticket.category === filterCategory) &&
+        (filterMonth === "" || month === parseInt(filterMonth)) &&
+        (!isArchive || filterYear === "" || getArchiveYear(ticket) === parseInt(filterYear))
+      );
+    })
+    // rest of sort...
       .sort((a, b) => {
         const da = isArchive ? (a.closed_at || a.created_at) : (a.updated_at || a.created_at);
         const db = isArchive ? (b.closed_at || b.created_at) : (b.updated_at || b.created_at);

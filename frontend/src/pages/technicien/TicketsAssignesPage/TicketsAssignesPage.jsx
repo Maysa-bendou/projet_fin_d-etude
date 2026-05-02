@@ -415,25 +415,29 @@ export default function TicketsAssignesPage() {
   }, [ticketsData]);
 
   const filterList = useCallback((list, withYear = false) => {
-    const q = search.toLowerCase();
-    return list.filter(tk => {
-      const matchSearch =
-        !search ||
-        String(tk.id).includes(q) ||
-        tk.titre?.toLowerCase().includes(q) ||
-        fmtDate(tk.createdAt).includes(q);
-      const month = getCreatedMonth(tk);
-      return (
-        matchSearch &&
-        (!filterStatut    || statuts[tk.id] === filterStatut) &&
-        (!filterPriorite  || tk.priorite    === filterPriorite) &&
-        (!filterCategorie || tk.categorie   === filterCategorie) &&
-        (!filterMonth     || month === parseInt(filterMonth)) &&
-        (!withYear || !filterYear || getArchiveYear(tk) === parseInt(filterYear))
-      );
-    });
-  }, [search, filterStatut, filterPriorite, filterCategorie, filterYear, filterMonth, statuts]);
+  const q = search.toLowerCase();
 
+  return list.filter(tk => {
+    const matchSearch =
+      !search ||
+      String(tk.id).includes(q) ||
+      tk.titre?.toLowerCase().includes(q) ||
+      fmtDate(tk.createdAt).includes(q);
+
+    const month = withYear
+      ? getMonthFromDate(tk.closedAt || tk.createdAt) // 🔥 FIX HERE
+      : getMonthFromDate(tk.createdAt);
+
+    return (
+      matchSearch &&
+      (!filterStatut    || statuts[tk.id] === filterStatut) &&
+      (!filterPriorite  || tk.priorite    === filterPriorite) &&
+      (!filterCategorie || tk.categorie   === filterCategorie) &&
+      (!filterMonth     || month === parseInt(filterMonth)) &&
+      (!withYear || !filterYear || getArchiveYear(tk) === parseInt(filterYear))
+    );
+  });
+}, [search, filterStatut, filterPriorite, filterCategorie, filterYear, filterMonth, statuts]);
   const filteredActuels  = useMemo(() => filterList(actuelsList, false), [filterList, actuelsList]);
   const filteredArchives = useMemo(() => filterList(archivesList, true),  [filterList, archivesList]);
   const filtered = activeTab === "actuels" ? filteredActuels : filteredArchives;

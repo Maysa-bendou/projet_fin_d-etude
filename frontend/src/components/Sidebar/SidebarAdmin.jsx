@@ -38,6 +38,8 @@ export default function SidebarAdmin() {
   const navigate = useNavigate();
   const { t } = useTranslation("sidbar");
 
+
+  {/* { icon: Layers,   label: t("admin.departments"), path: "/admin/departements" },  */}
   const menuItems = [
     { 
       icon: Users, 
@@ -45,7 +47,6 @@ export default function SidebarAdmin() {
       path: "/admin/utilisateurs",
       hasNotify: true
     },
-    { icon: Layers,   label: t("admin.departments"), path: "/admin/departements" },
     { icon: Settings, label: t("admin.settings"),    path: "/admin/parametres" },
     { icon: User,     label: t("common.profile"),    path: "/admin/profile" },
   ];

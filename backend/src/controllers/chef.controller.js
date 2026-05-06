@@ -173,11 +173,36 @@ getServiceStats: async (req, res) => {
       percentage: totalTickets > 0 ? Math.round((t._count.id / totalTickets) * 100) : 0
     }));
 
-    // ── 4. SLA (filtered) ─────────────────────────────────────────────────────
-    const now          = new Date();
-    const overdueCount = await prisma.tickets.count({
-      where: { ...baseWhere, sla_due_date: { lt: now }, status: { notIn: ['resolved', 'closed'] } }
-    });
+// ── 4. SLA (filtered) ─────────────────────────────────────────────────────
+const allTicketsForSla = await prisma.tickets.findMany({
+  where: baseWhere,
+  select: {
+    status: true,
+    sla_date_limite: true,
+    solution_date_resolved: true,
+    closed_at: true,
+    updated_at: true
+  }
+});
+
+const now = new Date();
+let overdueCount = 0;
+
+for (const ticket of allTicketsForSla) {
+  if (!ticket.sla_date_limite) continue;
+  const deadline = new Date(ticket.sla_date_limite);
+  let comparisonDate;
+  if (ticket.status === 'resolved') {
+    comparisonDate = ticket.solution_date_resolved ? new Date(ticket.solution_date_resolved) : new Date(ticket.updated_at);
+  } else if (ticket.status === 'closed') {
+    comparisonDate = ticket.closed_at ? new Date(ticket.closed_at) : new Date(ticket.updated_at);
+  } else if (ticket.status === 'rejected') {
+    comparisonDate = new Date(ticket.updated_at);
+  } else {
+    comparisonDate = now;
+  }
+  if (comparisonDate > deadline) overdueCount++;
+}
 
     // ── 5. Monthly / Daily trend (filtered) ───────────────────────────────────
     const currentYear = filterYear || new Date().getFullYear();
@@ -373,20 +398,41 @@ getServiceStats: async (req, res) => {
         ? Math.round((resolvedCount / totalTickets) * 100)
         : 0;
 
-      // 5. SLA across ALL services
-      const now = new Date();
-      const overdueCount = await prisma.tickets.count({
-        where: {
-          ...baseWhere,
-          sla_due_date: { lt: now },
-          status: { notIn: ['resolved', 'closed'] }
-        }
-      });
+// 5. SLA across ALL services
+const allTicketsForSla = await prisma.tickets.findMany({
+  where: baseWhere,
+  select: {
+    status: true,
+    sla_date_limite: true,
+    solution_date_resolved: true,
+    closed_at: true,
+    updated_at: true
+  }
+});
 
-      const slaStats = [
-        { name: 'Respecté', value: totalTickets - overdueCount },
-        { name: 'Dépassé',  value: overdueCount }
-      ];
+const now = new Date();
+let overdueCount = 0;
+
+for (const ticket of allTicketsForSla) {
+  if (!ticket.sla_date_limite) continue;
+  const deadline = new Date(ticket.sla_date_limite);
+  let comparisonDate;
+  if (ticket.status === 'resolved') {
+    comparisonDate = ticket.solution_date_resolved ? new Date(ticket.solution_date_resolved) : new Date(ticket.updated_at);
+  } else if (ticket.status === 'closed') {
+    comparisonDate = ticket.closed_at ? new Date(ticket.closed_at) : new Date(ticket.updated_at);
+  } else if (ticket.status === 'rejected') {
+    comparisonDate = new Date(ticket.updated_at);
+  } else {
+    comparisonDate = now;
+  }
+  if (comparisonDate > deadline) overdueCount++;
+}
+
+const slaStats = [
+  { name: 'Respecté', value: totalTickets - overdueCount },
+  { name: 'Dépassé',  value: overdueCount }
+];
 
       // 6. Per-service breakdown
       const serviceBreakdown = await Promise.all(

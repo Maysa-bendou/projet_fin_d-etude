@@ -161,12 +161,11 @@ if (msg.startsWith("ticket_redirected:")) {
       const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
       return { mode: "terminal", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.closedOk"), pct: exceeded ? 100 : Math.min(100, ((window - (due - closed)) / window) * 100) };
     }
-    if (PAUSED.includes(tk.status)) {
-      const elapsed = tk.sla_pause_elapsed_ms ? Number(tk.sla_pause_elapsed_ms) : null;
-      const frozen  = elapsed != null ? window - elapsed : Math.max(0, due - now);
-      const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
-      return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, ((window - frozen) / window) * 100) };
-    }
+   if (PAUSED.includes(tk.status)) {
+  const frozen = tk.sla_pause_elapsed_ms != null ? Number(tk.sla_pause_elapsed_ms) : Math.max(0, due - now);
+  const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+  return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, (frozen / window) * 100) };
+}
     const remaining = due - now;
     const exceeded  = remaining <= 0;
     const abs = Math.abs(remaining);
@@ -409,47 +408,7 @@ if (msg.startsWith("ticket_redirected:")) {
               </div>
             )}
 
-            {/* History timeline — translates legacy French DB messages */}
-            {tk.comments?.filter(c => c.comment_type !== "attachment").length > 0 && (
-              <div style={{ padding: '14px 22px', borderBottom: '1px solid #e8e2d9' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>
-                  {t("ticketDetail.history", { defaultValue: "History" })}
-                </p>
-                <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 4 }}>
-                  {tk.comments
-                    .filter(c => c.comment_type !== "attachment")
-                    .map((c, i, arr) => {
-                      const translated = translateLegacyMsg(c.message ?? "");
-                      return (
-                        <div key={c.id ?? i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '1 0 130px', minWidth: 130, position: 'relative' }}>
-                          {i < arr.length - 1 && (
-                            <div style={{ position: 'absolute', top: 11, left: '50%', width: '100%', height: 1.5, background: '#e8e2d9', zIndex: 0 }} />
-                          )}
-                          <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#f1f5f9', border: '1.5px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, flexShrink: 0 }} />
-                          <div style={{ marginTop: 7, padding: '7px 9px', borderRadius: 8, background: '#faf9f7', border: '1px solid #e8e2d9', width: 'calc(100% - 14px)', fontSize: 11, textAlign: 'center', color: '#475569' }}>
-                            {/* Message: translated if legacy string, otherwise HTML */}
-                            <div style={{ fontSize: 11, lineHeight: 1.4, marginBottom: 2 }}>
-                              {translated !== null
-                                ? translated
-                                : <span dangerouslySetInnerHTML={{ __html: c.message }} />
-                              }
-                            </div>
-                            {/* Timestamp — locale-aware withTime */}
-                            <p style={{ fontSize: 10, color: '#94a3b8', margin: '3px 0 0' }}>
-                              {formatDate(t, c.date, "withTime")}
-                            </p>
-                            {c.author && (
-                              <p style={{ fontSize: 10, color: '#94a3b8', margin: '1px 0 0' }}>
-                                {t("common.by", { ns: "common", defaultValue: "by" })} {c.author}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
+          
 
             {/* Footer — assignment info + take-charge button */}
             <div style={{ padding: '14px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>

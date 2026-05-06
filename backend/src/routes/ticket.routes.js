@@ -211,10 +211,10 @@ router.get("/", async (req, res) => {
       closed_at:       t.closed_at,
       created_at:      t.created_at,       // ← ajouter
       assigned_at:     t.assigned_at, 
-        sla_pause_elapsed_ms: t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null,  // ← add
-  sla_statut:      t.sla_statut, 
+      sla_pause_elapsed_ms: t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null,  // ← add
+      sla_statut:      t.sla_statut, 
       createdBy:       t.users_tickets_created_byTousers?.name,
-       employee:        t.users_tickets_created_byTousers,
+      employee:        t.users_tickets_created_byTousers,
       assignedTo: t.users_tickets_assigned_toTousers,
       technicienId:    t.assigned_to,
     }));

@@ -87,8 +87,8 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
   }
 
   if (PAUSED.includes(status)) {
-    const frozen = slaPauseElapsed != null ? win - slaPauseElapsed : Math.max(0, due - now);
-    const pct    = Math.min(100, Math.max(0, ((win - frozen) / win) * 100));
+const frozen = slaPauseElapsed != null ? slaPauseElapsed : Math.max(0, due - now);
+const pct    = Math.min(100, Math.max(0, (frozen / win) * 100));
     const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -104,7 +104,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
 
   const diffMs   = due - now;
   const exceeded = diffMs <= 0;
-  const pct      = Math.max(0, Math.min(100, ((win - Math.max(0, diffMs)) / win) * 100));
+  const pct = exceeded ? 100 : Math.max(0, Math.min(100, (Math.max(0, diffMs) / win) * 100));
   const abs      = Math.abs(diffMs);
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
   const barColor = exceeded ? "#ef4444" : h < 2 ? "#f87171" : h < 6 ? "#fbbf24" : "#34d399";
@@ -113,7 +113,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
       <div style={{ height: 3, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: barColor }} />
       </div>
-      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#94a3b8" }}>
+      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : h < 2 ? "#c2410c" : h < 6 ? "#a16207" : "#15803d" }}>
         {exceeded ? t("ticketsService.sla.alert", { h, m }) : t("ticketsService.sla.remaining", { h, m })}
       </span>
     </div>

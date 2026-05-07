@@ -255,7 +255,7 @@
     "closingNote": "Note de fermeture",
     "solution": "Solution",
     "comment": "Commentaire",
-    "previousSolutionReopened": "Solution précédente (ticket réouvert)",
+    "previousSolutionReopened": "Solution précédente ",
     "delete": "Supprimer",
     "orSendNewSolution": "ou envoyez une nouvelle solution ci-dessous pour la remplacer.",
     "solutionSentAwaitingConfirm": "Solution envoyée — en attente de la confirmation de l'employé.",

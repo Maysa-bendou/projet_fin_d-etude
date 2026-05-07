@@ -260,32 +260,32 @@ export default function ConversationActions({
                 </div>
 
                 {/* ── Solution précédente après réouverture ── */}
-                {!isClosed && ticket.solution && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
-                    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest flex items-center gap-1">
-                      <Info size={11}/> {t("conv.previousSolutionReopened")}
-                    </p>
-                    <div className="text-[12px] text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={async () => {
-                          await fetch(`http://localhost:3001/api/tech/tickets/${ticket.id}/clear-solution`, {
-                            method: "PUT",
-                            headers: { "Content-Type": "application/json" },
-                          });
-                          await fetchTicket(true);  // ← besoin de passer fetchTicket en prop
-                        }}
-                        className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
-                      >
-                        {t("conv.delete")}
-                      </button>
-                      <span className="text-[11px] text-amber-600 flex items-center">
-                        {t("conv.orSendNewSolution")}
-                      </span>
-                    </div>
-                  </div>
-                )}
+{!isClosed && ticket.solution && conversation.some(c => c.type === "rejected_confirm") && (
+  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+    <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest flex items-center gap-1">
+      <Info size={11}/> {t("conv.previousSolutionReopened")}
+    </p>
+    <div className="text-[12px] text-gray-700 leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+    <div className="flex gap-2 pt-1">
+      <button
+        onClick={async () => {
+          await fetch(`http://localhost:3001/api/tech/tickets/${ticket.id}/clear-solution`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+          });
+          await fetchTicket(true);
+        }}
+        className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+      >
+        {t("conv.delete")}
+      </button>
+      <span className="text-[11px] text-amber-600 flex items-center">
+        {t("conv.orSendNewSolution")}
+      </span>
+    </div>
+  </div>
+)}
 
                 {/* Notices */}
                 {respondMode === "solution" && solutionBlockedLocal && (

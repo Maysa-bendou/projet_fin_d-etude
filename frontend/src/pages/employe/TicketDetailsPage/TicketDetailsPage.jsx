@@ -210,7 +210,10 @@ export default function TicketDetailsPage() {
 
   const translateLegacyMsg = (msg) => {
     if (!msg) return "";
-    if (msg === "technician_took_over")   return t("history.technicianTookOver",    { ns: "common" });
+if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return t("history.technicianTookOver", { ns: "common", name });
+}
     if (msg === "ticket_assigned")        return t("history.ticketAssigned",         { ns: "common" });
     if (msg === "confirmation_requested") return t("history.confirmationRequested",  { ns: "common" });
     if (msg === "history.confirmationRequested") return t("history.confirmationRequested", { ns: "common" });
@@ -241,7 +244,8 @@ export default function TicketDetailsPage() {
       return t("history.employeeUpdated", { ns: "common", detail });
     }
     const LEGACY = {
-      "Technicien a pris en charge le ticket":                      t("history.technicianTookOver",    { ns: "common" }),
+    
+"Technicien a pris en charge le ticket": t("history.technicianTookOver", { ns: "common", name: "" }),
       "Ticket assigné à un technicien":                             t("history.ticketAssigned",         { ns: "common" }),
       "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns: "common" }),
       "Ticket fermé manuellement par le technicien.":               t("history.ticketClosed",           { ns: "common" }),

@@ -239,16 +239,21 @@
       "reason": "Reason"
     },
     "modal": {
-      "title": "Ticket taken over",
+      "title": "Ticket taken over by ",
       "status": "In Progress",
-      "body": "You are now responsible for this ticket. What would you like to do?",
+      "body": "What would you like to do next?",
       "stayHere": "Stay on this ticket",
       "backToList": "Back to ticket list"
     },
-    "btn": {
-      "takeCharge": "Take charge",
-      "alreadyAssigned": "Already Assigned",
-      "taking": "Processing..."
-    }
+"takenByTech": "Taken over by the technician",
+"btn": {
+  "alreadyAssigned": "Already Assigned",
+  "cancel": "Cancel",
+  "assignTicket": "Assign ticket",
+  "modifyExpert": "Modify expert",
+  "confirmModify": "Confirm modification",
+  "assign": "Assign",
+  "taking": "Processing..."
+}
   }
 }

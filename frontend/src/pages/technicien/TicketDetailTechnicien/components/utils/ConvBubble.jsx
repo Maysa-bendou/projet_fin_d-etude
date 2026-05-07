@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 
 // ── Couleurs des bulles ──────────────────────────────────────────────
 const COLORS = {
-  employee:   { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },  // rose/rouge
-  technician: { bg: "#eff6ff", color: "#1d4ed8",  border: "#bfdbfe" },   // bleu
-  techInfo:   { bg: "#fffbeb", color: "#92400e",  border: "#fde68a" },   // amber (mode "info/commentaire")
-  confirm:    { bg: "#f0fdf4", color: "#15803d",  border: "#bbf7d0" },   // vert
+  employee:   { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
+  technician: { bg: "#eff6ff", color: "#1d4ed8",  border: "#bfdbfe" },
+  techInfo:   { bg: "#fffbeb", color: "#92400e",  border: "#fde68a" },
+  confirm:    { bg: "#f0fdf4", color: "#15803d",  border: "#bbf7d0" },
 };
 
 function FileList({ files, isMine }) {
@@ -46,42 +46,8 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
     );
   }
 
-  // ── Confirmation bubble ────────────────────────────────────────────
-  if (item.type === "confirm") {
-    return (
-      <div className="flex flex-col items-end mb-5">
-        <div className="flex items-end gap-2.5 flex-row-reverse">
-          <div className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white"
-            style={{ background: "#1d4ed8" }}>
-            {(currentUser?.name?.[0] ?? "T") + (currentUser?.surname?.[0] ?? "")}
-          </div>
-          <div className="max-w-[78%]">
-            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full mb-2 inline-block tracking-wide"
-              style={{ background: COLORS.confirm.bg, color: COLORS.confirm.color, border: `1px solid ${COLORS.confirm.border}` }}>
-              {t("conv.tags.confirm")}
-            </span>
-            <div className="rounded-2xl rounded-tr-sm px-4 py-3.5 shadow-sm"
-              style={{ background: COLORS.confirm.bg, border: `1px solid ${COLORS.confirm.border}` }}>
-              <p className="text-[12px] mb-3 font-medium" style={{ color: COLORS.confirm.color }}>
-                {t("conv.confirmQuestion")}
-              </p>
-              <div className="flex gap-2">
-                <span className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
-                  style={{ border: `1px solid ${COLORS.confirm.border}`, color: COLORS.confirm.color }}>
-                  {t("conv.confirmYes")}
-                </span>
-                <span className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
-                  style={{ border: "1px solid #fecaca", color: "#dc2626" }}>
-                  {t("conv.confirmNo")}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <p className="text-[10px] text-slate-400 mt-1.5 mr-10">{t("conv.youLabel")} · {item.date}</p>
-      </div>
-    );
-  }
+  // ── Skip confirm — merged into solution bubble ──────────────────────
+  if (item.type === "confirm") return null;
 
   // ── Choisir la palette selon l'auteur et le type ───────────────────
   var palette;
@@ -96,9 +62,8 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
     solution:         { label: t("conv.tags.solution"),         bg: COLORS.technician.bg, color: COLORS.technician.color, border: COLORS.technician.border },
     info:             { label: t("conv.tags.info"),             bg: COLORS.technician.bg, color: COLORS.technician.color, border: COLORS.technician.border },
     redirect:         { label: t("conv.tags.redirect"),         bg: "#fdf4ff",            color: "#7e22ce",               border: "#e9d5ff"                 },
-    confirm:          { label: t("conv.tags.confirm"),          bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
-    emp_reply:        { label: t("conv.tags.emp_reply"),        bg: COLORS.employee.bg,   color: COLORS.employee.color,   border: COLORS.employee.border   },
-    confirmed:        { label: t("conv.tags.confirmed"),        bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border    },
+    emp_reply:        { label: t("conv.tags.emp_reply"),        bg: COLORS.employee.bg,   color: COLORS.employee.color,   border: COLORS.employee.border    },
+    confirmed:        { label: t("conv.tags.confirmed"),        bg: COLORS.confirm.bg,    color: COLORS.confirm.color,    border: COLORS.confirm.border     },
     rejected_confirm: { label: t("conv.tags.rejected_confirm"), bg: "#fef2f2",            color: "#dc2626",               border: "#fecaca"                 },
   };
   var typeTag = tags[item.type];
@@ -145,6 +110,29 @@ export default function ConvBubble({ item, currentUser, empInitials, empName }) 
           >
             <div dangerouslySetInnerHTML={{ __html: item.message }} />
             <FileList files={item.files} isMine={isMine} />
+
+            {/* ── Confirmation box inside solution bubble ── */}
+            {item.type === "solution" && (
+              <div className="mt-3 pt-3 border-t" style={{ borderColor: COLORS.technician.border }}>
+                <p className="text-[11px] font-medium mb-2" style={{ color: COLORS.technician.color }}>
+                  {t("conv.confirmQuestion")}
+                </p>
+                <div className="flex gap-2">
+                  <span
+                    className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
+                    style={{ border: `1px solid ${COLORS.confirm.border}`, color: COLORS.confirm.color }}
+                  >
+                    {t("conv.confirmYes")}
+                  </span>
+                  <span
+                    className="flex-1 text-center text-[11px] font-semibold rounded-xl py-1.5 bg-white cursor-default"
+                    style={{ border: "1px solid #fecaca", color: "#dc2626" }}
+                  >
+                    {t("conv.confirmNo")}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

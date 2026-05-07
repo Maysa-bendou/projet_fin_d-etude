@@ -160,12 +160,12 @@ function SolutionPanel({ ticket, t, comments }) {
       </button>
       {open && (
         <div style={{ padding:"0 22px 16px", borderTop:"1px solid #e8e2d9" }}>
-          <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"12px 14px", fontSize:13, color:"#166534", lineHeight:1.7, marginTop:12 }}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.solution) }} />
+        <div style={{ fontSize:13, color:"#0f172a", lineHeight:1.7, marginTop:8 }}
+  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.solution) }} />
           {ticket.closing_note && (
             <div style={{ marginTop:8 }}>
-              <p style={{ fontSize:10, fontWeight:700, color:"#15803d", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>{t('ticketDetails.solution.closingNote')}</p>
-              <p style={{ fontSize:12, color:"#166534", margin:0 }}>{ticket.closing_note}</p>
+<p style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>{t('ticketDetails.solution.closingNote')}</p>
+<p style={{ fontSize:12, color:"#0f172a", margin:0 }}>{ticket.closing_note}</p>
             </div>
           )}
           {files.length > 0 && (

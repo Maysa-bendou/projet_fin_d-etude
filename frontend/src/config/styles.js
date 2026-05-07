@@ -9,13 +9,13 @@ export const PRIORITY_CONFIG = {
 };
 
 export const STATUS_CONFIG = {
-  open:             { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
-  in_progress:      { color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe" },
-  pending:          { color: "#a16207", bg: "#fefce8", border: "#fde68a" },
-  pending_supplier: { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
-  resolved:         { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
-  closed:           { color: "#6b7280", bg: "#f9fafb", border: "#e5e7eb" },
-  rejected:         { color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+  open:             { color: "#1d4ed8", bg: "#dbeafe", border: "#bfdbfe" },
+  in_progress:      { color: "#7c3aed", bg: "#ede9fe", border: "#ddd6fe" },
+  pending:          { color: "#a16207", bg: "#fef9c3", border: "#fef08a" },
+  pending_supplier: { color: "#c2410c", bg: "#ffedd5", border: "#fed7aa" },
+  resolved:         { color: "#15803d", bg: "#dcfce7", border: "#bbf7d0" },
+  closed:           { color: "#6b7280", bg: "#f3f4f6", border: "#e5e7eb" },
+  rejected:         { color: "#dc2626", bg: "#fee2e2", border: "#fecaca" },
 };
 
 export const CATEGORY_CONFIG = {

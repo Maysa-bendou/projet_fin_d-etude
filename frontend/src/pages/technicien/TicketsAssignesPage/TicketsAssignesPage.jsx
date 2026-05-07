@@ -13,15 +13,16 @@ import {
 import { STATUS_CONFIG } from "../../../config/styles";
 
 const STAT_CARD_DEFS = [
-  { key: null,                     Icon: HiOutlineTicket,              color: "#374151", bg: "#f9fafb", border: "#e5e7eb" },
-  { key: "Ouvert",                 Icon: HiOutlineShieldExclamation,   ...STATUS_CONFIG.open             },
-  { key: "En cours",               Icon: HiOutlineClock,               ...STATUS_CONFIG.in_progress      },
-  { key: "En attente",             Icon: HiOutlinePauseCircle,         ...STATUS_CONFIG.pending          },
-  { key: "En attente fournisseur", Icon: HiOutlinePauseCircle,         ...STATUS_CONFIG.pending_supplier },
-  { key: "Résolu",                 Icon: HiOutlineCheckCircle,         ...STATUS_CONFIG.resolved         },
-  { key: "Fermé",                  Icon: HiOutlineArchiveBoxArrowDown,  ...STATUS_CONFIG.closed           },
-  { key: "Rejeté",                 Icon: HiOutlineXCircle,             ...STATUS_CONFIG.rejected         },
+  { key: null,                     Icon: HiOutlineTicket,              color: "#374151", bg: "#f9fafb", border: "#e5e7eb" },  // Total — dark gray ✅
+  { key: "Ouvert",                 Icon: HiOutlineShieldExclamation,   ...STATUS_CONFIG.open             },  // blue
+  { key: "En cours",               Icon: HiOutlineClock,               ...STATUS_CONFIG.in_progress      },  // purple
+  { key: "En attente",             Icon: HiOutlinePauseCircle,         ...STATUS_CONFIG.pending          },  // yellow
+  { key: "En attente fournisseur", Icon: HiOutlinePauseCircle,         ...STATUS_CONFIG.pending_supplier },  // orange-red
+  { key: "Résolu",                 Icon: HiOutlineCheckCircle,         ...STATUS_CONFIG.resolved         },  // green ✅
+  { key: "Fermé",                  Icon: HiOutlineArchiveBoxArrowDown,  ...STATUS_CONFIG.closed           },  // gray ✅
+  { key: "Rejeté",                 Icon: HiOutlineXCircle,             ...STATUS_CONFIG.rejected         },  // red ✅
 ];
+
 // ── Constants ─────────────────────────────────────
 const THIS_YEAR = new Date().getFullYear();
 
@@ -535,11 +536,11 @@ export default function TicketsAssignesPage() {
 <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 8, marginBottom: 20 }}>
   {STAT_CARDS.map(({ label, key, color, bg, border, Icon }) => (
     <div key={label} style={{
-      background: bg,
+       background: "#fff",
       borderRadius: 10,
-      border: `1.5px solid ${border}`,
+      border: "1px solid #e5e7eb",   
       padding: "10px 12px",
-      boxShadow: `inset 0 0 0 999px ${bg}30`,
+     
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

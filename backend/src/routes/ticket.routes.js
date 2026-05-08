@@ -557,12 +557,20 @@ router.put("/:id/assign", async (req, res) => {
 },
 });
 
+const techForComment = await prisma.users.findUnique({
+  where: { id: techId },
+  select: { name: true, surname: true },
+});
+const techFullName = techForComment
+  ? `${techForComment.name} ${techForComment.surname}`.trim()
+  : "";
+
 await prisma.ticket_comments.create({
   data: {
     ticket_id: ticketId,
     user_id: assigned_by || null,
-    comment:      action === "taken" ? "technician_took_over" : "ticket_assigned",
-    comment_type: action === "taken" ? "taken"                : "assigned",
+    comment:      action === "taken" ? `technician_took_over:${techFullName}` : "ticket_assigned",
+    comment_type: action === "taken" ? "taken" : "assigned",
   },
 });
 

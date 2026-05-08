@@ -239,16 +239,21 @@
       "reason": "Raison"
     },
     "modal": {
-      "title": "Ticket pris en charge",
+      "title": "Ticket pris en charge par ",
       "status": "En cours",
-      "body": "Vous êtes maintenant responsable de ce ticket. Que souhaitez-vous faire ?",
+      "body": "Que souhaitez-vous faire ensuite ?",
       "stayHere": "Rester sur ce ticket",
       "backToList": "Retour à la liste des tickets"
     },
-    "btn": {
-      "takeCharge": "Prendre en charge",
-      "alreadyAssigned": "Déjà Assigné",
-      "taking": "Traitement..."
-    }
+"takenByTech": "Pris en charge par le technicien",
+"btn": {
+  "alreadyAssigned": "Déjà assigné",
+  "cancel": "Annuler",
+  "assignTicket": "Assigner le ticket",
+  "modifyExpert": "Modifier l'expert",
+  "confirmModify": "Confirmer la modification",
+  "assign": "Assigner",
+  "taking": "Traitement..."
+}
   }
 }

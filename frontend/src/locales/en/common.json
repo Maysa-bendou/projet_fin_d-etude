@@ -83,7 +83,7 @@
   "loading": "Refreshing…"
 },
 "history": {
-  "technicianTookOver": "Technician took charge of the ticket",
+  "technicianTookOver": "Technician {{name}} took charge of the ticket",
   "statusChanged": "Status changed to: {{status}}",
   "confirmationRequested": "Resolution confirmation requested from employee",
   "ticketClosed": "Ticket closed manually by technician",

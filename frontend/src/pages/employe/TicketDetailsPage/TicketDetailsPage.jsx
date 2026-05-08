@@ -160,12 +160,12 @@ function SolutionPanel({ ticket, t, comments }) {
       </button>
       {open && (
         <div style={{ padding:"0 22px 16px", borderTop:"1px solid #e8e2d9" }}>
-          <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"12px 14px", fontSize:13, color:"#166534", lineHeight:1.7, marginTop:12 }}
-            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.solution) }} />
+        <div style={{ fontSize:13, color:"#0f172a", lineHeight:1.7, marginTop:8 }}
+  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.solution) }} />
           {ticket.closing_note && (
             <div style={{ marginTop:8 }}>
-              <p style={{ fontSize:10, fontWeight:700, color:"#15803d", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>{t('ticketDetails.solution.closingNote')}</p>
-              <p style={{ fontSize:12, color:"#166534", margin:0 }}>{ticket.closing_note}</p>
+<p style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>{t('ticketDetails.solution.closingNote')}</p>
+<p style={{ fontSize:12, color:"#0f172a", margin:0 }}>{ticket.closing_note}</p>
             </div>
           )}
           {files.length > 0 && (
@@ -210,7 +210,10 @@ export default function TicketDetailsPage() {
 
   const translateLegacyMsg = (msg) => {
     if (!msg) return "";
-    if (msg === "technician_took_over")   return t("history.technicianTookOver",    { ns: "common" });
+if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return t("history.technicianTookOver", { ns: "common", name });
+}
     if (msg === "ticket_assigned")        return t("history.ticketAssigned",         { ns: "common" });
     if (msg === "confirmation_requested") return t("history.confirmationRequested",  { ns: "common" });
     if (msg === "history.confirmationRequested") return t("history.confirmationRequested", { ns: "common" });
@@ -241,7 +244,8 @@ export default function TicketDetailsPage() {
       return t("history.employeeUpdated", { ns: "common", detail });
     }
     const LEGACY = {
-      "Technicien a pris en charge le ticket":                      t("history.technicianTookOver",    { ns: "common" }),
+    
+"Technicien a pris en charge le ticket": t("history.technicianTookOver", { ns: "common", name: "" }),
       "Ticket assigné à un technicien":                             t("history.ticketAssigned",         { ns: "common" }),
       "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns: "common" }),
       "Ticket fermé manuellement par le technicien.":               t("history.ticketClosed",           { ns: "common" }),

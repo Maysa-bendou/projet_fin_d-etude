@@ -74,8 +74,11 @@ const TicketDetailPage = () => {
 const translateLegacyMsg = (msg) => {
   if (!msg) return "";
 
-  // Short keys saved by backend
-  if (msg === "technician_took_over")   return t("history.technicianTookOver",    { ns: "common" });
+// After
+if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return t("history.technicianTookOver", { ns: "common", name });
+}
   if (msg === "ticket_assigned")        return t("history.ticketAssigned",         { ns: "common" });
   if (msg === "confirmation_requested") return t("history.confirmationRequested",  { ns: "common" });
   if (msg === "history.confirmationRequested") return t("history.confirmationRequested", { ns: "common" });
@@ -116,7 +119,8 @@ if (msg.startsWith("ticket_redirected:")) {
 
   // Legacy French sentences (old DB data)
   const LEGACY = {
-    "Technicien a pris en charge le ticket":                      t("history.technicianTookOver",    { ns: "common" }),
+// After
+"Technicien a pris en charge le ticket": t("history.technicianTookOver", { ns: "common", name: "" }),
     "Ticket assigné à un technicien":                             t("history.ticketAssigned",         { ns: "common" }),
     "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns: "common" }),
     "Ticket fermé manuellement par le technicien.":               t("history.ticketClosed",           { ns: "common" }),
@@ -432,9 +436,11 @@ if (msg.startsWith("ticket_redirected:")) {
                     {tk.assigned_action === "taken" ? (
                       <>
                         <MdPerson style={{ fontSize: 13, color: '#3b82f6' }} />
-                        <span style={{ fontSize: 11, color: '#64748b' }}>
-                          {t("history.technicianTookOver", { ns: "common" })}
-                        </span>
+<span style={{ fontSize: 11, color: '#64748b' }}>
+  {t("history.technicianTookOver", { ns: "common", name: tk.technician?.name
+    ? `${tk.technician.name} ${tk.technician.surname}`.trim()
+    : "" })}
+</span>
                       </>
                     ) : (
                       ["assigned", "updated"].includes(tk.assigned_action) && (

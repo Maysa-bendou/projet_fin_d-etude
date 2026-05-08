@@ -145,7 +145,7 @@ const translateStatusMsg = (msg) => {
       });
 
 
-      const CONV_EXCLUDED = new Set(["status", "update", "reopen", "redirect"]);
+      const CONV_EXCLUDED = new Set(["status", "update", "reopen", "redirect", "taken", "assigned"]);
 
       data.comments.forEach((c) => {
         const type = c.comment_type ?? "comment";

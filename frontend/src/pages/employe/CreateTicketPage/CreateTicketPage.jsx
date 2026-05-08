@@ -13,7 +13,7 @@ const PRIORITY_MATRIX = {
   low:    { high: "medium",   medium: "low",     low: "low" },
 };
 
-const EMPTY_FORM = { type: "problem", title: "", description: "", category: "", impact: "", urgency: "" };
+const EMPTY_FORM = { type: "problem", title: "", description: "",impact: "", urgency: "" };
 
 const selectStyle = {
   width: "100%", border: "1.5px solid #d9d4cc", borderRadius: 10,
@@ -89,7 +89,7 @@ export default function CreateTicketPage() {
     { value: "network",    label: t('createTicket.categories.network') },
     { value: "access",     label: t('createTicket.categories.access') },
     { value: "security",   label: t('createTicket.categories.security') },
-    { value: "messagerie", label: t('createTicket.categories.messagerie') },
+
   ];
   const IMPACT_OPTIONS = [
     { value: "low",    label: t('createTicket.impacts.low') },
@@ -105,7 +105,6 @@ export default function CreateTicketPage() {
   const FIELDS = [
     { key: "title",       label: t('createTicket.fields.title') },
     { key: "description", label: t('createTicket.fields.description') },
-    { key: "category",    label: t('createTicket.fields.category') },
     { key: "impact",      label: t('createTicket.fields.impact') },
     { key: "urgency",     label: t('createTicket.fields.urgency') },
   ];
@@ -155,7 +154,6 @@ export default function CreateTicketPage() {
       const fd = new FormData();
       fd.append("title",       form.title);
       fd.append("description", form.description);
-      fd.append("category",    form.category);
       fd.append("impact",      form.impact);
       fd.append("urgency",     form.urgency);
       fd.append("type",        form.type);
@@ -168,7 +166,11 @@ export default function CreateTicketPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? t('common.serverError'));
-      setSuccess(data.ticket);
+     setSuccess({
+  ...data.ticket,
+  ml_category: data.ml_category,
+  service_name: data.service_name,
+});
     } catch (err) {
       setServerError(err.message);
       errorBannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -195,9 +197,62 @@ export default function CreateTicketPage() {
         <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", padding: "40px 36px", maxWidth: 440, width: "100%", textAlign: "center" }}>
           <div style={{ width: 56, height: 56, background: "#f0fdf4", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 22, color: "#16a34a", border: "2px solid #bbf7d0" }}>✓</div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>{t('createTicket.success.title')}</h2>
-          <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 28 }}>
-            {t('createTicket.success.subtitle')} <span style={{ fontFamily: "monospace", background: "#f1f5f9", padding: "2px 8px", borderRadius: 6, color: "#475569" }}>#{success.id}</span>
-          </p>
+         <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 16 }}>
+  {t('createTicket.success.subtitle')} <span style={{ fontFamily: "monospace", background: "#f1f5f9", padding: "2px 8px", borderRadius: 6, color: "#475569" }}>#{success.id}</span>
+</p>
+{/* Category + Service badges */}
+<div
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    gap: 10,
+    marginBottom: 28,
+    flexWrap: "wrap",
+  }}
+>
+  {/* CATEGORY */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "6px 14px",
+      borderRadius: 20,
+     
+      fontSize: 12,
+      fontWeight: 600,
+    }}
+  >
+    <span style={{ color: "#1d4ed8" }}>
+      {t(`createTicket.categories.${success.ml_category}`)}
+    </span>
+
+    <span style={{ color: "#64748b", fontWeight: 500 }}>
+      · {t("createTicket.success.aiDetected")}
+    </span>
+  </div>
+
+  {/* SERVICE */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "6px 14px",
+      borderRadius: 20,
+      fontSize: 12,
+      fontWeight: 600,
+    }}
+  >
+    <span style={{ color: "#15803d" }}>
+      {success.service_name}
+    </span>
+
+    <span style={{ color: "#64748b", fontWeight: 500 }}>
+      · {t("createTicket.success.serviceAssigned")}
+    </span>
+  </div>
+</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button onClick={() => navigate("/employee/mes-tickets")}
               style={{ width: "100%", background: "#1e3a8a", color: "#fff", border: "none", borderRadius: 10, padding: "12px 0", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
@@ -238,20 +293,6 @@ export default function CreateTicketPage() {
                   <div style={{ position: "relative" }}>
                     <select name="type" value={form.type} onChange={handleChange} style={selectStyle}>
                       {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <ChevronDown />
-                  </div>
-                </div>
-
-                <div ref={fieldRefs.category}>
-                  <Label required missing={isMissing("category") ? t('createTicket.required') : undefined} icon={<MdOutlineCategory size={13} />}>
-                    {t('createTicket.fields.category')}
-                  </Label>
-                  <div style={{ position: "relative" }}>
-                    <select name="category" value={form.category} onChange={handleChange}
-                      style={{ ...selectStyle, border: borderFor("category") }}>
-                      <option value="" disabled>{t('createTicket.select')}</option>
-                      {CATEGORY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                     <ChevronDown />
                   </div>

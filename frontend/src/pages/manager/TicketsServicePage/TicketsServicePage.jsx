@@ -254,17 +254,15 @@ const TicketRow = memo(({ ticket, navigate, role, activeTab, isLast, ticketIds }
       <TD><Pill config={PRIORITY_CONFIG} value={ticket.priority}                     label={tPriority(ticket.priority)} /></TD>
       <TD><Pill config={STATUS_CONFIG}   value={ticket.status}                       label={tStatus(ticket.status)} /></TD>
 
-      <td style={{ padding: "9px 10px" }}>
-        {activeTab === "archives"
-          ? <span style={{ color: "#d1d5db", fontSize: 11 }}>—</span>
-          : <SlaBar
-              slaDueDate={ticket.sla_date_limite}
-              slaDebut={ticket.sla_date_debut}
-              status={ticket.status}
-              closedAt={ticket.closed_at}
-              slaPauseElapsed={ticket.sla_pause_elapsed_ms ?? null}
-            />}
-      </td>
+    <td style={{ padding: "9px 10px" }}>
+  <SlaBar
+    slaDueDate={ticket.sla_date_limite}
+    slaDebut={ticket.sla_date_debut}
+    status={ticket.status}
+    closedAt={ticket.closed_at}
+    slaPauseElapsed={ticket.sla_pause_elapsed_ms ?? null}
+  />
+</td>
 
       <TD>
         {empName ? (

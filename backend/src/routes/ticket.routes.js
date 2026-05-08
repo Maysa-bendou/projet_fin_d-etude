@@ -55,19 +55,36 @@ const CATEGORY_SERVICE_MAP = {
   network:    2,  // IT Network
   security:   3,  // IT Security
   access:     5,  // Service Desk
-  messagerie: 4,  // IT Collaboration Systems
+  
 };
 
 // ── POST /create ──────────────────────────────────────────────────────────
 router.post("/create", uploadCreate.array("files", 10), async (req, res) => {
   try {
-    const { title, description, category, impact, urgency, type, created_by } = req.body;
+    const { title, description, impact, urgency, type, created_by } = req.body;
+    // ── ML classification ──────────────────────────────────────────────
+let category = "access"; // safe default if ML fails
 
+try {
+  const mlRes = await fetch("http://127.0.0.1:8000/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, description }),
+  });
+  const mlData = await mlRes.json();
+  if (mlData.category) {
+    category = mlData.category;
+    console.log("🤖 ML predicted:", category, "| lang:", mlData.detected_lang);
+  }
+} catch (err) {
+  console.warn("⚠️ ML API unavailable, using default:", err.message);
+}
     // ── Debug logs ────────────────────────────────────────────────────────
     console.log("📥 req.body:", req.body);
     console.log("📎 req.files:", req.files?.map(f => f.originalname) ?? "aucun");
 
-    if (!title || !description || !category || !impact || !urgency || !type || !created_by)
+    if (!title || !description || !impact || !urgency || !type || !created_by)
+
       return res.status(400).json({ error: "Champs manquants" });
 
     const PRIORITY_MATRIX = {
@@ -156,7 +173,17 @@ router.post("/create", uploadCreate.array("files", 10), async (req, res) => {
       ]);
     }
 
-    res.json({ ticket });
+   // Find service name
+const service = service_id ? await prisma.services.findUnique({
+  where: { id: service_id },
+  select: { name: true },
+}) : null;
+
+res.json({ 
+  ticket,
+  ml_category: category,
+  service_name: service?.name ?? null,
+});
   } catch (err) {
     console.error("❌ Erreur création ticket:", err);
     res.status(500).json({ error: "Erreur lors de la création du ticket" });

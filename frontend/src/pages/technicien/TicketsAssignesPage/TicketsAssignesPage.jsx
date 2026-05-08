@@ -57,7 +57,6 @@ const categorieStyle = {
   "Réseau":     "bg-teal-100 text-teal-700",
   "Sécurité":   "bg-orange-100 text-orange-700",
   "Accès":      "bg-indigo-100 text-indigo-700",
-  "Messagerie": "bg-pink-100 text-pink-700",
 };
 
 // DB key ↔ French display label maps — used for API mapping only, NOT for display
@@ -82,7 +81,7 @@ const statusEN = {
 };
 
 const priorityFR  = { low: "Basse", medium: "Normale", high: "Haute" };
-const categoryFR  = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité", messagerie: "Messagerie" };
+const categoryFR  = { hardware: "Hardware", software: "Logiciels", network: "Réseau", access: "Accès", security: "Sécurité"};
 
 // STAT_CARDS icons stay the same; labels are translated in the component via useMemo
 
@@ -292,7 +291,7 @@ export default function TicketsAssignesPage() {
   const tCategory = (frLabel) => {
     const map = {
       "Hardware": "hardware", "Logiciels": "software", "Réseau": "network",
-      "Accès": "access", "Sécurité": "security", "Messagerie": "messagerie",
+      "Accès": "access", "Sécurité": "security",
     };
     const key = map[frLabel];
     if (!key) return frLabel;
@@ -750,19 +749,18 @@ export default function TicketsAssignesPage() {
 </td>
 
                         {/* SLA */}
-                        <td style={{ padding: "9px 10px" }}>
-                          {activeTab === "archives"
-                            ? <span style={{ color: "#d1d5db", fontSize: 11 }}>—</span>
-                            : <SlaBar
-                                slaDueDate={tk.slaDueDate}
-                                slaDateDebut={tk.slaDateDebut}
-                                statut={statutCurrent}
-                                closedAt={tk.closedAt}
-                                slaPauseElapsed={tk.slaPauseElapsed}
-                                t={t}
-                              />
-                          }
-                        </td>
+                       {/* SLA */}
+{/* SLA */}
+<td style={{ padding: "9px 10px" }}>
+  <SlaBar
+    slaDueDate={tk.slaDueDate}
+    slaDateDebut={tk.slaDateDebut}
+    statut={statutCurrent}
+    closedAt={tk.closedAt}
+    slaPauseElapsed={tk.slaPauseElapsed}
+    t={t}
+  />
+</td>
 
                         {/* Employé avec avatar */}
                         <td style={{ padding: "9px 10px" }}>

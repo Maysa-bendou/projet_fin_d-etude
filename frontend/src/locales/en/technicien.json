@@ -42,7 +42,7 @@
       "countSuffix_one": "ticket",
       "countSuffix_other": "tickets",
       "outOf": "of {{total}} total",
-      "monthAll": "months"
+      "monthAll": "All months"
     },
     "table": {
       "id": "ID",

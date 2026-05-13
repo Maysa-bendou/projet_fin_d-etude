@@ -453,26 +453,22 @@ if (existingTicket.status === "closed" && status === "open") {
   commentType = "reopen";
 }
 
-    // ✅ TRACK CHANGES
-    if (title && title !== existingTicket.title) {
-      changes.push("Titre modifié");
-    }
-
-    if (description && description !== existingTicket.description) {
-      changes.push("Description modifiée");
-    }
-
-    if (impact && impact !== existingTicket.impact) {
-      changes.push(`Impact: ${existingTicket.impact} → ${impact}`);
-    }
-
-    if (urgency && urgency !== existingTicket.urgency) {
-      changes.push(`Urgence: ${existingTicket.urgency} → ${urgency}`);
-    }
-
-    if (status && status !== existingTicket.status) {
-      changes.push(`Statut: ${existingTicket.status} → ${status}`);
-    }
+// ✅ TRACK CHANGES — store keys, not French text
+if (title && title !== existingTicket.title) {
+  changes.push("title_changed");
+}
+if (description && description !== existingTicket.description) {
+  changes.push("description_changed");
+}
+if (impact && impact !== existingTicket.impact) {
+  changes.push(`impact_changed:${existingTicket.impact}:${impact}`);
+}
+if (urgency && urgency !== existingTicket.urgency) {
+  changes.push(`urgency_changed:${existingTicket.urgency}:${urgency}`);
+}
+if (status && status !== existingTicket.status) {
+  changes.push(`status_changed:${existingTicket.status}:${status}`);
+}
 
     const PRIORITY_MATRIX = {
   high:   { high: "high",   medium: "high",   low: "medium" },

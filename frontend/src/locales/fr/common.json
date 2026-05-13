@@ -25,7 +25,7 @@
 },
 "impact": {
   "low": "Une personne",
-  "medium": "Un département",
+  "medium": "Un service",
   "high": "Toute l'entreprise"
 },
 
@@ -92,6 +92,13 @@
   "employeeRejected": "Employé a signalé que le problème persiste",
 "technicianTookOver": "Le technicien {{name}} a pris en charge le ticket",
   "employeeUpdated": "Modifié par l'employé : {{detail}}",
+"changes": {
+  "title_changed": "Titre modifié",
+  "description_changed": "Description modifiée",
+  "impact_changed": "Impact : {{from}} → {{to}}",
+  "urgency_changed": "Urgence : {{from}} → {{to}}",
+  "status_changed": "Statut : {{from}} → {{to}}"
+},
   "ticketAssigned": "Ticket assigné à un technicien",
     "employeeReopened": "Ticket réouvert par l'employé"
 },

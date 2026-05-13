@@ -70,8 +70,7 @@
       "software": "Logiciels",
       "network": "Réseau",
       "access": "Accès",
-      "security": "Sécurité",
-      "messagerie": "Collaboration & Messagerie"
+      "security": "Sécurité"
     },
     "impacts": {
       "low": "Une personne",
@@ -96,7 +95,9 @@
       "title": "Ticket créé avec succès",
       "subtitle": "Ticket",
       "viewTickets": "Voir mes tickets",
-      "createAnother": "Retour à Créer ticket"
+      "createAnother": "Retour à Créer ticket",
+        "aiDetected": "détecté par l’IA",
+      "serviceAssigned": "service assigné"
     },
     "hints": {
       "title": "Soyez concis — une phrase résumant le problème.",
@@ -127,7 +128,7 @@
       "allPriorities": "Toutes les priorités",
       "allServices": "Tous les services",
       "mois": "Mois",
-      "allYears": "Toutes",
+      "allYears": "Année",
       "reset": "Réinitialiser"
     },
     "ticketCount": "ticket{{count, plural, one {} other {s}}}"

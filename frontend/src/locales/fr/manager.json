@@ -194,8 +194,8 @@
 
   "ticketDetail": {
     "back": "Retour aux tickets",
-    "reference": "Référence Ticket",
-    "description": "Description de l'incident",
+    "reference": "Titre du Ticket",
+    "description": "Description ",
     "info": "Informations du ticket",
     "assignedTech": "Technicien assigné",
     "assignedByManager": "Assigné par ",

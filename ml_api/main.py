@@ -1,21 +1,32 @@
+
+# Every time you want to run the FastAPI server:
+
+# Open terminal in ml_api
+# venv\Scripts\Activate.ps1
+# uvicorn main:app --reload --port 8000
+
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 from transformers import DistilBertForSequenceClassification, DistilBertTokenizerFast
 from transformers import MarianMTModel, MarianTokenizer
 from langdetect import detect, LangDetectException
+from huggingface_hub import hf_hub_download
 import torch
 import pickle
 
 app = FastAPI()
 
-# ── Load DistilBERT model ──────────────────────────────────────────
+# ── Load DistilBERT model from HuggingFace ─────────────────────────
 print("Loading DistilBERT model...")
-MODEL_PATH = "./distilbert_model_best"
+MODEL_REPO = "MAYSA23/ticket-classifier"
 
-classifier = DistilBertForSequenceClassification.from_pretrained(MODEL_PATH)
-tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_PATH)
+classifier = DistilBertForSequenceClassification.from_pretrained(MODEL_REPO)
+tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_REPO)
 
-with open(f"{MODEL_PATH}/label_encoder.pkl", "rb") as f:
+# Download label_encoder.pkl from HuggingFace
+label_encoder_path = hf_hub_download(repo_id=MODEL_REPO, filename="label_encoder.pkl")
+with open(label_encoder_path, "rb") as f:
     le = pickle.load(f)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -23,7 +34,7 @@ classifier.to(device)
 classifier.eval()
 print("✅ DistilBERT loaded!")
 
-# ── Load Helsinki-NLP translator ───────────────────────────────────
+# ── Load Helsinki-NLP translator (downloads automatically) ─────────
 print("Loading translator...")
 TRANSLATOR_MODEL = "Helsinki-NLP/opus-mt-fr-en"
 tr_tokenizer = MarianTokenizer.from_pretrained(TRANSLATOR_MODEL)
@@ -35,7 +46,6 @@ print("✅ Translator loaded!")
 class TicketRequest(BaseModel):
     title: str
     description: str
-    # no more manual lang field — we detect it
 
 # ── Translate French to English ────────────────────────────────────
 def translate(text: str) -> str:
@@ -63,28 +73,29 @@ def predict(text: str) -> str:
 @app.post("/predict")
 def predict_ticket(req: TicketRequest):
     text = f"{req.title}. {req.description}"
-    
+
     # Detect language
     try:
         lang = detect(text)
         print(f"Detected language: {lang}")
     except LangDetectException:
         lang = "en"  # fallback
-    
+
     # Translate only if French
     if lang == "fr":
         text = translate(text)
         print(f"Translated: {text}")
-    
+
     # Classify
     category = predict(text)
-    
+
     # Fallback for removed categories
     REMOVED = {"messagerie": "access"}
     category = REMOVED.get(category, category)
-    
+
     print(f"Predicted: {category}")
     return {"category": category, "detected_lang": lang}
+
 # ── Health check ───────────────────────────────────────────────────
 @app.get("/")
 def health():

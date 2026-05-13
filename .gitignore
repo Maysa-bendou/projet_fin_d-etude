@@ -1,5 +1,19 @@
-node_modules
-# Keep environment variables out of version control
+node_modules/
+
+# Environment variables
 .env
 
+# Prisma generated files
 /generated/prisma
+
+# ML models (too large)
+ml_api/distilbert_model_best/
+
+# Python virtual environments
+venv/
+.venv/
+ml_api/venv/
+
+# Python cache
+__pycache__/
+*.pyc

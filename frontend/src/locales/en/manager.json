@@ -157,7 +157,7 @@
       "category": "Category",
       "allCategories": "All categories",
       "assignment": "Assignment",
-      "all": "All",
+      "all": "ALL",
       "assigned": "Assigned",
       "unassigned": "Unassigned",
       "closureYear": "Closure Year",
@@ -194,8 +194,8 @@
 
   "ticketDetail": {
     "back": "Back to tickets",
-    "reference": "Ticket Reference",
-    "description": "Incident Description",
+    "reference": "Ticket Title",
+    "description": "Description",
     "info": "Ticket Information",
     "assignedTech": "Assigned Technician",
     "assignedByManager": "Assigned by ",

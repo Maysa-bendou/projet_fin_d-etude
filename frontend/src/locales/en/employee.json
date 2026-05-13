@@ -75,7 +75,7 @@
     },
     "impacts": {
       "low": "One person",
-      "medium": "A department",
+      "medium": "A Service",
       "high": "Entire company"
     },
     "urgencies": {
@@ -96,7 +96,9 @@
       "title": "Ticket created successfully",
       "subtitle": "Ticket",
       "viewTickets": "View my tickets",
-      "createAnother": "Back To Create ticket"
+      "createAnother": "Back To Create ticket",
+       "aiDetected": "AI detected",
+      "serviceAssigned": "service assigned"
     },
     "hints": {
       "title": "Be concise one sentence summarizing the issue.",
@@ -125,7 +127,7 @@
       "allPriorities": "All priorities",
       "allServices": "All services",
       "mois": "Month",
-      "allYears": "All",
+      "allYears": "Year",
       "reset": "Reset"
     },
     "ticketCount": "ticket{{count, plural, one {} other {s}}}"

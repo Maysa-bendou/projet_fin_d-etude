@@ -37,7 +37,7 @@
       "assigned": "Assigned",
       "unassigned": "Unassigned",
       "closeYear": "Closing Year",
-      "closeYearAll": "All",
+      "closeYearAll": "Year",
       "reset": "Reset",
       "countSuffix_one": "ticket",
       "countSuffix_other": "tickets",
@@ -75,8 +75,8 @@
 
   "ticketDetail": {
     "back": "Back to tickets",
-    "reference": "Ticket Reference",
-    "description": "Incident Description",
+    "reference": "Ticket Title",
+    "description": " Description",
     "info": "Ticket Information",
     "assignedTech": "Assigned Technician",
     "assignedByManager": "Assigned by ",
@@ -187,7 +187,7 @@
     "errorRedirect": "Error while redirecting.",
     "actuality": {
       "assigned": "Ticket assigned",
-      "reopened": "🔄 Ticket reopened"
+      "reopened": " Ticket reopened"
     }
   },
 

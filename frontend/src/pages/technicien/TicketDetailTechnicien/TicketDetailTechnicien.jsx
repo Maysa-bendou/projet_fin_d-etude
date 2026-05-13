@@ -90,11 +90,36 @@ const translateStatusMsg = (msg) => {
   if (msg === "employee_reopened")
     return tC("history.employeeReopened");
 
-  // ── employee_updated:Titre modifié | Impact: low → high ──────────
-  const updateMatch = msg.match(/^employee_updated:(.+)$/);
-  if (updateMatch)
-    return tC("history.employeeUpdated", { detail: updateMatch[1] });
+const updateMatch = msg.match(/^employee_updated:(.+)$/);
+if (updateMatch) {
+  const translatedDetail = updateMatch[1]
+    .split("|")
+    .map(part => part.trim())
+    .map(part => {
+      const m = part.match(/^(.+?):\s*(\S+)\s*→\s*(\S+)$/);
+      if (!m) return part;
+      const [, rawField, from, to] = m;
 
+      const fieldKey = {
+        "Impact":      "impact",
+        "Urgence":     "urgency",
+        "Urgency":     "urgency",
+        "Titre":       "title",
+        "Title":       "title",
+        "Description": "description",
+        "Statut":      "status",
+        "Status":      "status",
+      }[rawField.trim()] ?? rawField.toLowerCase();
+
+      const fromLabel = tC(`${fieldKey}.${from}`, { defaultValue: from });
+      const toLabel   = tC(`${fieldKey}.${to}`,   { defaultValue: to });
+
+      return tC(`history.changes.${fieldKey}_changed`, { from: fromLabel, to: toLabel, defaultValue: `${rawField}: ${fromLabel} → ${toLabel}` });
+    })
+    .join(" | ");
+
+  return tC("history.employeeUpdated", { detail: translatedDetail });
+}
   // ── Legacy French strings (old DB rows) ──────────────────────────
   const legacyMap = {
     "Technicien a pris en charge le ticket": tC("history.technicianTookOver"),
@@ -169,11 +194,28 @@ const translateStatusMsg = (msg) => {
         if (type === "status") {
           actItems.push({ id: `act-${c.id}`, type: "status", message: translateStatusMsg(c.message), date: dateStr, rawDate: dateObj });
         } else if (type === "update") {
-          actItems.push({ id: `act-${c.id}`, type: "update", message: `✏ ${c.message}`, date: dateStr, rawDate: dateObj });
-        } else if (type === "reopen") {
+// AFTER
+actItems.push({ id: `act-${c.id}`, type: "update", message: translateStatusMsg(`${c.message}`), date: dateStr, rawDate: dateObj });
+ } else if (type === "reopen") {
           actItems.push({ id: `act-${c.id}`, type: "reopen", messageKey: "ticketDetailTech.actuality.reopened", date: dateStr, rawDate: dateObj });
+// AFTER
+} else if (type === "redirect") {
+  const raw = c.message.replace(/^\[REDIRECTION\]\s*/, "");
+
+  // parse "ticket_redirected:Karim Haddad:reason" or "ticket_redirected:Karim Haddad"
+  const redirMatch = raw.match(/^ticket_redirected:([^:]+)(?::(.+))?$/);
+  const by     = redirMatch ? redirMatch[1].trim() : (c.author ?? "?");
+  const reason = redirMatch ? (redirMatch[2]?.trim() || "—") : (raw || "—");
+
+  actItems.push({
+    id: `act-${c.id}`,
+    type: "redirect",
+    message: tC("history.ticketRedirected", { by }),
+    date: dateStr,
+    rawDate: dateObj,
+  });
 } else if (ACT_LABEL_KEYS[type]) {
-actItems.push({ id: `act-${c.id}`, type, messageKey: ACT_LABEL_KEYS[type], date: dateStr, rawDate: dateObj });
+  actItems.push({ id: `act-${c.id}`, type, messageKey: ACT_LABEL_KEYS[type], date: dateStr, rawDate: dateObj });
 }
       });
 

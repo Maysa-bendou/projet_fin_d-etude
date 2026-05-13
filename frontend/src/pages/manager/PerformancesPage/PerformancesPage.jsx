@@ -168,13 +168,14 @@ export default function PerformancesPage() {
     });
   }, [stats, selectedMonth, monthStringToIndex]);
 
-  // ── Translated monthly stats: re-map `month` field to current locale ──────
-  const translatedMonthlyStats = useMemo(() => {
-    return sortedMonthlyStats.map((item) => ({
-      ...item,
-      month: tMonth(item.month),
-    }));
-  }, [sortedMonthlyStats, tMonth]);
+const translatedMonthlyStats = useMemo(() => {
+  return sortedMonthlyStats.map((item) => ({
+    ...item,
+    month: selectedMonth
+      ? item.month?.toString().replace(/^[A-Za-z]+/, i18n.language === 'fr' ? 'j' : 'd')
+      : tMonth(item.month),
+  }));
+}, [sortedMonthlyStats, tMonth, selectedMonth, i18n.language]);
 
   const avgMonthly = useMemo(() => {
     if (!sortedMonthlyStats.length) return 0;

@@ -125,7 +125,7 @@ const fmtDate   = (str) => {
     }
     if (PAUSED.includes(tk.status)) {
       const elapsed = tk.sla_pause_elapsed_ms ? Number(tk.sla_pause_elapsed_ms) : null;
-      const frozen = elapsed != null ? window - elapsed : Math.max(0, due - now);
+      const frozen = elapsed != null ? elapsed : Math.max(0, due - now);
       const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
       return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, ((window - frozen) / window) * 100) };
     }

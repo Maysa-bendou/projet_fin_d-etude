@@ -163,12 +163,12 @@ if (msg.startsWith("ticket_redirected:")) {
       const exceeded = closed > due;
       const delta    = Math.abs(closed - due);
       const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
-      return { mode: "terminal", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.closedOk"), pct: exceeded ? 100 : Math.min(100, ((window - (due - closed)) / window) * 100) };
+      return { mode: "terminal", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.closedOk"), pct: exceeded ? 100 : Math.min(100, Math.max(0, ((due - closed) / window) * 100)), };
     }
    if (PAUSED.includes(tk.status)) {
   const frozen = tk.sla_pause_elapsed_ms != null ? Number(tk.sla_pause_elapsed_ms) : Math.max(0, due - now);
   const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
-  return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, (frozen / window) * 100) };
+  return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, (frozen / window) * 100)};
 }
    const remaining = due - now;
 const exceeded  = remaining <= 0;
@@ -181,9 +181,7 @@ return {
   text: exceeded
     ? t("ticketDetail.sla.exceeded", { h, m })
     : t("ticketDetail.sla.remaining", { h, m }),
-  pct: exceeded
-    ? 100                                                          // ← full bar when exceeded
-    : Math.min(100, Math.max(0, (remaining / window) * 100)),
+pct: exceeded ? 100 : Math.min(100, Math.max(0, (remaining / window) * 100)),// ← this one
 };};
 
   const sla = calculateSLA();
@@ -192,9 +190,9 @@ return {
     : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
     : sla.mode === "paused"   ? "#7c3aed"
     : sla.exceeded            ? "#dc2626"
-    : sla.pct > 50            ? "#16a34a"
-    : sla.pct > 20            ? "#d97706"
-    : "#f97316";
+    : sla.pct > 50  ? "#16a34a"
+: sla.pct > 20  ? "#d97706"
+: "#f97316"
 
   // ── LevelBadge — dot colour from config (unchanged), label from translateKey ─
   const LevelBadge = ({ config, value, keyMap }) => {

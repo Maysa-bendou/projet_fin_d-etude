@@ -159,7 +159,8 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
 
           <div>
             <Label fieldKey="email">{t("users.modal.email")}</Label>
-            <input name="email" type="email" value={form.email} onChange={handleChange} style={inputStyle("email")} disabled={!isEditing} />
+            <input name="email" type="email" value={form.email} onChange={handleChange} style={inputStyle("email")} disabled={!isEditing}
+            autoComplete="off"  />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -201,7 +202,7 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
           {isEditing && (
             <div>
               <Label fieldKey="password">{t("users.modal.password")}</Label>
-              <input name="password" type="password" value={form.password} onChange={handleChange} style={inputStyle("password")} />
+              <input name="password" type="password" value={form.password} onChange={handleChange} style={inputStyle("password")} autoComplete="new-password" />
             </div>
           )}
 

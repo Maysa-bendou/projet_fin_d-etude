@@ -59,15 +59,29 @@ function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElaps
     const used = exceeded ? win + delta : win - (due - closed);
     return { mode: "terminal", exceeded, diffH: Math.floor(delta / 3600000), diffM: Math.floor((delta % 3600000) / 60000), pct: Math.min(100, Math.max(0, (used / win) * 100)), deadline: new Date(slaDateLimite) };
   }
-  if (PAUSED.includes(statut)) {
-  const frozen  = slaPauseElapsed != null ? slaPauseElapsed : Math.max(0, due - now); // ← remove "win -"
-  const elapsed = win - frozen;
-  return { mode: "paused", diffH: Math.floor(frozen / 3600000), diffM: Math.floor((frozen % 3600000) / 60000), pct: Math.min(100, Math.max(0, (elapsed / win) * 100)), deadline: new Date(slaDateLimite) };
+ if (PAUSED.includes(statut)) {
+  const frozen = slaPauseElapsed != null
+    ? slaPauseElapsed              // ← already IS the remaining ms
+    : Math.max(0, due - now);
+ 
+  return { 
+    mode: "paused", 
+    diffH: Math.floor(frozen / 3600000), 
+    diffM: Math.floor((frozen % 3600000) / 60000), 
+   pct: Math.min(100, Math.max(0, (frozen / win) * 100)),
+    deadline: new Date(slaDateLimite) 
+  };
 }
-  const remaining = due - now;
-  const exceeded  = remaining <= 0;
-  const abs = Math.abs(remaining);
-  return { mode: "active", exceeded, diffH: Math.floor(abs / 3600000), diffM: Math.floor((abs % 3600000) / 60000), pct: Math.max(0, Math.min(100, (remaining / win) * 100)), deadline: new Date(slaDateLimite) };
+const remaining = due - now;
+const exceeded  = remaining <= 0;
+const abs = Math.abs(remaining);
+return {
+  mode: "active", exceeded,
+  diffH: Math.floor(abs / 3600000),
+  diffM: Math.floor((abs % 3600000) / 60000),
+pct: exceeded ? 100 : Math.max(0, Math.min(100, (remaining / win) * 100)),
+  deadline: new Date(slaDateLimite),
+};
 }
 
 const S = {
@@ -92,8 +106,8 @@ const sla = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut, status, cl
     : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
     : sla.mode === "paused"   ? "#7c3aed"
     : sla.exceeded            ? "#dc2626"
-    : sla.pct > 50            ? "#16a34a"
-    : sla.pct > 20            ? "#d97706"
+: sla.pct > 50  ? "#16a34a"
+: sla.pct > 20  ? "#d97706"
     : "#f97316";
 
   const empFields = [

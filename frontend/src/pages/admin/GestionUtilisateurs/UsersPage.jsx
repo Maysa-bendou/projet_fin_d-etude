@@ -15,6 +15,7 @@ const FilterInput = ({ placeholder, value, onChange }) => (
     <input
       type="text" placeholder={placeholder} value={value}
       onChange={e => onChange(e.target.value)}
+      autoComplete="off" 
       style={{ border: "1px solid #e2e8f0", borderRadius: 7, padding: "0 26px 0 28px", height: 32, width: 200, fontSize: 12, color: "#1e293b", background: "#fff", outline: "none" }}
       onFocus={e => e.target.style.borderColor = "#93c5fd"}
       onBlur={e  => e.target.style.borderColor = "#e2e8f0"}
@@ -200,7 +201,10 @@ function UsersPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <RefreshButton onRefresh={fetchData} />
           <button
-            onClick={() => setIsAddModalOpen(true)}
+             onClick={() => {
+    setSelectedUser(null); // ← clear any previous selection
+    setIsAddModalOpen(true);
+  }}
             style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "#1e3a8a", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
           >
             <HiOutlineUserPlus size={15} />
@@ -256,11 +260,11 @@ function UsersPage() {
 
       {/* Modals */}
       {isAddModalOpen && (
-        <UserModal services={services} departments={departments}
+        <UserModal key="add" services={services} departments={departments}
           setUser={setIsAddModalOpen} saveUser={addUser} mode="add" />
       )}
       {selectedUser && (
-        <UserModal services={services} departments={departments}
+        <UserModal key={selectedUser.id} services={services} departments={departments}
           user={selectedUser} setUser={setSelectedUser}
           saveUser={updateUser} toggleActive={toggleActive} mode="edit" />
       )}

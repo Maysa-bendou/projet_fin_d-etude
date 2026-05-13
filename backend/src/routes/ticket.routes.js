@@ -71,10 +71,41 @@ try {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title, description }),
   });
-  const mlData = await mlRes.json();
+  const mlData = await mlRes.json(); // ← THIS LINE IS MISSING IN YOUR CODE
+
   if (mlData.category) {
     category = mlData.category;
     console.log("🤖 ML predicted:", category, "| lang:", mlData.detected_lang);
+
+    if (mlData.detected_lang === "fr") {
+      try {
+        const translateRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 300,
+            messages: [
+              {
+                role: "user",
+                content: `Translate this ticket to English. Reply with only JSON: {"title":"...","description":"..."}\n\nTitle: ${title}\nDescription: ${description}`,
+              },
+            ],
+          }),
+        });
+        const translateData = await translateRes.json();
+        const raw = translateData.content?.[0]?.text ?? "{}";
+        const translated = JSON.parse(raw.replace(/```json|```/g, "").trim());
+        console.log("🇬🇧 [FR→EN] Title      :", translated.title ?? "(no translation)");
+        console.log("🇬🇧 [FR→EN] Description:", translated.description ?? "(no translation)");
+      } catch (err) {
+        console.warn("⚠️ Translation failed:", err.message);
+      }
+    }
   }
 } catch (err) {
   console.warn("⚠️ ML API unavailable, using default:", err.message);
@@ -445,7 +476,7 @@ if (existingTicket.status === "closed" && status === "open") {
   const reopenCount = await prisma.ticket_comments.count({
     where: { ticket_id: id, comment_type: "reopen" },
   });
-  if (reopenCount >= 2) {
+  if (reopenCount >= 1) {
     return res.status(400).json({ error: "Reopen limit reached" });
   }
 

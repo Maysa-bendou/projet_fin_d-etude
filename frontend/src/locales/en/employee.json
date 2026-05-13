@@ -156,7 +156,7 @@
     },
     "types": {
       "solution": "Proposed Solution",
-      "info": "Information",
+      "info": "Comment",
       "confirm": "Confirmation Requested",
       "emp_reply": "Your Reply",
       "confirmed": "Resolution Confirmed",

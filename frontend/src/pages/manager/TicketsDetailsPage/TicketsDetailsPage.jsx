@@ -117,14 +117,14 @@ const { t } = useTranslation(["manager", "common"]);
       return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, ((window - frozen) / window) * 100) };
     }
     const remaining = due - now;
-    const exceeded = remaining <= 0;
-    const abs = Math.abs(remaining);
-    const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
-    return {
-      mode: "active", exceeded,
-      text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.remaining", { h, m }),
-      pct: Math.min(100, Math.max(0, (remaining / window) * 100)),
-    };
+const exceeded = remaining <= 0;
+const abs = Math.abs(remaining);
+const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
+return {
+  mode: "active", exceeded,
+  text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.remaining", { h, m }),
+  pct: exceeded ? 100 : Math.min(100, Math.max(0, (remaining / window) * 100)),
+};
   };
 
   /* ── loading ── */

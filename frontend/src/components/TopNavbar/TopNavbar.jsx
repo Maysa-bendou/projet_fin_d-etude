@@ -27,16 +27,16 @@ const LANGUAGES = [
 
 function getNotifMeta(type) {
   switch (type) {
-    case "assigned":         return { icon: Ticket,       color: "text-blue-600 bg-blue-50"     };
-    case "sla":              return { icon: AlertCircle,  color: "text-red-600 bg-red-50"       };
-    case "solution":         return { icon: CheckCircle2, color: "text-green-600 bg-green-50"   };
-    case "info":             return { icon: Info,         color: "text-amber-600 bg-amber-50"   };
-    case "status":           return { icon: Clock,        color: "text-purple-600 bg-purple-50" };
-    case "emp_reply":        return { icon: Info,         color: "text-amber-600 bg-amber-50"   };
-    case "confirmed":        return { icon: CheckCircle2, color: "text-green-600 bg-green-50"   };
-    case "rejected_confirm": return { icon: AlertCircle,  color: "text-red-600 bg-red-50"       };
+    case "assigned":
     case "new_ticket":       return { icon: Ticket,       color: "text-blue-600 bg-blue-50"     };
+    case "solution":
+    case "confirmed":        return { icon: CheckCircle2, color: "text-green-600 bg-green-50"   };
+    case "sla":
+    case "rejected_confirm": return { icon: AlertCircle,  color: "text-red-600 bg-red-50"       };
+    case "info":
+    case "emp_reply":
     case "updated":          return { icon: Info,         color: "text-amber-600 bg-amber-50"   };
+    case "status":           return { icon: Clock,        color: "text-purple-600 bg-purple-50" };
     case "redirect":         return { icon: Forward,      color: "text-purple-600 bg-purple-50" };
     default:                 return { icon: Info,         color: "text-gray-600 bg-gray-50"     };
   }

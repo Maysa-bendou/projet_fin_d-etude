@@ -25,7 +25,7 @@
 },
 "impact": {
   "low": "One person",
-  "medium": "One department",
+  "medium": "One service",
   "high": "Entire company"
 },
 
@@ -92,6 +92,13 @@
   "employeeConfirmed": "Employee confirmed the resolution",
   "employeeRejected": "Employee reported the problem persists",
   "employeeUpdated": "Updated by employee: {{detail}}",
+  "changes": {
+    "title_changed": "Title modified",
+    "description_changed": "Description modified",
+    "impact_changed": "Impact: {{from}} → {{to}}",
+    "urgency_changed": "Urgency: {{from}} → {{to}}",
+    "status_changed": "Status: {{from}} → {{to}}"
+  },
   "ticketAssigned": "Ticket assigned to a technician",
     "employeeReopened": "Ticket reopened by employee"
 },

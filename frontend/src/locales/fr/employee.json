@@ -10,6 +10,8 @@
     "saving": "Enregistrement...",
     "edit": "Modifier",
     "back": "Retour",
+            "prec": "précédent",
+    "suiv" : " suivant",
     "unassigned": "Non assigné",
     "send": "Envoyer",
     "sending": "Envoi…",

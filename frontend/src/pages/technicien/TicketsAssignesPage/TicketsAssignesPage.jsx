@@ -95,7 +95,7 @@ const makeFmtDate = (locale) => (str) => {
   if (!str) return "—";
   const d = new Date(str);
   if (isNaN(d)) return "—";
-  return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString(locale, { month: "short" })} ${d.getFullYear()}`;
+  return d.toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
 };
 
 const isArchived = (t) => {
@@ -271,8 +271,8 @@ export default function TicketsAssignesPage() {
   const currentLang = i18n.language; // triggers re-render on language switch
 
   // FIX: locale-aware date formatter
-  const dateLocale = t("date.locale", { ns: "common" });
-  const fmtDate = makeFmtDate(dateLocale);
+const dateLocale = t("date.locale", { ns: "common" });
+const fmtDate = useMemo(() => makeFmtDate(dateLocale), [dateLocale]);
 
   // FIX: translate DB key → display label using common namespace
   // Internal state still uses French keys (statusFR values) for filter/SLA logic — unchanged
@@ -299,9 +299,12 @@ export default function TicketsAssignesPage() {
   };
 
   // FIX: month names for filter dropdown — language-aware
-  const MONTHS_LOCALIZED = Array.from({ length: 12 }, (_, i) =>
+const MONTHS_LOCALIZED = useMemo(() => 
+  Array.from({ length: 12 }, (_, i) =>
     new Date(2024, i, 1).toLocaleString(dateLocale, { month: "short" })
-  );
+  ),
+[dateLocale]  // re-runs when language changes
+);
   const user = useMemo(() => JSON.parse(localStorage.getItem("user")), []);
 
   const [ticketsData,     setTicketsData]     = useState([]);
@@ -588,7 +591,7 @@ export default function TicketsAssignesPage() {
           </FilterSelect>
 
           <FilterSelect icon={HiOutlineCalendarDays} value={filterMonth} onChange={setFilterMonth} minW={90}>
-            <option value="">{t("ticketsService.filters.mois")}</option>
+            <option value="">{t("ticketsService.filters.monthAll")}</option>
             {MONTHS_LOCALIZED.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </FilterSelect>
 
@@ -703,49 +706,18 @@ export default function TicketsAssignesPage() {
                           </span>
                         </td>
 
-                        {/* Statut — select inline */}
-                       {/* Statut — select inline */}
-<td style={{ padding: "9px 10px" }} onClick={e => e.stopPropagation()}>
-  <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
-    <select
-      value={statutCurrent}
-      onChange={e => changerStatut(e, tk.id, e.target.value)}
-      style={{
-        border: "none",
-        borderRadius: 99,
-        padding: "2px 24px 2px 8px",
-        fontSize: 11,
-        fontWeight: 600,
-        cursor: "pointer",
-        outline: "none",
-        appearance: "none",
-        WebkitAppearance: "none",
-        ...(statutColors[statutCurrent] ?? { background: "#f3f4f6", color: "#6b7280" }),
-      }}
-    >
-      {Object.keys(statusEN).map(s => (
-        <option key={s} value={s}>{tStatus(s)}</option>
-      ))}
-    </select>
-    {/* Custom arrow */}
-    <svg
-      style={{
-        position: "absolute",
-        right: 7,
-        pointerEvents: "none",
-        flexShrink: 0,
-      }}
-      width="10" height="10" viewBox="0 0 10 10" fill="none"
-    >
-      <path
-        d="M2 3.5L5 6.5L8 3.5"
-        stroke={statutColors[statutCurrent]?.color ?? "#6b7280"}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  </div>
+{/* Statut — fixed pill */}
+<td style={{ padding: "9px 10px" }}>
+  <span style={{
+    display: "inline-block",
+    borderRadius: 99,
+    padding: "2px 10px",
+    fontSize: 11,
+    fontWeight: 600,
+    ...(statutColors[statutCurrent] ?? { background: "#f3f4f6", color: "#6b7280" }),
+  }}>
+    {tStatus(statutCurrent)}
+  </span>
 </td>
 
                         {/* SLA */}

@@ -239,10 +239,31 @@ if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
       const translatedStatus = t(`status.${statusKey}`, { ns: "common", defaultValue: statusKey });
       return t("history.statusChanged", { ns: "common", status: translatedStatus });
     }
-    if (msg.startsWith("employee_updated:")) {
-      const detail = msg.split(":").slice(1).join(":");
-      return t("history.employeeUpdated", { ns: "common", detail });
-    }
+if (msg.startsWith("employee_updated:")) {
+  const raw = msg.split(":").slice(1).join(":");
+  const detail = raw.split("|").map(part => {
+    const trimmed = part.trim();
+    const subParts = trimmed.split(":");
+    const key = subParts[0];
+    const fromRaw = subParts[1];
+    const toRaw   = subParts[2];
+
+    // translate from/to using existing common.json sections
+    const translateValue = (field, val) => {
+      if (!val) return val;
+      if (field === "impact_changed")  return t(`impact.${val}`,   { ns: "common", defaultValue: val });
+      if (field === "urgency_changed") return t(`urgency.${val}`,  { ns: "common", defaultValue: val });
+      if (field === "status_changed")  return t(`status.${val}`,   { ns: "common", defaultValue: val });
+      return val;
+    };
+
+    const from = translateValue(key, fromRaw);
+    const to   = translateValue(key, toRaw);
+
+    return t(`history.changes.${key}`, { ns: "common", from, to, defaultValue: trimmed });
+  }).join(", ");
+  return t("history.employeeUpdated", { ns: "common", detail });
+}
     const LEGACY = {
     
 "Technicien a pris en charge le ticket": t("history.technicianTookOver", { ns: "common", name: "" }),
@@ -451,12 +472,12 @@ if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
 
           <button onClick={() => prevId && navigate(`/employee/ticket/${prevId}`)} disabled={!prevId}
             style={{ display:"flex", alignItems:"center", gap:5, padding:"7px 14px", borderRadius:8, border:"1px solid #d9d4cc", background:"#fff", cursor:!prevId ? "not-allowed" : "pointer", color:!prevId ? "#c4bdb3" : "#374151", fontSize:12, fontWeight:700 }}>
-            <HiOutlineArrowLeft size={14} /> Préc.
+            <HiOutlineArrowLeft size={14} /> {t('common.prec')}
           </button>
           <span style={{ fontSize:12, fontWeight:700, color:"#94a3b8", padding:"0 4px" }}>#{id}</span>
           <button onClick={() => nextId && navigate(`/employee/ticket/${nextId}`)} disabled={!nextId}
             style={{ display:"flex", alignItems:"center", gap:5, padding:"7px 14px", borderRadius:8, border:"1px solid #d9d4cc", background:"#fff", cursor:!nextId ? "not-allowed" : "pointer", color:!nextId ? "#c4bdb3" : "#374151", fontSize:12, fontWeight:700 }}>
-            Suiv. <HiOutlineArrowRight size={14} />
+            {t('common.suiv')} <HiOutlineArrowRight size={14} />
           </button>
         </div>
       </div>

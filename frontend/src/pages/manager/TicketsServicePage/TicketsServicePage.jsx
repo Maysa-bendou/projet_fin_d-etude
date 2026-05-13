@@ -1,5 +1,5 @@
 import React, {
-  useState, useEffect, useMemo, useCallback, memo
+  useState, useEffect, useMemo, useCallback, useRef, memo
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -7,8 +7,10 @@ import {
   HiOutlineTicket, HiOutlineArchiveBox, HiOutlineArrowPath,
   HiOutlineMagnifyingGlass, HiOutlineXMark,
   HiOutlineTag, HiOutlineExclamationCircle, HiOutlineCheckCircle,
-  HiOutlineCalendarDays,
+  HiOutlineCalendarDays, HiOutlineArrowDownTray,
 } from "react-icons/hi2";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 import RefreshButton from "../../../components/common/RefreshButton";
 import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
@@ -250,7 +252,7 @@ const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
       <TD style={{ fontWeight: 700, color: "#c4bfb8", fontSize: 11 }}>#{ticket.id}</TD>
 
       <td style={{ padding: "9px 10px", overflow: "hidden" }}>
-        <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12, fontWeight: 600, color: "#0f172a" }}>
+        <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#0f172a", wordBreak: "break-word", whiteSpace: "normal" }}>
           {ticket.title || "N/A"}
         </span>
       </td>
@@ -270,20 +272,20 @@ const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
   />
 </td>
 
-      <TD>
+      <TD style={{ whiteSpace: "nowrap" }}>
         {empName ? (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Avatar name={empParts.name} surname={empParts.surname} color="#fce7f3" textColor="#9d174d" />
-            <span style={{ fontSize: 12, color: "#374151", overflow: "hidden", textOverflow: "ellipsis" }}>{empName}</span>
+            <span style={{ fontSize: 12, color: "#374151" }}>{empName}</span>
           </div>
         ) : <span style={{ color: "#d1d5db" }}>—</span>}
       </TD>
 
-      <TD>
+      <TD style={{ whiteSpace: "nowrap" }}>
         {techName ? (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Avatar name={technician.name} surname={technician.surname} />
-            <span style={{ fontSize: 12, fontWeight: 500, color: "#374151", overflow: "hidden", textOverflow: "ellipsis" }}>{techName}</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>{techName}</span>
           </div>
         ) : (
           <span style={{ fontSize: 11, fontWeight: 700, color: "#fb923c", fontStyle: "italic" }}>
@@ -301,32 +303,32 @@ const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
 // ── TicketTable ────────────────────────────────────────────────────────────
 
 const COLS = [
-  { label: "ticketsService.cols.id",         w: 50  },
-  { label: "ticketsService.cols.title",       w: 180 },
-  { label: "ticketsService.cols.category",    w: 100 },
-  { label: "ticketsService.cols.priority",    w: 90  },
-  { label: "ticketsService.cols.status",      w: 121 },
-  { label: "ticketsService.cols.sla",         w: 110 },
-  { label: "ticketsService.cols.employee",    w: 140 },
-  { label: "ticketsService.cols.technician",  w: 140 },
-  { label: "ticketsService.cols.createdAt",   w: 95  },
-  { label: null,                              w: 95  },
+  { label: "ticketsService.cols.id",         w: 55,  minW: 50  },
+  { label: "ticketsService.cols.title",       w: 200, minW: 160 },
+  { label: "ticketsService.cols.category",    w: 110, minW: 100 },
+  { label: "ticketsService.cols.priority",    w: 90,  minW: 85  },
+  { label: "ticketsService.cols.status",      w: 121, minW: 110 },
+  { label: "ticketsService.cols.sla",         w: 120, minW: 110 },
+  { label: "ticketsService.cols.employee",    w: 160, minW: 150 },
+  { label: "ticketsService.cols.technician",  w: 160, minW: 150 },
+  { label: "ticketsService.cols.createdAt",   w: 115, minW: 105 },
+  { label: null,                              w: 115, minW: 105 },
 ];
 
 const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
   const { t } = useTranslation("manager");
   const ticketIds = tickets.map(tk => tk.id);
   return (
-    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", overflow: "hidden" }}>
+    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", overflowX: "auto", overflowY: "visible" }}>
       {tickets.length === 0 ? (
         <div style={{ padding: "48px 24px", textAlign: "center" }}>
           <HiOutlineTicket size={32} color="#d1d5db" style={{ marginBottom: 10 }} />
           <p style={{ color: "#94a3b8", fontSize: 13, margin: 0 }}>{t("ticketsService.noTickets")}</p>
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-            <colgroup>{COLS.map((c, i) => <col key={i} style={{ width: c.w }} />)}</colgroup>
+        <div>
+          <table style={{ width: "max-content", minWidth: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
+            <colgroup>{COLS.map((c, i) => <col key={i} style={{ minWidth: c.minW, width: c.w }} />)}</colgroup>
             <thead>
               <tr style={{ background: "#faf9f7", borderBottom: "1.5px solid #e8e2d9" }}>
                 {COLS.map((c, i) => (
@@ -370,6 +372,9 @@ const TicketsServicePage = () => {
   const MONTHS_LOC = makeMonths(dateLocale);
   const tStatus   = (key) => tc(`status.${key}`,   { defaultValue: key });
   const tCategory = (key) => tc(`category.${key}`, { defaultValue: key });
+
+  const tableRef = useRef(null);
+  const [exporting, setExporting] = useState(false);
 
   const { role, serviceId } = useMemo(() => {
     const u = JSON.parse(localStorage.getItem("user") || "null");
@@ -470,6 +475,192 @@ const TicketsServicePage = () => {
     setFilterAssignment(""); setFilterYear(""); setFilterMonth("");
   }, []);
 
+  // ── Export PDF ─────────────────────────────────────────────────────────
+  const exportPDF = useCallback(async () => {
+    if (!tableRef.current) return;
+    setExporting(true);
+    try {
+      const wrapperEl = tableRef.current;
+
+      // ── 1. Deep-clone the table into a hidden off-screen container
+      //       that has NO width constraint → browser lays it out at full
+      //       natural width so every column (incl. ASSIGNED) is rendered.
+      const offscreen = document.createElement("div");
+      offscreen.style.cssText = [
+        "position:fixed",
+        "top:0",
+        "left:-99999px",        // off-screen, not clipped
+        "width:max-content",    // expand to fit all columns
+        "min-width:100vw",
+        "background:#ffffff",
+        "z-index:-1",
+        "pointer-events:none",
+        "overflow:visible",
+      ].join(";");
+
+      const clone = wrapperEl.cloneNode(true);
+      // Remove any overflow/width constraints from the clone itself
+      clone.style.overflow  = "visible";
+      clone.style.overflowX = "visible";
+      clone.style.overflowY = "visible";
+      clone.style.width     = "max-content";
+      clone.style.minWidth  = "unset";
+      clone.style.maxWidth  = "unset";
+      clone.style.borderRadius = "0";
+
+      // Also remove scroll containers inside the clone
+      clone.querySelectorAll("*").forEach(child => {
+        const cs = window.getComputedStyle(child);
+        if (cs.overflowX === "auto" || cs.overflowX === "scroll" ||
+            cs.overflowX === "hidden") {
+          child.style.overflowX = "visible";
+          child.style.width     = "max-content";
+        }
+        if (cs.overflowY === "auto" || cs.overflowY === "scroll" ||
+            cs.overflowY === "hidden") {
+          child.style.overflowY = "visible";
+        }
+      });
+
+      offscreen.appendChild(clone);
+      document.body.appendChild(offscreen);
+
+      // Wait one frame for the browser to paint the clone at full width
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      const fullW = offscreen.scrollWidth;
+      const fullH = offscreen.scrollHeight;
+
+      // ── 2. Capture the off-screen clone (no viewport clipping)
+      const canvas = await html2canvas(offscreen, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth:  fullW,
+        windowHeight: fullH,
+        width:  fullW,
+        height: fullH,
+        x: 0,
+        y: 0,
+      });
+
+      // ── 3. Get row boundaries from the CLONE (not the live DOM)
+      const cloneRect = clone.getBoundingClientRect();
+      const allRows   = Array.from(clone.querySelectorAll("thead tr, tbody tr"));
+      const rowBands  = allRows.map(row => {
+        const r = row.getBoundingClientRect();
+        return {
+          top:    r.top    - cloneRect.top,
+          bottom: r.bottom - cloneRect.top,
+        };
+      });
+
+      // ── 4. Remove the off-screen clone
+      document.body.removeChild(offscreen);
+
+      // ── 5. Build the PDF
+      const margin  = 24;
+      const headerH = 32;
+      const pdf     = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
+      const pdfW    = pdf.internal.pageSize.getWidth();
+      const pdfH    = pdf.internal.pageSize.getHeight();
+      const usableW = pdfW - margin * 2;
+      const usableH = pdfH - margin * 2 - headerH;
+
+      // Scale factor: canvas pixels → PDF px  (canvas is scale:2)
+      const imgW  = canvas.width / 2;
+      const ratio = usableW / imgW;
+
+      const activeFilters = [];
+      if (filterStatus)     activeFilters.push(tStatus(filterStatus));
+      if (filterCategory)   activeFilters.push(tCategory(filterCategory));
+      if (filterAssignment) activeFilters.push(filterAssignment === "assigned" ? t("ticketsService.filters.assigned") : t("ticketsService.filters.unassigned"));
+      if (filterMonth)      activeFilters.push(MONTHS_LOC[parseInt(filterMonth)]);
+      if (filterYear)       activeFilters.push(String(filterYear));
+      if (filterSearch)     activeFilters.push(`"${filterSearch}"`);
+      const filterText = activeFilters.length ? activeFilters.join(" · ") : "—";
+
+      let pageNum = 1;
+      const totalPages = (() => {
+        let curY = 0; let pages = 1;
+        for (const band of rowBands) {
+          const h = (band.bottom - band.top) * ratio;
+          if (curY + h > usableH && curY > 0) { pages++; curY = 0; }
+          curY += h;
+        }
+        return pages;
+      })();
+
+      const drawHeader = (pNum) => {
+        pdf.setFontSize(13);
+        pdf.setTextColor(15, 23, 42);
+        pdf.setFont(undefined, "bold");
+        const title = serviceName
+          ? `${t("ticketsService.service")} ${serviceName}`
+          : t("ticketsService.allTickets");
+        pdf.text(title, margin, margin + 4);
+        pdf.setFontSize(8.5);
+        pdf.setFont(undefined, "normal");
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(filterText, margin, margin + 16);
+        pdf.text(
+          `${displayedTickets.length} ticket${displayedTickets.length !== 1 ? "s" : ""}${totalPages > 1 ? `   ${pNum}/${totalPages}` : ""}`,
+          pdfW - margin, margin + 4, { align: "right" }
+        );
+      };
+
+      drawHeader(1);
+
+      let cursorY = 0;
+
+      for (const band of rowBands) {
+        const rowH       = band.bottom - band.top;
+        const rowHScaled = rowH * ratio;
+
+        if (cursorY > 0 && cursorY * ratio + rowHScaled > usableH) {
+          pdf.addPage();
+          pageNum++;
+          drawHeader(pageNum);
+          cursorY = 0;
+        }
+
+        // Slice this row out of the full canvas
+        const sliceCanvas  = document.createElement("canvas");
+        sliceCanvas.width  = canvas.width;
+        sliceCanvas.height = Math.ceil(rowH * 2);
+        const ctx = sliceCanvas.getContext("2d");
+        ctx.drawImage(
+          canvas,
+          0, Math.floor(band.top * 2),
+          canvas.width, Math.ceil(rowH * 2),
+          0, 0,
+          canvas.width, Math.ceil(rowH * 2)
+        );
+
+        const destY = margin + headerH + cursorY * ratio;
+        pdf.addImage(sliceCanvas.toDataURL("image/png"), "PNG", margin, destY, usableW, rowHScaled);
+        cursorY += rowH;
+      }
+
+      const blob = pdf.output("blob");
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `tickets_export_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+    } catch (err) {
+      console.error("PDF export error:", err);
+      // Clean up offscreen div if something went wrong
+      document.querySelectorAll("div[style*='-99999px']").forEach(n => n.remove());
+    } finally {
+      setExporting(false);
+    }
+  }, [tableRef, displayedTickets, serviceName, filterStatus, filterCategory, filterAssignment, filterMonth, filterYear, filterSearch, MONTHS_LOC, t, tStatus, tCategory]);
+
   // ── Loading ────────────────────────────────────────────────────────────
 
   if (loading) return (
@@ -503,7 +694,25 @@ const TicketsServicePage = () => {
             </p>
           </div>
         </div>
-        <RefreshButton onRefresh={fetchData} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={exportPDF}
+            disabled={exporting || displayedTickets.length === 0}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "7px 14px", borderRadius: 8, border: "1.5px solid #bfdbfe",
+              background: exporting ? "#f1f5f9" : "#eff6ff",
+              color: exporting ? "#94a3b8" : "#1d4ed8",
+              fontSize: 12, fontWeight: 600, cursor: exporting ? "not-allowed" : "pointer",
+              opacity: displayedTickets.length === 0 ? 0.45 : 1,
+              transition: "opacity 0.15s",
+            }}
+          >
+            <HiOutlineArrowDownTray size={15} />
+            {exporting ? "Export…" : "Export PDF"}
+          </button>
+          <RefreshButton onRefresh={fetchData} />
+        </div>
       </div>
 
       {/* Body */}
@@ -570,7 +779,9 @@ const TicketsServicePage = () => {
         </div>
 
         {/* Table */}
-        <TicketTable tickets={displayedTickets} navigate={navigate} role={role} activeTab={activeTab} />
+        <div ref={tableRef}>
+          <TicketTable tickets={displayedTickets} navigate={navigate} role={role} activeTab={activeTab} />
+        </div>
 
       </div>
     </div>

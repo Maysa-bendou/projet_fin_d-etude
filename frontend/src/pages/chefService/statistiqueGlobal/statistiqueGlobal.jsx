@@ -206,7 +206,16 @@ export default function ChefPerformancesPage() {
       ...m,
       displayMonth: tMonth(m.month),
     }));
-    if (selectedMonth) return withTranslated;
+    if (selectedMonth) {
+  // Daily view: prefix each day number with J (FR) or D (EN)
+  const dayPrefix = i18n.language === 'fr' ? 'j' : 'd';
+  return [...stats.monthlyStats]
+    .sort((a, b) => Number(a.month) - Number(b.month))
+    .map(m => ({
+      ...m,
+      displayMonth: `${dayPrefix}${m.month}`,
+    }));
+}
     // Sort by month order
     const order = MONTHS.map(m => m.label);
     return [...withTranslated].sort((a, b) => {

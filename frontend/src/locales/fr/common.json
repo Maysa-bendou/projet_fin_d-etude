@@ -87,7 +87,7 @@
   "confirmationRequested": "Demande de confirmation envoyée à l'employé",
   "ticketClosed": "Ticket fermé manuellement par le technicien",
   "ticketClosedWithNote": "Ticket fermé. Note : {{note}}",
-  "ticketRedirected": "Redirigé par {{by}} : {{reason}}",
+"ticketRedirected": "Redirigé par {{by}} ",
   "employeeConfirmed": "Employé a confirmé la résolution",
   "employeeRejected": "Employé a signalé que le problème persiste",
 "technicianTookOver": "Le technicien {{name}} a pris en charge le ticket",

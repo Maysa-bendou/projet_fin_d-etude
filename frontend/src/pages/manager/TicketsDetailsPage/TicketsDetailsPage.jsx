@@ -17,7 +17,20 @@ const TicketDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-const { t } = useTranslation(["manager", "common"]);
+const { t }     = useTranslation(["manager", "common"]);
+const { t: tc } = useTranslation("common");
+const fmtDate   = (str) => {
+  if (!str) return "—";
+  const d = new Date(str);
+  if (isNaN(d)) return "—";
+  const day   = String(d.getDate());
+  const month = d.toLocaleString(tc("date.locale"), { month: "long" });
+  const year  = d.getFullYear();
+  return (tc("date.long") || "D MMMM YYYY")
+    .replace("MMMM", month)
+    .replace("D", day)
+    .replace("YYYY", year);
+};
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const sId = user.service_id;
@@ -303,7 +316,8 @@ const LevelBadge = ({ config, value, label }) => {
                     { icon: <MdTrendingUp style={{ fontSize: 13 }} />,   label: t("ticketDetail.cols.impact"),    node: <LevelBadge config={IMPACT_CONFIG}  value={tk.impact}   label={t(`impact.${tk.impact}`,     { ns: "common" })} /> },
                     { icon: <MdFlashOn style={{ fontSize: 13 }} />,      label: t("ticketDetail.cols.urgency"),   node: <LevelBadge config={URGENCY_CONFIG} value={tk.urgency} label={t(`urgency.${tk.urgency}`,   { ns: "common" })} /> },
                      { icon: <MdSupportAgent style={{ fontSize: 13 }} />,  label: t("ticketDetail.cols.service"),   node: <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{tk.service?.name || tk.service || "—"}</span> },
-                    { icon: <MdCalendarToday style={{ fontSize: 13 }} />, label: t("ticketDetail.cols.createdAt"), node: <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{new Date(tk.createdAt || tk.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</span> },
+                    { icon: <MdCalendarToday style={{ fontSize: 13 }} />, label: t("ticketDetail.cols.createdAt"), node: <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>
+{fmtDate(tk.createdAt || tk.created_at)}</span> },
                   ].map(({ icon, label, node }, i) => (
                     <div key={i} style={{ display: "flex", flexDirection: "column", gap: 5, background: "#faf9f7", border: "1px solid #e8e2d9", borderRadius: 10, padding: "10px 14px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -338,7 +352,7 @@ const LevelBadge = ({ config, value, label }) => {
                       <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", background: "#fef2f2", padding: "2px 8px", borderRadius: 99, border: "1px solid #fecaca" }}>{t("ticketDetail.sla.breachDetected")}</span>
                     )}
                     <span style={{ fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                      {t("ticketDetail.sla.limit")} : {tk.sla_date_limite ? new Date(tk.sla_date_limite).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "N/A"}
+                      {t("ticketDetail.sla.limit")} : {tk.sla_date_limite ? fmtDate(tk.sla_date_limite) : "N/A"}
                     </span>
                   </div>
                 </div>
@@ -354,7 +368,7 @@ const LevelBadge = ({ config, value, label }) => {
                     {tk.redirected_at && (
                       <div style={{ fontSize: 12, color: "#374151" }}>
                         <span style={{ fontWeight: 700, color: "#6b21a8" }}>{t("ticketDetail.redirect.redirectedAt")} : </span>
-                        {new Date(tk.redirected_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        {fmtDate(tk.redirected_at)}
                       </div>
                     )}
                     <div style={{ fontSize: 12, color: "#374151", borderTop: "1px solid #e9d5ff", paddingTop: 6, marginTop: 2 }}>
@@ -406,45 +420,38 @@ const LevelBadge = ({ config, value, label }) => {
                     </div>
                   )}
 
-                  {tk.assigned_at && <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 0" }}>{t("ticketDetail.assignedOn")} : {new Date(tk.assigned_at).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</p>}
-                  {tk.closed_at   && <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0" }}>{t("ticketDetail.closedOn")} : {new Date(tk.closed_at).toLocaleDateString(undefined,   { day: "numeric", month: "short", year: "numeric" })}</p>}
+                  {tk.assigned_at && <p style={{ fontSize: 11, color: "#94a3b8", margin: "4px 0 0" }}>{t("ticketDetail.assignedOn")} : {fmtDate(tk.assigned_at)}</p>}
+                  {tk.closed_at   && <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0" }}>{t("ticketDetail.closedOn")} : {fmtDate(tk.closed_at)}</p>}
+                
                 </div>
-
-                <button
-                  onClick={() => { if (!isTerminal) { setShowList(!showList); setSelectedTech(null); } }}
-                  disabled={isTerminal}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8,
-                    padding: "10px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-                    cursor: isTerminal ? "not-allowed" : "pointer", border: "none",
-                    background: isTerminal ? "#1e3a8a"
-  : showList ? "#e8e2d9"
-  : isAssigned ? "#1e3a8a"
-  : "#1e3a8a",
-
-color: isTerminal ? "#94a3b8"
-  : showList ? "#6b7280"
-  : isAssigned ? "#fff"
-  : "#fff", outline: isAssigned && !showList && !isTerminal ? "1.5px solid #1e3a8a" : "none",
-                    opacity: isTerminal ? 0.6 : 1,
-                  }}
-                  onMouseEnter={e => { if (!isTerminal && !showList) e.currentTarget.style.background = isAssigned ? "#1e3a8a" : "#1e40af"; }}
-                  onMouseLeave={e => { if (!isTerminal && !showList) e.currentTarget.style.background = isAssigned ? "#1e3a8a" : "#1e3a8a"; }}
-                >
-                {showList ? <MdArrowBack style={{ fontSize: 17 }} /> : <MdSwapHoriz style={{ fontSize: 17 }} />}
-{isTerminal
-  ? t("ticketDetail.btn.alreadyAssigned")
-  : showList
-    ? t("ticketDetail.btn.cancel")
-    : isAssigned
-      ? t("ticketDetail.btn.modifyExpert")
-      : t("ticketDetail.btn.assignTicket")}
-                </button>
+{!isAssigned && (
+  <button
+    onClick={() => { if (!isTerminal) { setShowList(!showList); setSelectedTech(null); } }}
+    disabled={isTerminal}
+    style={{
+      display: "flex", alignItems: "center", gap: 8,
+      padding: "10px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+      cursor: isTerminal ? "not-allowed" : "pointer", border: "none",
+      background: showList ? "#e8e2d9" : "#1e3a8a",
+      color: isTerminal ? "#94a3b8" : showList ? "#6b7280" : "#fff",
+      opacity: isTerminal ? 0.6 : 1,
+    }}
+    onMouseEnter={e => { if (!isTerminal && !showList) e.currentTarget.style.background = "#1e40af"; }}
+    onMouseLeave={e => { if (!isTerminal && !showList) e.currentTarget.style.background = "#1e3a8a"; }}
+  >
+    {showList ? <MdArrowBack style={{ fontSize: 17 }} /> : <MdSwapHoriz style={{ fontSize: 17 }} />}
+    {isTerminal
+      ? t("ticketDetail.btn.alreadyAssigned")
+      : showList
+        ? t("ticketDetail.btn.cancel")
+        : t("ticketDetail.btn.assignTicket")}
+  </button>
+)}
               </div>
             </div>
 
             {/* ── ASSIGNMENT PANEL — only in right column, never affects left ── */}
-            {showList && (
+            {showList && !isAssigned && (
               <div style={{ background: "#fff", border: "1px solid #d9d4cc", borderRadius: 16, overflow: "hidden", animation: "fadeIn 0.2s ease" }}>
 
                 {/* Panel header */}

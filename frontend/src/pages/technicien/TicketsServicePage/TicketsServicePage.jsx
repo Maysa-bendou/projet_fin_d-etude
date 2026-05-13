@@ -15,12 +15,18 @@ import Pill from "../../../components/common/Pill";
 
 const THIS_YEAR = new Date().getFullYear();
 
-// FIX: locale-aware date formatter factory — locale passed from component
-const makeFmtDate = (locale) => (str) => {
+// AFTER
+const makeFmtDate = (locale, longFormat) => (str) => {
   if (!str) return "—";
   const d = new Date(str);
   if (isNaN(d)) return "—";
-  return `${String(d.getDate()).padStart(2,"0")} ${d.toLocaleString(locale,{month:"short"})} ${d.getFullYear()}`;
+  const day   = String(d.getDate());
+  const month = d.toLocaleString(locale, { month: "long" });
+  const year  = d.getFullYear();
+  return (longFormat || "D MMMM YYYY")
+    .replace("D", day)
+    .replace("MMMM", month)
+    .replace("YYYY", year);
 };
 
 // FIX: locale-aware month list for filter dropdown
@@ -200,8 +206,8 @@ const TicketRow = memo(({ t, navigate, role, activeTab, isLast, ticketIds }) => 
   // FIX: two separate useTranslation calls — one per namespace, no array
   const { t: i18n } = useTranslation("technicien");
   const { t: tc }   = useTranslation("common");
-  // FIX: locale-aware date formatter
-  const fmtDate = makeFmtDate(tc("date.locale"));
+
+const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
   // FIX: translation helpers for Pill labels
   const tStatus   = (key) => tc(`status.${key}`,   { defaultValue: key });
   const tPriority = (key) => tc(`priority.${key}`, { defaultValue: key });

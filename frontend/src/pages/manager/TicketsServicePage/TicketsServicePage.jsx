@@ -18,12 +18,18 @@ import Pill from "../../../components/common/Pill";
 
 const THIS_YEAR = new Date().getFullYear();
 
-// FIX: locale-aware date formatter — built from the active locale
-const makeFmtDate = (locale) => (str) => {
+
+const makeFmtDate = (locale, longFormat) => (str) => {
   if (!str) return "—";
   const d = new Date(str);
   if (isNaN(d)) return "—";
-  return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString(locale, { month: "short" })} ${d.getFullYear()}`;
+  const day   = String(d.getDate());
+  const month = d.toLocaleString(locale, { month: "long" });
+  const year  = d.getFullYear();
+  return (longFormat || "D MMMM YYYY")
+    .replace("MMMM", month)
+    .replace("D", day)
+    .replace("YYYY", year);
 };
 
 // FIX: locale-aware month list for the filter dropdown
@@ -212,8 +218,8 @@ const TicketRow = memo(({ ticket, navigate, role, activeTab, isLast, ticketIds }
   // FIX: two separate useTranslation calls — one per namespace, no array
   const { t }    = useTranslation("manager");
   const { t: tc } = useTranslation("common");
-  // FIX: locale-aware date formatter
-  const fmtDate = makeFmtDate(tc("date.locale"));
+// AFTER
+const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
   // FIX: translation helpers for Pill labels
   const tStatus   = (key) => tc(`status.${key}`,   { defaultValue: key });
   const tPriority = (key) => tc(`priority.${key}`, { defaultValue: key });
@@ -540,12 +546,12 @@ const TicketsServicePage = () => {
             <option value="">{t("ticketsService.filters.monthAll")}</option>
             {MONTHS_LOC.map((m, i) => <option key={i} value={i}>{m}</option>)}
           </FilterSelect>
-          {activeTab === "archives" && archiveYears.length > 0 && (
-            <FilterSelect value={filterYear} onChange={setFilterYear} minW={75}>
-              <option value="">{t("ticketsService.filters.all")}</option>
-              {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
-            </FilterSelect>
-          )}
+{activeTab === "archives" && archiveYears.length > 0 && (
+  <FilterSelect value={filterYear} onChange={setFilterYear} minW={75}>
+    <option value="">{t("ticketsService.filters.allYears")}</option>
+    {archiveYears.map(y => <option key={y} value={y}>{y}</option>)}
+  </FilterSelect>
+)}
           <Sep />
           <button onClick={resetFilters} style={{
             display: "flex", alignItems: "center", gap: 5, height: 32, padding: "0 11px", borderRadius: 7, whiteSpace: "nowrap",

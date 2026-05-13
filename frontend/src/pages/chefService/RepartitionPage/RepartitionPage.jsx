@@ -206,9 +206,12 @@ export default function RepartitionPage() {
     if (!stats?.monthlyStats) return [];
     const toIdx = (raw) => monthStringToIndex[raw?.toLowerCase()] ?? 99;
     const toLabel = (raw) => MONTH_SHORT[monthStringToIndex[raw?.toLowerCase()] ?? 0] ?? raw;
-    if (selectedMonth) {
-      return stats.monthlyStats.map(entry => ({ ...entry, month: toLabel(entry.month) }));
-    }
+if (selectedMonth) {
+  return stats.monthlyStats.map(entry => ({
+    ...entry,
+    month: entry.month?.toString().replace(/^[A-Za-z]+/, i18n.language === 'fr' ? 'j' : 'd'),
+  }));
+}
     return [...stats.monthlyStats]
       .sort((a, b) => toIdx(a.month) - toIdx(b.month))
       .map(entry => ({ ...entry, month: toLabel(entry.month) }));

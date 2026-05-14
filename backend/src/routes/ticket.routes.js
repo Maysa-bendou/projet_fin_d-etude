@@ -628,28 +628,30 @@ await prisma.ticket_comments.create({
   },
 });
 
-    await prisma.ticket_assignments_history.create({
-      data: {
-        ticket_id:    ticketId,
-        from_user_id: action === "assigned" ? assigned_by : null,
-        to_user_id:   techId,
-        action:       action || "taken",
-        reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
-        assigned_by:  assigned_by ? parseInt(assigned_by) : null,
-      },
-    });
+   await prisma.ticket_assignments_history.create({
+  data: {
+    ticket_id:    ticketId,
+    from_user_id: action === "assigned" ? assigned_by : null,
+    to_user_id:   techId,
+    action:       action || "taken",
+    reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
+    assigned_by:  assigned_by ? parseInt(assigned_by) : null,
+  },
+});
 
-    await Promise.allSettled([
-  notifyTechAssigned(techId, ticketId, ticket.title)
-]);
-    if (ticket.created_by) {
-      const tech = await prisma.users.findUnique({
-        where: { id: techId },
-        select: { name: true, surname: true },
-      });
-      const techName = tech ? `${tech.name} ${tech.surname}`.trim() : "un technicien";
-      await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techName);
-    }
+// Only notify tech if assigned by manager, not when he takes it himself
+if (action !== "taken") {
+  await notifyTechAssigned(techId, ticketId, ticket.title);
+}
+
+if (ticket.created_by) {
+  const tech = await prisma.users.findUnique({
+    where: { id: techId },
+    select: { name: true, surname: true },
+  });
+  const techName = tech ? `${tech.name} ${tech.surname}`.trim() : "un technicien";
+  await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techName);
+}
 
     res.json({
       id:          updatedTicket.id,

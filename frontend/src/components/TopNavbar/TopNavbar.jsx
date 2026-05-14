@@ -111,13 +111,13 @@ function resolveNotifMessage(n, t) {
       return t("notifications.messages.solution", p, { defaultValue: n.message });
 
     case "info":
-      return t("notifications.messages.info", p, { defaultValue: n.message });
+  return t("notifications.messages.info", p, { defaultValue: n.message });
 
     case "status":
       return t("notifications.messages.status", p, { defaultValue: n.message });
 
     case "emp_reply":
-      return t("notifications.messages.emp_reply", p, { defaultValue: n.message });
+  return t("notifications.messages.emp_reply", p, { defaultValue: n.message });
 
     case "confirmed":
       return t("notifications.messages.confirmed", p, { defaultValue: n.message });
@@ -344,11 +344,12 @@ export default function TopNavbar({ pageTitle = "" }) {
                             setNotifOpen(false);
                             if (n.ticket_id) {
                               if (rolePath === "technician") {
-                                const path = n.type === "assigned"
-                                  ? `/technician/ticket-technicien/${n.ticket_id}`
-                                  : `/technician/tickets-service/${n.ticket_id}`;
-                                navigate(path);
-                              } else if (rolePath === "manager" || rolePath === "chef") {
+  const goToService = n.type === "new_ticket" || n.type === "redirect";
+  navigate(goToService
+    ? `/technician/tickets-service/${n.ticket_id}`
+    : `/technician/ticket-technicien/${n.ticket_id}`
+  );
+}else if (rolePath === "manager" || rolePath === "chef") {
                                 navigate(`/manager/tickets-service/${n.ticket_id}`);
                               } else if (rolePath === "employee") {
                                 navigate(`/employee/ticket/${n.ticket_id}`);

@@ -93,6 +93,7 @@
       "contact": "Contact",
       "office": "Office"
     },
+    "initialAttachments": "Attachments",
     "cols": {
       "priority": "Priority",
       "category": "Category",
@@ -248,7 +249,12 @@
       "respond": "Reply",
       "redirect": "Redirect",
       "close": "Close"
+  
     },
+    "closedWithoutConfirmation": "Closed without confirmation",
+        "ticketClosed": "This ticket is closed",
+"ticketClosedNoRedirect": "This ticket is closed  redirection is no longer available",
+"noClosingNote": "No closing note recorded",
     "ticketClosedNoAction": "Ticket closed — no actions available",
     "finalSolution": "Final solution",
     "attachments": "Attachments",
@@ -303,7 +309,13 @@
 "confirmQuestion":    "Has the issue been resolved?",
 "confirmYes":         "Yes, resolved",
 "confirmNo":          "No, still a problem",
-"youLabel":           "You"
+"youLabel":           "You", 
+"status": {
+  "closed": "Ticket closed",
+  "closedWithNote": "Ticket closed . {{note}}",
+  "redirected": "Ticket redirected by {{by}} .  {{reason}}",
+  "changed": "Status updated"
+}
   },
 
   "categories": {
@@ -318,6 +330,12 @@
   "fileAttachment": {
     "attach": "Attach"
   },
+"confirmModal": {
+  "title": "Confirm assignment",
+  "body": "Are you sure you want to take charge of this ticket? You will be responsible for it.",
+  "confirm": "Yes, take charge",
+  "cancel": "Cancel"
+},
 
   "manualClose": {
   "title":                "Close ticket manually",

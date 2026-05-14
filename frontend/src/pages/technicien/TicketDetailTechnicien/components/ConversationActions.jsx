@@ -135,7 +135,12 @@ export default function ConversationActions({
       .then(setFilteredTechs)
       .catch(() => setFilteredTechs([]));
   }, [redirectServiceId, techniciens]);
-
+// ADD THIS before the return
+const lastSolutionIdx = [...conversation].findLastIndex(c => c.type === "solution");
+const hasConfirmationAfterSolution = lastSolutionIdx !== -1
+  ? conversation.slice(lastSolutionIdx).some(c => c.type === "confirmed")
+  : false;
+const closedWithoutConfirmation = isClosed && !hasConfirmationAfterSolution;
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
 
@@ -149,7 +154,7 @@ export default function ConversationActions({
             {conversation.length} {t("conv.msg")}
           </span>
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div ref={convEndRef} className="flex-1 overflow-y-auto px-4 py-4">
           {conversation.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <MessageSquare size={28} className="text-gray-200 mb-3"/>
@@ -195,55 +200,54 @@ export default function ConversationActions({
 
           {/* ── RESPOND tab ── */}
           {activeTab === "respond" && (
-            isClosed ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-gray-500">
-                  <Lock size={15}/>
-                  <p className="text-sm font-semibold">{t("conv.ticketClosedNoAction")}</p>
-                </div>
-                {ticket.solution && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                      <CheckCircle2 size={11}/> {t("conv.finalSolution")}
-                    </p>
-                    <div className="text-[12px] text-gray-700 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+           // REPLACE the entire isClosed block in the respond tab
+isClosed ? (
+  <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+  <Lock size={13} className="text-slate-400 shrink-0"/>
+  <p className="text-[11px] font-semibold text-slate-500">{t("conv.ticketClosed")}</p>
+  {closedWithoutConfirmation && (
+    <span className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
+      {t("conv.closedWithoutConfirmation")}
+    </span>
+  )}
+</div>
 
-                    {/* Pièces jointes liées à la solution/fermeture */}
-                    {(() => {
-                      // Dernier message solution ou comment de fermeture uniquement
-                      const lastMsg = [...conversation]
-                        .reverse()
-                        .find(c => ["solution", "comment"].includes(c.type));
-                      const files = lastMsg?.files ?? [];
-                      return files.length > 0 ? (
-                        <div className="mt-2 pt-2 border-t border-green-200 flex flex-col gap-1">
-                          <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-1 flex items-center gap-1">
-                            <Paperclip size={10}/> {t("conv.attachments")}
-                          </p>
-                          {files.map((f, i) => (
-                            <a key={f.id ?? i}
-                              href={`http://localhost:3001/${f.filePath}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 text-[11px] text-blue-600 hover:underline px-2 py-1 rounded hover:bg-green-100 transition truncate"
-                            >
-                              <Paperclip size={10} className="shrink-0"/> {f.fileName}
-                            </a>
-                          ))}
-                        </div>
-                      ) : null;
-                    })()}
-                  </div>
-                )}
-                {ticket.closing_note && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{t("conv.closingNote")}</p>
-                    <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
+    {ticket.solution && (
+      <div className="border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+          <CheckCircle2 size={10}/> {t("conv.finalSolution")}
+        </p>
+        <div className="text-[12px] text-slate-700 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+
+        {(() => {
+          const lastMsg = [...conversation].reverse().find(c => ["solution","comment"].includes(c.type));
+          const files = lastMsg?.files ?? [];
+          return files.length > 0 ? (
+            <div className="mt-1.5 pt-2 border-t border-slate-100 flex flex-col gap-1">
+              {files.map((f, i) => (
+                <a key={f.id ?? i}
+                  href={`http://localhost:3001/${f.filePath}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[11px] text-blue-500 hover:underline px-1 truncate">
+                  <Paperclip size={10} className="shrink-0"/> {f.fileName}
+                </a>
+              ))}
+            </div>
+          ) : null;
+        })()}
+      </div>
+    )}
+
+    {ticket.closing_note && (
+      <div className="border border-slate-200 rounded-xl p-3 flex flex-col gap-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("conv.closingNote")}</p>
+        <p className="text-[12px] text-slate-600 leading-relaxed">{ticket.closing_note}</p>
+      </div>
+    )}
+  </div>
+) : (
               <>
                 {/* Mode toggle: Solution / Commentaire */}
                 <div className="flex rounded-lg overflow-hidden border border-gray-200 bg-gray-50 shrink-0">
@@ -354,9 +358,32 @@ export default function ConversationActions({
 
           {/* ── REDIRECT tab ── */}
           {activeTab === "redirect" && (
-            isClosed ? (
-              <></>
-            ) : (
+           // REPLACE the empty <></> with:
+isClosed ? (
+  <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+      <Lock size={13} className="text-slate-400 shrink-0"/>
+      <p className="text-[11px] font-semibold text-slate-500">{t("conv.ticketClosedNoRedirect")}</p>
+    </div>
+
+    {ticket.solution && (
+      <div className="border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+          <CheckCircle2 size={10}/> {t("conv.finalSolution")}
+        </p>
+        <div className="text-[12px] text-slate-700 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+      </div>
+    )}
+
+    {ticket.closing_note && (
+      <div className="border border-slate-200 rounded-xl p-3 flex flex-col gap-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("conv.closingNote")}</p>
+        <p className="text-[12px] text-slate-600 leading-relaxed">{ticket.closing_note}</p>
+      </div>
+    )}
+  </div>
+): (
               <>
                 <div className="flex items-start gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-[11px] text-purple-700">
                   <Forward size={13} className="shrink-0 mt-0.5"/>
@@ -451,19 +478,34 @@ export default function ConversationActions({
 
           {/* ── CLOSE tab ── */}
           {activeTab === "close" && (
-            isClosed ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-gray-500 text-sm font-semibold">
-                  <Lock size={15}/> {t("conv.closed")}
-                </div>
-                {ticket.closing_note && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-1">{t("conv.note")}</p>
-                    <p className="text-[12px] text-gray-700">{ticket.closing_note}</p>
-                  </div>
-                )}
-              </div>
-            ) : ticket?.is_resolved_confirmed ? (
+          // REPLACE the existing isClosed block in the close tab
+isClosed ? (
+  <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+      <Lock size={13} className="text-slate-400 shrink-0"/>
+      <p className="text-[11px] font-semibold text-slate-500">{t("conv.closed")}</p>
+    </div>
+
+    {ticket.solution && (
+      <div className="border border-slate-200 rounded-xl p-3 flex flex-col gap-1.5">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+          <CheckCircle2 size={10}/> {t("conv.finalSolution")}
+        </p>
+        <div className="text-[12px] text-slate-700 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: ticket.solution }}/>
+      </div>
+    )}
+
+    {ticket.closing_note ? (
+      <div className="border border-slate-200 rounded-xl p-3 flex flex-col gap-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("conv.closingNote")}</p>
+        <p className="text-[12px] text-slate-600 leading-relaxed">{ticket.closing_note}</p>
+      </div>
+    ) : (
+      <p className="text-[11px] text-slate-400 italic px-1">{t("conv.noClosingNote")}</p>
+    )}
+  </div>
+) : ticket?.is_resolved_confirmed ? (
               // ✅ Employé a confirmé → formulaire de fermeture rapide
               <ConfirmedCloseForm
                 ticket={ticket}

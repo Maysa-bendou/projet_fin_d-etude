@@ -213,6 +213,7 @@
       "contact": "Contact",
       "office": "Bureau"
     },
+        "initialAttachments": "Pièces jointes",
     "cols": {
       "priority": "Priorité",
       "category": "Catégorie",

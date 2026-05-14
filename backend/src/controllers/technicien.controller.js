@@ -133,16 +133,19 @@ const getTicketDetailTech = async (req, res) => {
           };
         }),
       })),
-      attachments: [
-        ...(ticket.ticket_attachments || []),
-        ...(ticket.ticket_comments || []).flatMap(c => c.ticket_attachments || [])
-      ].map((a) => ({
-        id: a.id,
-        fileName: a.file_name,
-        filePath: a.file_path,
-        uploadedBy: `${a.users?.name ?? ""} ${a.users?.surname ?? ""}`.trim(),
-        uploadedAt: a.uploaded_at,
-      })),
+    // AFTER
+attachments: (ticket.ticket_comments || [])
+  .filter(c => c.comment_type === "attachment")
+  .flatMap(c => c.ticket_attachments || [])
+  .map((a) => ({
+    id: a.id,
+    fileName: a.file_name,
+    filePath: a.file_path
+      ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
+      : null,
+    uploadedBy: `${a.users?.name ?? ""} ${a.users?.surname ?? ""}`.trim(),
+    uploadedAt: a.uploaded_at,
+  })),
     });
   } catch (err) {
     console.error(err);

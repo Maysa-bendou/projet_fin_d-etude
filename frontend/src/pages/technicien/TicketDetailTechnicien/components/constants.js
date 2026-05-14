@@ -97,14 +97,16 @@ export const ACT_LABEL_KEYS = {
 
 
 export const ACT_META = {
-  assigned:         { dot: "bg-blue-400",   labelKey: "constants.actMeta.assigned",         icon: "user-check"      },
-  solution:         { dot: "bg-blue-500",   labelKey: "constants.actMeta.solution",          icon: "clock"           },
-  info:             { dot: "bg-amber-500",  labelKey: "constants.actMeta.info",              icon: "alert-circle"    },
-  confirm:          { dot: "bg-green-500",  labelKey: "constants.actMeta.confirm",           icon: "check-circle"    },
-  emp_reply:        { dot: "bg-gray-400",   labelKey: "constants.actMeta.emp_reply",         icon: "trending-up"     },
-  confirmed:        { dot: "bg-green-600",  labelKey: "constants.actMeta.confirmed",         icon: "check-circle"    },
-  rejected_confirm: { dot: "bg-red-500",    labelKey: "constants.actMeta.rejected_confirm",  icon: "x-circle"        },
-  redirect:         { dot: "bg-pink-500",   labelKey: "constants.actMeta.redirect",          icon: "corner-up-right" },
-  status:           { dot: "bg-purple-400", labelKey: "constants.actMeta.status",            icon: "calendar"        },
-  comment:          { dot: "bg-gray-300",   labelKey: "constants.actMeta.comment",           icon: "align-left"      },
+  assigned:         { dot: "#60a5fa",  labelKey: "constants.actMeta.assigned",        icon: "user-check"      },
+  solution:         { dot: "#3b82f6",  labelKey: "constants.actMeta.solution",         icon: "clock"           },
+  info:             { dot: "#f59e0b",  labelKey: "constants.actMeta.info",             icon: "alert-circle"    },
+  confirm:          { dot: "#22c55e",  labelKey: "constants.actMeta.confirm",          icon: "check-circle"    },
+  emp_reply:        { dot: "#9ca3af",  labelKey: "constants.actMeta.emp_reply",        icon: "trending-up"     },
+  confirmed:        { dot: "#16a34a",  labelKey: "constants.actMeta.confirmed",        icon: "check-circle"    },
+  rejected_confirm: { dot: "#ef4444",  labelKey: "constants.actMeta.rejected_confirm", icon: "x-circle"        },
+  redirect:         { dot: "#ec4899",  labelKey: "constants.actMeta.redirect",         icon: "corner-up-right" },
+  status:           { dot: "#a78bfa",  labelKey: "constants.actMeta.status",           icon: "calendar"        },
+  comment:          { dot: "#d1d5db",  labelKey: "constants.actMeta.comment",          icon: "align-left"      },
+  reopen:           { dot: "#15803d",  labelKey: "constants.actMeta.reopen",           icon: "corner-up-right" },
+  update:           { dot: "#534ab7",  labelKey: "constants.actMeta.update",           icon: "align-left"      },
 };

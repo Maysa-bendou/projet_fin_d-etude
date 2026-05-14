@@ -291,7 +291,7 @@ export default function TicketDetailsPage() {
   const [editFields, setEditFields]     = useState({ titre:"", description:"", impact:"", urgence:"" });
 
   const fileInputRef = useRef(null);
-  const convEndRef   = useRef(null);
+  const convContainerRef = useRef(null);
 
   const fetchTicket = async () => {
     setLoading(true); setError(null);
@@ -318,8 +318,11 @@ export default function TicketDetailsPage() {
   useEffect(() => {
     if (ticket) setEditFields({ titre:ticket.title, description:ticket.description, impact:ticket.impact, urgence:ticket.urgency });
   }, [ticket]);
-  useEffect(() => {
-  if (ticket) convEndRef.current?.scrollIntoView({ behavior: "instant" });
+ useEffect(() => {
+  if (convContainerRef.current) {
+    convContainerRef.current.scrollTop =
+      convContainerRef.current.scrollHeight;
+  }
 }, [ticket]);
 
   const currentIdx = allIds.indexOf(String(id));
@@ -603,7 +606,10 @@ export default function TicketDetailsPage() {
               <p style={{ fontSize:11, fontWeight:700, color:"#64748b", textTransform:"uppercase", letterSpacing:"0.08em", margin:0 }}>{t('ticketDetails.conversation.title')}</p>
             </div>
 
-            <div style={{ maxHeight:340, overflowY:"auto", padding:"14px 18px" }}>
+         <div
+  ref={convContainerRef}
+  style={{ maxHeight:340, overflowY:"auto", padding:"14px 18px" }}
+>
               {comments.filter(c => ["comment","solution","info","emp_reply","confirmed","rejected_confirm","confirm"].includes(c.comment_type)).length === 0 ? (
                 <p style={{ textAlign:"center", color:"#94a3b8", padding:"28px 0", fontSize:13 }}>{t('ticketDetails.conversation.empty')}</p>
               ) : (
@@ -611,28 +617,34 @@ export default function TicketDetailsPage() {
                   <ConvBubble key={c.id} item={c} t={t} translateLegacyMsg={translateLegacyMsg} />
                 )
               )}
-              <div ref={convEndRef} />
+          
             </div>
 
             {/* Confirm buttons */}
-            {pendingConfirm &&!isClosed && (
-              <div style={{ margin:"0 18px 12px", background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"12px 14px" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
-                  <HiOutlineCheckCircle size={14} color="#15803d" />
-                  <p style={{ fontSize:13, fontWeight:600, color:"#15803d", margin:0 }}>{t('ticketDetails.confirm.question')}</p>
-                </div>
-                <div style={{ display:"flex", gap:7 }}>
-                  <button onClick={() => handleConfirmReply(true)} disabled={confirming}
-                    style={{ flex:1, padding:"7px 0", background:"#15803d", border:"none", borderRadius:8, color:"#fff", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    <HiOutlineCheck size={12}/> {t('ticketDetails.confirm.yes')}
-                  </button>
-                  <button onClick={() => handleConfirmReply(false)} disabled={confirming}
-                    style={{ flex:1, padding:"7px 0", background:"#fff", border:"1px solid #fecaca", borderRadius:8, color:"#dc2626", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
-                    <HiOutlineXMark size={12}/> {t('ticketDetails.confirm.no')}
-                  </button>
-                </div>
-              </div>
-            )}
+           
+{pendingConfirm && !isClosed && (
+  <div style={{ margin:"0 18px 12px", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:12, padding:"14px 16px" }}>
+    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+      <div style={{ width:28, height:28, borderRadius:"50%", background:"#eff6ff", border:"1px solid #bfdbfe", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <HiOutlineShieldCheck size={14} color="#1e3a8a" />
+      </div>
+      <div>
+        <p style={{ fontSize:12, fontWeight:700, color:"#1e293b", margin:0 }}>{t('ticketDetails.confirm.question')}</p>
+        <p style={{ fontSize:11, color:"#94a3b8", margin:"2px 0 0" }}>{t('ticketDetails.confirm.subtitle', { defaultValue:"Please let us know if the issue has been resolved." })}</p>
+      </div>
+    </div>
+    <div style={{ display:"flex", gap:8 }}>
+      <button onClick={() => handleConfirmReply(true)} disabled={confirming}
+        style={{ flex:1, padding:"8px 0", background:"#1e3a8a", border:"none", borderRadius:8, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+        <HiOutlineCheck size={12}/> {t('ticketDetails.confirm.yes')}
+      </button>
+      <button onClick={() => handleConfirmReply(false)} disabled={confirming}
+        style={{ flex:1, padding:"8px 0", background:"#fff", border:"1px solid #e2e8f0", borderRadius:8, color:"#64748b", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+        <HiOutlineXMark size={12}/> {t('ticketDetails.confirm.no')}
+      </button>
+    </div>
+  </div>
+)}
 
             {alreadyConfirmed && (
               <div style={{ margin:"0 18px 12px", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"9px 12px", fontSize:12, color:"#6b7280", display:"flex", alignItems:"center", gap:6 }}>

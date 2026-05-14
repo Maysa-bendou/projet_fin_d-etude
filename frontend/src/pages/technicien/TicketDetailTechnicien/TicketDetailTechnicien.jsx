@@ -178,18 +178,25 @@ if (updateMatch) {
         const dateStr = fmt(c.date);
         const authorId = c.authorId;
 
-        if (!CONV_EXCLUDED.has(type)) {
-          convItems.push({
-            id: c.id,
-            type,
-            authorId,
-            author: c.author,
-            isMe: authorId === currentUser?.id,
-            message: c.message.replace(/^\[REDIRECTION\]\s*/, ""),
-            files: c.files ?? [],
-            date: dateStr,
-          });
-        }
+       if (!CONV_EXCLUDED.has(type)) {
+  const rawMessage = c.message.replace(/^\[REDIRECTION\]\s*/, "");
+
+  const translatedMessage = {
+    "employee_confirmed": tC("history.employeeConfirmed"),
+    "employee_rejected":  tC("history.employeeRejected"),
+  }[rawMessage] ?? rawMessage;
+
+  convItems.push({
+    id: c.id,
+    type,
+    authorId,
+    author: c.author,
+    isMe: authorId === currentUser?.id,
+    message: translatedMessage,
+    files: c.files ?? [],
+    date: dateStr,
+  });
+}
 
         if (type === "status") {
           actItems.push({ id: `act-${c.id}`, type: "status", message: translateStatusMsg(c.message), date: dateStr, rawDate: dateObj });
@@ -231,8 +238,15 @@ actItems.push({ id: `act-${c.id}`, type: "update", message: translateStatusMsg(`
   }, [id, t]);
 
   // Chargement initial
-  useEffect(() => { fetchTicket(); }, [fetchTicket]);
+useEffect(() => { fetchTicket(); }, [fetchTicket]);
 
+// AFTER
+useEffect(() => {
+  if (conversation.length === 0) return;
+  if (convEndRef.current) {
+    convEndRef.current.scrollTop = convEndRef.current.scrollHeight;
+  }
+}, [conversation]);
   // Fetch allIds
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -441,9 +455,9 @@ actItems.push({ id: `act-${c.id}`, type: "update", message: translateStatusMsg(`
           isClosed={isClosed}
           handleStatusChange={handleStatusChange}
           currentUser={currentUser}
+          actuality={actuality} 
         />
 
-        <Actuality actuality={actuality} />
 
         <ConversationActions
           conversation={conversation}

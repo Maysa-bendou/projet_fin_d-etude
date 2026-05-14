@@ -85,6 +85,7 @@
     "waitingExpert": "En attente d'expert",
     "assignedOn": "Assigné le",
     "closedOn": "Clôturé le",
+    "initialAttachments": "Pièces jointes",
     "profile": {
       "employee": "Employé",
       "email": "Email",
@@ -191,6 +192,12 @@
     }
   },
 
+"confirmModal": {
+  "title": "Confirmer la prise en charge",
+  "body": "Êtes-vous sûr de vouloir prendre en charge ce ticket ? Vous en serez responsable.",
+  "confirm": "Oui, je prends en charge",
+  "cancel": "Annuler"
+},
   "components": {
     "actuality": {
       "title": "Actualité",
@@ -249,6 +256,10 @@
       "redirect": "Rediriger",
       "close": "Fermer"
     },
+    "closedWithoutConfirmation": "Clôturé sans confirmation",
+    "ticketClosed": "Ce ticket est clôturé",
+"ticketClosedNoRedirect": "Ce ticket est clôturé — la redirection n'est plus disponible",
+"noClosingNote": "Aucune note de fermeture enregistrée",
     "ticketClosedNoAction": "Ticket fermé — aucune action disponible",
     "finalSolution": "Solution finale",
     "attachments": "Pièces jointes",
@@ -303,7 +314,13 @@
 "confirmQuestion":    "Le problème est-il résolu ?",
 "confirmYes":         "Oui, résolu",
 "confirmNo":          "Non, toujours un problème",
-"youLabel":           "Vous"
+"youLabel":           "Vous",
+"status": {
+  "closed": "Ticket clôturé",
+  "closedWithNote": "Ticket clôturé . {{note}}",
+  "redirected": "Ticket redirigé par {{by}} . {{reason}}",
+  "changed": "Statut mis à jour"
+}
   },
 
   "categories": {

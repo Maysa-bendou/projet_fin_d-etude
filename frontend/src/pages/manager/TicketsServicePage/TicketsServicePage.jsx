@@ -303,23 +303,22 @@ const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
 // ── TicketTable ────────────────────────────────────────────────────────────
 
 const COLS = [
-  { label: "ticketsService.cols.id",         w: 55,  minW: 50  },
-  { label: "ticketsService.cols.title",       w: 200, minW: 160 },
-  { label: "ticketsService.cols.category",    w: 110, minW: 100 },
-  { label: "ticketsService.cols.priority",    w: 90,  minW: 85  },
-  { label: "ticketsService.cols.status",      w: 121, minW: 110 },
-  { label: "ticketsService.cols.sla",         w: 120, minW: 110 },
-  { label: "ticketsService.cols.employee",    w: 160, minW: 150 },
-  { label: "ticketsService.cols.technician",  w: 160, minW: 150 },
-  { label: "ticketsService.cols.createdAt",   w: 115, minW: 105 },
-  { label: null,                              w: 115, minW: 105 },
+  { label: "ticketsService.cols.id",         w: 50  },
+  { label: "ticketsService.cols.title",       w: 180 },
+  { label: "ticketsService.cols.category",    w: 100 },
+  { label: "ticketsService.cols.priority",    w: 90  },
+  { label: "ticketsService.cols.status",      w: 121 },
+  { label: "ticketsService.cols.sla",         w: 110 },
+  { label: "ticketsService.cols.employee",    w: 140 },
+  { label: "ticketsService.cols.technician",  w: 140 },
+  { label: "ticketsService.cols.createdAt",   w: 95  },
+  { label: null,                              w: 95  },
 ];
-
 const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
   const { t } = useTranslation("manager");
   const ticketIds = tickets.map(tk => tk.id);
   return (
-    <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", overflowX: "auto", overflowY: "visible" }}>
+   <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e8e2d9", overflow: "hidden" }}>
       {tickets.length === 0 ? (
         <div style={{ padding: "48px 24px", textAlign: "center" }}>
           <HiOutlineTicket size={32} color="#d1d5db" style={{ marginBottom: 10 }} />
@@ -327,8 +326,9 @@ const TicketTable = memo(({ tickets, navigate, role, activeTab }) => {
         </div>
       ) : (
         <div>
-          <table style={{ width: "max-content", minWidth: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
-            <colgroup>{COLS.map((c, i) => <col key={i} style={{ minWidth: c.minW, width: c.w }} />)}</colgroup>
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+    <colgroup>{COLS.map((c, i) => <col key={i} style={{ width: c.w }} />)}</colgroup>
+
             <thead>
               <tr style={{ background: "#faf9f7", borderBottom: "1.5px solid #e8e2d9" }}>
                 {COLS.map((c, i) => (

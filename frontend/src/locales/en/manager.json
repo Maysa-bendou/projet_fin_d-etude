@@ -200,6 +200,7 @@
     "info": "Ticket Information",
     "assignedTech": "Assigned Technician",
     "assignedByManager": "Assigned by ",
+        "initialAttachments": "Attachments",
     "aManager":          "a manager",
     "managedByYou": "You are managing this ticket",
     "waitingExpert": "Waiting for expert",

@@ -66,7 +66,7 @@ async function notifyEmployeeInfoRequest(employeeId, ticketId, ticketTitle) {
     userId:   employeeId,
     ticketId,
     type:     "info",
-    message:  `Le technicien a besoin d'informations supplémentaires pour votre ticket "${ticketTitle}".`,
+    message:  `Le technicien vous a envoyé un message concernant votre ticket "${ticketTitle}".`, // ← change this
   });
 }
 
@@ -100,7 +100,7 @@ async function notifyTechEmployeeReply(techId, ticketId, ticketTitle, employeeNa
     userId:   techId,
     ticketId,
     type:     "emp_reply",
-    message:  `${employeeName} a répondu au ticket "${ticketTitle}".`,
+    message:  `${employeeName} a envoyé un message sur le ticket "${ticketTitle}".`, // ← change this
   });
 }
 

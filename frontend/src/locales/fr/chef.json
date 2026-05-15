@@ -120,7 +120,7 @@
 
   "global": {
     "header": {
-      "subtitle": "Vue Chef · Tous les services"
+      "subtitle": "directeur  · Tous les services"
     },
     "section": {
       "flowDistributionAll": "Répartition des Flux — Tous Services",
@@ -129,7 +129,7 @@
       "timeTrendsAll":       "Tendances Temporelles — Tous Services"
     },
     "pdf": {
-      "reportTitle":          "Rapport de Performance Chef — Tous Services",
+      "reportTitle":          "Rapport de Performance directeur — Tous Services",
       "totalAllServices":     "Total Tickets (Tous services)",
       "resolutionAllServices":"Taux de Résolution (Tous services)",
       "reportFile":           "Performance_Chef"

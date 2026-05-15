@@ -89,7 +89,7 @@
       "roles": {
         "employee":    "Employé",
         "technician":  "Technicien",
-        "chef_service":"Chef de service",
+        "director": "directeur",
         "manager":     "Manager",
         "admin":       "Administrateur"
       },
@@ -173,7 +173,7 @@
       "technician": "Technicien",
       "manager":    "Manager",
       "admin":      "Admin",
-      "chef_service":       "Chef"
+      "director": "directeur"
     },
     "table": {
       "id":            "ID",
@@ -208,7 +208,8 @@
       "save":            "Enregistrer",
       "edit":            "Modifier",
       "activate":        "Activer",
-      "deactivate":      "Désactiver"
+      "deactivate":      "Désactiver",
+      "departmentPlaceholder": "Entrer le nom de département"
     }
   },
   "adminTickets": {
@@ -236,6 +237,7 @@
     "roles": {
       "employee":   "employé",
       "technician": "technicien",
+       "director":   "directeur",
       "manager":    "manager",
       "admin":      "admin"
     },

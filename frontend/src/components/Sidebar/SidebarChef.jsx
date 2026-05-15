@@ -41,11 +41,11 @@ export default function SidebarChef() {
     { 
       icon: BarChart3, 
       label: t("chef.globalStats"), 
-      path: "/chef/statistiques",
+      path: "/director/statistiques",
       hasNotify: true
     },
-    { icon: PieChart, label: t("chef.serviceDistribution"), path: "/chef/repartition" },
-    { icon: User,     label: t("common.profile"),           path: "/chef/profile" },
+    { icon: PieChart, label: t("chef.serviceDistribution"), path: "/director/repartition" },
+    { icon: User,     label: t("common.profile"),           path: "/director/profile" },
   ];
 
   const handleLogout = () => {

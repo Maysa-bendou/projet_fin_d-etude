@@ -33,7 +33,7 @@ export default function LoginPage() {
       const roles = {
         admin: "/admin",
         technician: "/technician",
-        chef_service: "/chef",
+        director: "/director",
         manager: "/manager"
       };
 

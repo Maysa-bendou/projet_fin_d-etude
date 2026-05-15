@@ -45,10 +45,9 @@ function FileLinks({ files, dark }) {
 // ── ConvBubble ────────────────────────────────────────────────────────────
 function ConvBubble({ item, t, translateLegacyMsg }) {
   const isEmployee = ["emp_reply","confirmed","rejected_confirm"].includes(item.comment_type);
-  const isConfirm  = item.comment_type === "confirm";
-const bubbleStyle = isEmployee
-  ? { background:"#1e3a8a", color:"#fff", borderBottomRightRadius:4 }
-  : { background:"#f1f5f9", border:"1px solid #e2e8f0", color:"#334155", borderBottomLeftRadius:4 };
+  const bubbleStyle = isEmployee
+    ? { background:"#1e3a8a", color:"#fff", borderBottomRightRadius:4 }
+    : { background:"#f1f5f9", border:"1px solid #e2e8f0", color:"#334155", borderBottomLeftRadius:4 };
   return (
     <div style={{ display:"flex", marginBottom:10, justifyContent: isEmployee ? "flex-end" : "flex-start" }}>
       <div style={{ maxWidth:"75%", display:"flex", flexDirection:"column", alignItems: isEmployee ? "flex-end" : "flex-start" }}>
@@ -64,6 +63,55 @@ const bubbleStyle = isEmployee
         </div>
         <p style={{ fontSize:10, color:"#94a3b8", marginTop:3, padding:"0 2px" }}>
           {formatDate(t, item.date, "withTime")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── ConfirmGroupBox ───────────────────────────────────────────────────────
+function ConfirmGroupBox({ techMsg, confirmMsg, t, translateLegacyMsg, pendingConfirm, isClosed, alreadyConfirmed, confirming, handleConfirmReply }) {
+  const renderMsg = (item) => {
+    const translated = translateLegacyMsg(item.message ?? "");
+    if (translated !== null) return translated;
+    return <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.message) }} />;
+  };
+  return (
+    <div style={{ display:"flex", marginBottom:14, justifyContent:"flex-start" }}>
+      <div style={{ maxWidth:"82%", display:"flex", flexDirection:"column", alignItems:"flex-start" }}>
+        <div style={{ background:"#fff", border:"1px solid #bfdbfe", borderRadius:14, borderBottomLeftRadius:4, overflow:"hidden", width:"100%" }}>
+          {/* Technician message */}
+          {techMsg && (
+            <div style={{ padding:"10px 14px", borderBottom:"1px solid #e2e8f0", fontSize:13, lineHeight:1.55, color:"#334155" }}>
+              {renderMsg(techMsg)}
+              <FileLinks files={techMsg.files} dark={false} />
+            </div>
+          )}
+          {/* Confirm label */}
+          <div style={{ padding:"8px 14px", borderBottom:(pendingConfirm && !isClosed) || alreadyConfirmed ? "1px solid #e2e8f0" : "none", display:"flex", alignItems:"center", gap:7, background:"#f8fafc" }}>
+            <HiOutlineShieldCheck size={13} color="#1e3a8a" />
+            <span style={{ fontSize:12, fontWeight:700, color:"#1e293b" }}>{t('ticketDetails.confirm.question')}</span>
+          </div>
+          {/* Yes/No or already replied */}
+          {pendingConfirm && !isClosed ? (
+            <div style={{ padding:"10px 14px", display:"flex", gap:8 }}>
+              <button onClick={() => handleConfirmReply(true)} disabled={confirming}
+                style={{ flex:1, padding:"8px 0", background:"#1e3a8a", border:"none", borderRadius:8, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                <HiOutlineCheck size={12}/> {t('ticketDetails.confirm.yes')}
+              </button>
+              <button onClick={() => handleConfirmReply(false)} disabled={confirming}
+                style={{ flex:1, padding:"8px 0", background:"#fff", border:"1px solid #e2e8f0", borderRadius:8, color:"#64748b", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                <HiOutlineXMark size={12}/> {t('ticketDetails.confirm.no')}
+              </button>
+            </div>
+          ) : alreadyConfirmed ? (
+            <div style={{ padding:"8px 14px", fontSize:12, color:"#15803d", display:"flex", alignItems:"center", gap:6 }}>
+              <HiOutlineCheckCircle size={13} color="#15803d" /> {t('ticketDetails.confirm.alreadyReplied')}
+            </div>
+          ) : null}
+        </div>
+        <p style={{ fontSize:10, color:"#94a3b8", marginTop:4, padding:"0 2px" }}>
+          {formatDate(t, confirmMsg.date, "withTime")}
         </p>
       </div>
     </div>
@@ -610,47 +658,52 @@ export default function TicketDetailsPage() {
   ref={convContainerRef}
   style={{ maxHeight:340, overflowY:"auto", padding:"14px 18px" }}
 >
-              {comments.filter(c => ["comment","solution","info","emp_reply","confirmed","rejected_confirm","confirm"].includes(c.comment_type)).length === 0 ? (
-                <p style={{ textAlign:"center", color:"#94a3b8", padding:"28px 0", fontSize:13 }}>{t('ticketDetails.conversation.empty')}</p>
-              ) : (
-       comments.filter(c => ["comment","solution","info","emp_reply","confirmed","rejected_confirm","confirm"].includes(c.comment_type)).map(c =>
-                  <ConvBubble key={c.id} item={c} t={t} translateLegacyMsg={translateLegacyMsg} />
-                )
-              )}
+              {(() => {
+                const convTypes = ["comment","solution","info","emp_reply","confirmed","rejected_confirm","confirm"];
+                const convItems = comments.filter(c => convTypes.includes(c.comment_type));
+                if (convItems.length === 0) {
+                  return <p style={{ textAlign:"center", color:"#94a3b8", padding:"28px 0", fontSize:13 }}>{t('ticketDetails.conversation.empty')}</p>;
+                }
+                // Pass 1: pre-compute which tech msg IDs are absorbed into a ConfirmGroupBox
+                const skipIds = new Set();
+                convItems.forEach((c, idx) => {
+                  if (c.comment_type === "confirm") {
+                    const techMsg = [...convItems].slice(0, idx).reverse().find(prev =>
+                      ["comment","solution","info"].includes(prev.comment_type)
+                    ) ?? null;
+                    if (techMsg) skipIds.add(techMsg.id);
+                  }
+                });
+                // Pass 2: render, skipping absorbed tech msgs
+                const rendered = [];
+                convItems.forEach((c, idx) => {
+                  if (skipIds.has(c.id)) return;
+                  if (c.comment_type === "confirm") {
+                    const techMsg = [...convItems].slice(0, idx).reverse().find(prev =>
+                      ["comment","solution","info"].includes(prev.comment_type)
+                    ) ?? null;
+                    rendered.push(
+                      <ConfirmGroupBox
+                        key={c.id}
+                        techMsg={techMsg}
+                        confirmMsg={c}
+                        t={t}
+                        translateLegacyMsg={translateLegacyMsg}
+                        pendingConfirm={pendingConfirm}
+                        isClosed={isClosed}
+                        alreadyConfirmed={alreadyConfirmed}
+                        confirming={confirming}
+                        handleConfirmReply={handleConfirmReply}
+                      />
+                    );
+                  } else {
+                    rendered.push(<ConvBubble key={c.id} item={c} t={t} translateLegacyMsg={translateLegacyMsg} />);
+                  }
+                });
+                return rendered;
+              })()}
           
             </div>
-
-            {/* Confirm buttons */}
-           
-{pendingConfirm && !isClosed && (
-  <div style={{ margin:"0 18px 12px", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:12, padding:"14px 16px" }}>
-    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-      <div style={{ width:28, height:28, borderRadius:"50%", background:"#eff6ff", border:"1px solid #bfdbfe", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-        <HiOutlineShieldCheck size={14} color="#1e3a8a" />
-      </div>
-      <div>
-        <p style={{ fontSize:12, fontWeight:700, color:"#1e293b", margin:0 }}>{t('ticketDetails.confirm.question')}</p>
-        <p style={{ fontSize:11, color:"#94a3b8", margin:"2px 0 0" }}>{t('ticketDetails.confirm.subtitle', { defaultValue:"Please let us know if the issue has been resolved." })}</p>
-      </div>
-    </div>
-    <div style={{ display:"flex", gap:8 }}>
-      <button onClick={() => handleConfirmReply(true)} disabled={confirming}
-        style={{ flex:1, padding:"8px 0", background:"#1e3a8a", border:"none", borderRadius:8, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-        <HiOutlineCheck size={12}/> {t('ticketDetails.confirm.yes')}
-      </button>
-      <button onClick={() => handleConfirmReply(false)} disabled={confirming}
-        style={{ flex:1, padding:"8px 0", background:"#fff", border:"1px solid #e2e8f0", borderRadius:8, color:"#64748b", fontSize:12, fontWeight:600, cursor:"pointer", opacity:confirming ? .6 : 1, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-        <HiOutlineXMark size={12}/> {t('ticketDetails.confirm.no')}
-      </button>
-    </div>
-  </div>
-)}
-
-            {alreadyConfirmed && (
-              <div style={{ margin:"0 18px 12px", background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"9px 12px", fontSize:12, color:"#6b7280", display:"flex", alignItems:"center", gap:6 }}>
-                <HiOutlineCheckCircle size={13} color="#15803d" /> {t('ticketDetails.confirm.alreadyReplied')}
-              </div>
-            )}
 
             {/* Reply box */}
             <div style={{ borderTop:"1px solid #f1f5f9" }}>

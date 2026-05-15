@@ -32,7 +32,7 @@ const SLA_PRIORITY_CONFIG = {
 const ROLE_CONFIG = {
   employee:     { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
   technician:   { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  chef_service: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
+  director: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
   manager:      { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
   admin:        { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
 };
@@ -49,7 +49,7 @@ const CATEGORY_ICONS = {
 const ROLE_ICONS = {
   employee:     <MdPerson             size={13} />,
   technician:   <MdEngineering        size={13} />,
-  chef_service: <MdSupervisorAccount  size={13} />,
+  director: <MdSupervisorAccount  size={13} />,
   manager:      <MdBusiness           size={13} />,
   admin:        <MdAdminPanelSettings size={13} />,
 };
@@ -207,7 +207,7 @@ export default function ParametresAdmin() {
     impacts:    config?.enums?.impacts    || ["low", "medium", "high"],
     urgencies:  config?.enums?.urgencies  || ["low", "medium", "high"],
     categories: config?.enums?.categories || ["hardware", "software", "network", "access", "security", "messagerie"],
-    roles:      config?.enums?.roles      || ["employee", "technician", "chef_service", "manager", "admin"],
+    roles:      config?.enums?.roles      || ["employee", "technician", "director", "manager", "admin"],
   };
 
   // ── Translated enum label helpers (using common.json) ──────────────────

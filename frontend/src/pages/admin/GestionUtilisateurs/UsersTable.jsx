@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 const ROLE_AVATAR = {
   employee:     { bg: "#fce7f3", color: "#9d174d" },
   technician:   { bg: "#dbeafe", color: "#1d4ed8" },
-  chef_service: { bg: "#dcfce7", color: "#16a34a" },
+  director: { bg: "#dcfce7", color: "#16a34a" },
   manager:      { bg: "#f3f4f6", color: "#374151" },
   admin:        { color: "#c2410c", bg: "#fff7ed"},
 };
@@ -12,7 +12,7 @@ const ROLE_AVATAR = {
 const ROLE_PILL = {
   employee:     { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
   technician:   { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  chef_service: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
+  director: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
   manager:      { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
   admin:        { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
 };

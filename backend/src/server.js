@@ -19,7 +19,6 @@ const ticketRoutes = require("./routes/ticket.routes");
 const techRoutes = require("./routes/tech.routes");
 const userRoutes = require("./routes/user.routes");
 const technicienRoutes = require("./routes/technicien.routes");
-const departmentRoutes = require("./routes/department.routes");
 const adminRoutes = require("./routes/admin.routes");
 const cron = require("node-cron");
 const { checkSlaAlerts } = require("./controllers/sla.cron");
@@ -31,7 +30,6 @@ app.use("/api/tech", technicienRoutes);
 
 
 app.use("/api/users", userRoutes);
-app.use("/api/departments", departmentRoutes);
 app.use("/api/admin", adminRoutes); // pour stats SLA, etc.
 const slaRoutes = require("./routes/sla.routes");
 app.use("/api/sla", slaRoutes);

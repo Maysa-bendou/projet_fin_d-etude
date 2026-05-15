@@ -23,10 +23,15 @@ const categories = ["hardware", "software", "network", "access", "security", "me
     const statuses = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
     const impacts = ["low", "medium", "high"];
     const urgencies = ["low", "medium", "high"];
-    const roles = ["employee", "technician", "chef_service", "manager", "admin"];
+    const roles = ["employee", "technician", "director", "manager", "admin"];
    
     // Dynamic data
-    const departments = await prisma.departments.findMany({ select: { id: true, name: true } });
+const departmentRows = await prisma.users.findMany({
+  where: { department: { not: null } },
+  select: { department: true },
+  distinct: ["department"],
+});
+const departments = departmentRows.map(r => r.department).filter(Boolean);
     const services = await prisma.services.findMany({ select: { id: true, name: true } });
 
     // Role stats

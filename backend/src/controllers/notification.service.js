@@ -178,7 +178,7 @@ async function notifyManagerTechTook(managerId, ticketId, ticketTitle, techName)
 
 async function notifyAllManagersOfService(serviceId, ticketId, ticketTitle) {
   const managers = await prisma.users.findMany({
-    where: { service_id: serviceId, role: { in: ["manager", "chef_service"] }, is_active: true },
+    where: { service_id: serviceId, role: { in: ["manager", "director"] }, is_active: true },
     select: { id: true },
   });
   await Promise.all(

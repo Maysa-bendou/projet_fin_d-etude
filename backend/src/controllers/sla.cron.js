@@ -53,8 +53,8 @@ async function notifyServiceUsers(ticket, isExpired) {
   const users = await prisma.users.findMany({
     where: {
       is_active:  true,
-      service_id: ticket.service_id,                              // ← même service
-      role:       { in: ["manager", "chef_service", "technician"] },
+      service_id: ticket.service_id,                     
+      role: { in: ["manager", "director", "technician"] },
     },
     select: { id: true },
   });

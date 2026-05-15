@@ -114,6 +114,8 @@ const getTicketDetailTech = async (req, res) => {
       service: ticket.services?.name ?? null,
       serviceId: ticket.services?.id ?? null,
       assignedBy,
+assigned_action: ticket.ticket_assignments_history?.[0]?.action ||
+  (ticket.assigned_to ? "assigned" : null),
       comments: (ticket.ticket_comments || []).map((c) => ({
         id: c.id,
         message: c.comment,

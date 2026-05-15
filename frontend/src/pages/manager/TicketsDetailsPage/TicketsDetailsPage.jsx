@@ -94,11 +94,10 @@ const TicketDetailPage = () => {
 
   const handleAssign = async () => {
     if (!selectedTech) return;
-    const isUpdating = !!(ticket?.technician?.id);
     const res = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ technicienId: selectedTech.id, action: isUpdating ? "updated" : "assigned", assigned_by: user.id }),
+      body: JSON.stringify({ technicienId: selectedTech.id, action: "assigned", assigned_by: user.id }),
     });
    if (res.ok) {
   setShowList(false);

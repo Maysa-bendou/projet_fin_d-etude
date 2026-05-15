@@ -296,6 +296,7 @@ export default function TopNavbar({ pageTitle = "" }) {
             )}
           </div>
 
+          {rolePath !== "director" && rolePath !== "admin" && <>
           <div className="w-[1px] h-8 bg-slate-100 mx-1" />
 
           {/* ── Notifications ── */}
@@ -374,8 +375,9 @@ export default function TopNavbar({ pageTitle = "" }) {
                   )}
                 </div>
               </div>
-            )}
+)}
           </div>
+          </>}
 
           <div className="w-[1px] h-8 bg-slate-100 mx-1" />
 

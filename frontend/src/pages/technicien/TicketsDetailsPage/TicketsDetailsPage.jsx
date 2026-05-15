@@ -84,54 +84,93 @@ const TicketDetailPage = () => {
     }
   };
 
-  const translateLegacyMsg = (msg) => {
-    if (!msg) return "";
-    if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
-      const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
-      return t("history.technicianTookOver", { ns: "common", name });
-    }
-    if (msg === "ticket_assigned")        return t("history.ticketAssigned",        { ns: "common" });
-    if (msg === "confirmation_requested") return t("history.confirmationRequested", { ns: "common" });
-    if (msg === "history.confirmationRequested") return t("history.confirmationRequested", { ns: "common" });
-    if (msg === "ticket_closed")          return t("history.ticketClosed",          { ns: "common" });
-    if (msg === "employee_confirmed")     return t("history.employeeConfirmed",     { ns: "common" });
-    if (msg === "employee_rejected")      return t("history.employeeRejected",      { ns: "common" });
-    if (msg === "employee_reopened")      return t("history.employeeReopened",      { ns: "common" });
-    if (msg.startsWith("ticket_closed_with_note:")) {
-      const note = msg.split(":").slice(1).join(":");
-      return t("history.ticketClosedWithNote", { ns: "common", note });
-    }
-    if (msg.startsWith("ticket_redirected:")) {
-      const parts = msg.split(":");
-      return t("history.ticketRedirected", { ns: "common", by: parts[1], reason: parts[2] });
-    }
-    if (msg.startsWith("status_changed:")) {
-      const statusKey = msg.split(":")[1];
-      const translatedStatus = t(`status.${statusKey}`, { ns: "common", defaultValue: statusKey });
-      return t("history.statusChanged", { ns: "common", status: translatedStatus });
-    }
-    if (msg.startsWith("history.statusChanged:")) {
-      const statusKey = msg.split(":")[1];
-      const translatedStatus = t(`status.${statusKey}`, { ns: "common", defaultValue: statusKey });
-      return t("history.statusChanged", { ns: "common", status: translatedStatus });
-    }
-    if (msg.startsWith("employee_updated:")) {
-      const detail = msg.split(":").slice(1).join(":");
-      return t("history.employeeUpdated", { ns: "common", detail });
-    }
-    const LEGACY = {
-      "Technicien a pris en charge le ticket": t("history.technicianTookOver", { ns: "common", name: "" }),
-      "Ticket assigné à un technicien": t("history.ticketAssigned", { ns: "common" }),
-      "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns: "common" }),
-      "Ticket fermé manuellement par le technicien.": t("history.ticketClosed", { ns: "common" }),
-      "Confirme resolu.": t("history.employeeConfirmed", { ns: "common" }),
-      "Probleme persiste.": t("history.employeeRejected", { ns: "common" }),
-    };
-    const norm = (s) => s.replace(/[''`]/g, "'").trim();
-    const legacy = Object.entries(LEGACY).find(([k]) => norm(k) === norm(msg));
-    if (legacy) return legacy[1];
-    return null;
+const translateLegacyMsg = (msg) => {
+  if (!msg) return "";
+
+  // ── New format keys ───────────────────────────────────────────────────────
+  if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
+    const name = msg.includes(":") ? msg.split(":").slice(1).join(":").trim() : "";
+    return t("history.technicianTookOver", { ns: "common", name: name || "—" });
+  }
+  if (msg === "ticket_assigned" || msg.startsWith("ticket_assigned:")) {
+    const name = msg.includes(":") ? msg.split(":").slice(1).join(":").trim() : "";
+    return t("history.ticketAssigned", { ns: "common", name: name || "—" });
+  }
+  if (msg === "confirmation_requested" || msg === "history.confirmationRequested") {
+    return t("history.confirmationRequested", { ns: "common" });
+  }
+  if (msg === "employee_confirmed") {
+    return t("history.employeeConfirmed", { ns: "common" });
+  }
+  if (msg === "employee_rejected") {
+    return t("history.employeeRejected", { ns: "common" });
+  }
+  if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
+    const name = msg.includes(":") ? msg.split(":").slice(1).join(":").trim() : "";
+    return t("history.employeeReopened", { ns: "common", name: name || "—" });
+  }
+  if (msg === "ticket_closed" || msg.startsWith("ticket_closed:")) {
+    const name = msg.includes(":") ? msg.split(":").slice(1).join(":").trim() : "";
+    return t("history.ticketClosed", { ns: "common", name: name || "—" });
+  }
+  if (msg.startsWith("ticket_closed_with_note:")) {
+    const note = msg.split(":").slice(1).join(":");
+    return t("history.ticketClosedWithNote", { ns: "common", note });
+  }
+  if (msg.startsWith("ticket_redirected:")) {
+    const parts = msg.split(":");
+    return t("history.ticketRedirected", { ns: "common", by: parts[1]?.trim() || "—" });
+  }
+  if (msg.startsWith("internal_note:")) {
+    const name = msg.split(":").slice(1).join(":").trim();
+    return t("history.internalNote", { ns: "common", name: name || "—" });
+  }
+  if (msg.startsWith("solution_proposed:")) {
+    const name = msg.split(":").slice(1).join(":").trim();
+    return t("history.solutionProposed", { ns: "common", name: name || "—" });
+  }
+  if (msg.startsWith("status_changed:") || msg.startsWith("history.statusChanged:")) {
+    const statusKey = msg.split(":")[1];
+    const translatedStatus = t(`status.${statusKey}`, { ns: "common", defaultValue: statusKey });
+    return t("history.statusChanged", { ns: "common", status: translatedStatus });
+  }
+  if (msg.startsWith("employee_updated:")) {
+    const raw = msg.split(":").slice(1).join(":");
+    const detail = raw.split("|").map(part => {
+      const trimmed = part.trim();
+      const subParts = trimmed.split(":");
+      const key = subParts[0];
+      const fromRaw = subParts[1];
+      const toRaw   = subParts[2];
+      const translateValue = (field, val) => {
+        if (!val) return val;
+        if (field === "impact_changed")  return t(`impact.${val}`,  { ns: "common", defaultValue: val });
+        if (field === "urgency_changed") return t(`urgency.${val}`, { ns: "common", defaultValue: val });
+        if (field === "status_changed")  return t(`status.${val}`,  { ns: "common", defaultValue: val });
+        return val;
+      };
+      const from = translateValue(key, fromRaw);
+      const to   = translateValue(key, toRaw);
+      return t(`history.changes.${key}`, { ns: "common", from, to, defaultValue: trimmed });
+    }).join(", ");
+    return t("history.employeeUpdated", { ns: "common", detail });
+  }
+
+  // ── Legacy French strings (old DB rows) ───────────────────────────────────
+  const LEGACY = {
+    "Technicien a pris en charge le ticket":                      t("history.technicianTookOver",    { ns: "common", name: "" }),
+    "Ticket assigné à un technicien":                             t("history.ticketAssigned",         { ns: "common", name: "" }),
+    "Demande de confirmation de résolution envoyée à l'employé.": t("history.confirmationRequested", { ns: "common" }),
+    "Ticket fermé manuellement par le technicien.":               t("history.ticketClosed",           { ns: "common", name: "" }),
+    "Confirme resolu.":                                           t("history.employeeConfirmed",      { ns: "common" }),
+    "Probleme persiste.":                                         t("history.employeeRejected",       { ns: "common" }),
   };
+  const norm = (s) => s.replace(/[''`]/g, "'").trim();
+  const legacy = Object.entries(LEGACY).find(([k]) => norm(k) === norm(msg));
+  if (legacy) return legacy[1];
+
+  return null;
+};
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>

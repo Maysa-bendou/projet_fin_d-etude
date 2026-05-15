@@ -546,35 +546,34 @@ if (impact && urgency) {
       data: updateData,
     });
 
-    // ✅ CREATE COMMENT IF CHANGES
+    // Compute empName BEFORE the comment creation
+const employee = user_id ? await prisma.users.findUnique({
+  where: { id: parseInt(user_id) },
+  select: { name: true, surname: true },
+}) : null;
+const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
+
+
     if (changes.length > 0) {
   const isReopen = commentType === "reopen";
   await prisma.ticket_comments.create({
     data: {
       ticket_id: id,
       user_id: user_id || null,
-// ✅ AFTER
 comment: isReopen
-  ? "employee_reopened"
-  : `employee_updated:${changes.join(" | ")}`,  // raw changes after ":" — frontend extracts
+  ? `employee_reopened:${empName}`   // ← now includes the name
+  : `employee_updated:${changes.join(" | ")}`,
 comment_type: commentType,   // "reopen" or "update" — already correct
     },
   });
 }
-
-   // ── Notifier le technicien si réouverture ou modification ──
-    if (updatedTicket.assigned_to && changes.length > 0) {
-
-      const employee = user_id ? await prisma.users.findUnique({
-        where: { id: parseInt(user_id) },
-        select: { name: true, surname: true },
-      }) : null;
-      const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
-     const isReopen = commentType === "reopen";
-await notifyTechTicketUpdated(
-  updatedTicket.assigned_to, id, updatedTicket.title, empName,
-  isReopen ? "reopen" : "update"
-); }
+if (updatedTicket.assigned_to && changes.length > 0) {
+  const isReopen = commentType === "reopen";
+  await notifyTechTicketUpdated(
+    updatedTicket.assigned_to, id, updatedTicket.title, empName,
+    isReopen ? "reopen" : "update"
+  );
+}
 
     res.json(updatedTicket);
 
@@ -583,8 +582,6 @@ await notifyTechTicketUpdated(
     res.status(500).json({ error: "Erreur lors de la mise à jour" });
   }
 });
-
-// ── Assignation ───────────────────────────
 
 // ── Assignation ───────────────────────────────────────────────────────────
 router.put("/:id/assign", async (req, res) => {
@@ -597,61 +594,66 @@ router.put("/:id/assign", async (req, res) => {
       where: { id: ticketId },
       select: { title: true, created_by: true },
     });
-   if (!ticket) { // ✅ FIX 2
+    if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
     }
-  const updatedTicket = await prisma.tickets.update({
-  where: { id: ticketId },
-  data: {
-  users_tickets_assigned_toTousers: {
-    connect: { id: techId },
-  },
-  assigned_at: new Date(),
-  status: action === "taken" ? "in_progress" : "open",
-},
-});
 
-const techForComment = await prisma.users.findUnique({
-  where: { id: techId },
-  select: { name: true, surname: true },
-});
-const techFullName = techForComment
-  ? `${techForComment.name} ${techForComment.surname}`.trim()
-  : "";
+    const updatedTicket = await prisma.tickets.update({
+      where: { id: ticketId },
+      data: {
+        users_tickets_assigned_toTousers: { connect: { id: techId } },
+        assigned_at: new Date(),
+        status: action === "taken" ? "in_progress" : "open",
+      },
+    });
 
-await prisma.ticket_comments.create({
-  data: {
-    ticket_id: ticketId,
-    user_id: assigned_by || null,
-    comment:      action === "taken" ? `technician_took_over:${techFullName}` : "ticket_assigned",
-    comment_type: action === "taken" ? "taken" : "assigned",
-  },
-});
+    const techForComment = await prisma.users.findUnique({
+      where: { id: techId },
+      select: { name: true, surname: true },
+    });
+    const techFullName = techForComment
+      ? `${techForComment.name} ${techForComment.surname}`.trim()
+      : "un technicien";
 
-   await prisma.ticket_assignments_history.create({
-  data: {
-    ticket_id:    ticketId,
-    from_user_id: action === "assigned" ? assigned_by : null,
-    to_user_id:   techId,
-    action:       action || "taken",
-    reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
-    assigned_by:  assigned_by ? parseInt(assigned_by) : null,
-  },
-});
+    await prisma.ticket_comments.create({
+      data: {
+        ticket_id:    ticketId,
+        user_id:      assigned_by || null,
+        comment:      action === "taken"
+                        ? `technician_took_over:${techFullName}`
+                        : `ticket_assigned:${techFullName}`,
+        comment_type: action === "taken" ? "taken" : "assigned",
+      },
+    });
 
-// Only notify tech if assigned by manager, not when he takes it himself
-if (action !== "taken") {
-  await notifyTechAssigned(techId, ticketId, ticket.title);
-}
+    await prisma.ticket_assignments_history.create({
+      data: {
+        ticket_id:    ticketId,
+        from_user_id: action === "assigned" ? assigned_by : null,
+        to_user_id:   techId,
+        action:       action || "taken",
+        reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
+        assigned_by:  assigned_by ? parseInt(assigned_by) : null,
+      },
+    });
 
-if (ticket.created_by) {
-  const tech = await prisma.users.findUnique({
-    where: { id: techId },
-    select: { name: true, surname: true },
-  });
-  const techName = tech ? `${tech.name} ${tech.surname}`.trim() : "un technicien";
-  await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techName);
-}
+    if (action === "taken") {
+      if (ticket.created_by) {
+        await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techFullName);
+      }
+      const ticketFull = await prisma.tickets.findUnique({
+        where: { id: ticketId },
+        select: { service_id: true },
+      });
+      if (ticketFull?.service_id) {
+        await notifyAllManagersOfService(ticketFull.service_id, ticketId, ticket.title, techFullName);
+      }
+    } else {
+      await notifyTechAssigned(techId, ticketId, ticket.title);
+      if (ticket.created_by) {
+        await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techFullName);
+      }
+    }
 
     res.json({
       id:          updatedTicket.id,

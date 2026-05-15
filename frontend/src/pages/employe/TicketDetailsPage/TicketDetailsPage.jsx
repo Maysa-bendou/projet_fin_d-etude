@@ -265,13 +265,22 @@ export default function TicketDetailsPage() {
       const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
       return t("history.technicianTookOver", { ns: "common", name });
     }
-    if (msg === "ticket_assigned")        return t("history.ticketAssigned",         { ns: "common" });
+if (msg === "ticket_assigned" || msg.startsWith("ticket_assigned:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return t("history.ticketAssigned", { ns: "common", name });
+}
     if (msg === "confirmation_requested") return t("history.confirmationRequested",  { ns: "common" });
     if (msg === "history.confirmationRequested") return t("history.confirmationRequested", { ns: "common" });
-    if (msg === "ticket_closed")          return t("history.ticketClosed",           { ns: "common" });
+if (msg === "ticket_closed" || msg.startsWith("ticket_closed:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return t("history.ticketClosed", { ns: "common", name });
+}
     if (msg === "employee_confirmed")     return t("history.employeeConfirmed",      { ns: "common" });
     if (msg === "employee_rejected")      return t("history.employeeRejected",       { ns: "common" });
-    if (msg === "employee_reopened")      return t("history.employeeReopened",       { ns: "common" });
+if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return t("history.employeeReopened", { ns: "common", name });
+}
     if (msg.startsWith("ticket_closed_with_note:")) {
       const note = msg.split(":").slice(1).join(":");
       return t("history.ticketClosedWithNote", { ns: "common", note });
@@ -474,7 +483,9 @@ export default function TicketDetailsPage() {
   const fmtDate = (s) => formatDate(t, s, "short");
   const fmtDT   = (s) => formatDate(t, s, "withTime");
 
-  const historyComments = comments.filter(c => c.comment_type !== "attachment");
+const historyComments = comments.filter(c =>
+  !["attachment", "emp_reply", "confirm"].includes(c.comment_type)
+);
   const hasSolution = isClosed && ticket.solution;
 
   const emp = ticket.employee ?? {};

@@ -131,8 +131,8 @@ export default function TicketInfo({ ticket, status, savingStatus, isClosed, han
         </span>
       );
     }
-    if (["assigned", "updated"].includes(ticket.assigned_action) && ticket.assigned_by_manager) {
-      const mgr = ticket.assigned_by_manager;
+if (["assigned", "updated"].includes(ticket.assigned_action) && (ticket.assigned_by_manager || ticket.assignedBy?.type === "manager")) {
+  const mgr = ticket.assigned_by_manager ?? ticket.assignedBy;
       return (
         <MiniTooltip user={{ name: mgr.name, surname: mgr.surname, email: mgr.email, department: mgr.department, job_title: mgr.job_title ?? mgr.jobTitle ?? mgr.poste }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#2563eb", cursor: "default", display: "inline-flex", alignItems: "center", gap: 5 }}>

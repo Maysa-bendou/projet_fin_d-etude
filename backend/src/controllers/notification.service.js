@@ -176,13 +176,18 @@ async function notifyManagerTechTook(managerId, ticketId, ticketTitle, techName)
 // UTILITAIRE — notifier tous les managers/techs d'un service
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function notifyAllManagersOfService(serviceId, ticketId, ticketTitle) {
+// REPLACE notifyAllManagersOfService with this:
+async function notifyAllManagersOfService(serviceId, ticketId, ticketTitle, techName = "") {
   const managers = await prisma.users.findMany({
-    where: { service_id: serviceId, role: { in: ["manager", "director"] }, is_active: true },
+    where: { service_id: serviceId, role: "manager", is_active: true },
     select: { id: true },
   });
   await Promise.all(
-    managers.map(m => notifyManagerNewTicket(m.id, ticketId, ticketTitle))
+    managers.map(m =>
+      techName
+        ? notifyManagerTechTook(m.id, ticketId, ticketTitle, techName)
+        : notifyManagerNewTicket(m.id, ticketId, ticketTitle)
+    )
   );
 }
 

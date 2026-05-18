@@ -8,7 +8,7 @@ async function checkSlaAlerts() {
   const soon = new Date(now.getTime() + ALERT_WINDOW_MS);
 
   // Tickets actifs dont le SLA expire bientôt ou déjà dépassé
-  const tickets = await prisma.tickets.findMany({
+  const tickets = await prisma.ticket.findMany({
     where: {
       status:          { in: ["open", "in_progress"] },
       sla_statut:      "en_cours",          // pas déjà traité
@@ -37,7 +37,7 @@ async function checkSlaAlerts() {
 
     // Marquer sla_statut = "depasse" pour ne plus re-notifier
     if (isExpired) {
-      await prisma.tickets.update({
+      await prisma.ticket.update({
         where: { id: ticket.id },
         data:  { sla_statut: "depasse" },
       });
@@ -50,7 +50,7 @@ async function notifyServiceUsers(ticket, isExpired) {
   if (!ticket.service_id) return;
 
   // Cherche tous les users du même service avec le bon rôle
-  const users = await prisma.users.findMany({
+  const users = await prisma.user.findMany({
     where: {
       is_active:  true,
       service_id: ticket.service_id,                     

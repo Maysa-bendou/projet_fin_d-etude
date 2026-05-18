@@ -21,7 +21,7 @@ import {
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
-// critical only exists in sla_config, NOT in priority_enum — kept here only for SLA table
+// critical only exists in slaConfig, NOT in priority_enum — kept here only for SLA table
 const SLA_PRIORITY_CONFIG = {
   critical: { color: "#A32D2D", bg: "#FCEBEB", border: "#fecaca" },
   high:     PRIORITY_CONFIG.high,

@@ -150,7 +150,7 @@ const STATS = [
                       {ticket.title}
                     </td>
                     <td style={{ padding: '9px 10px', fontSize: 12, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ticket.services?.name ?? '—'}
+                      {ticket.service?.name ?? '—'}
                     </td>
                     {/* ── FIX 3: Pill now receives translated label for priority ── */}
                     <td style={{ padding: '9px 10px' }}>

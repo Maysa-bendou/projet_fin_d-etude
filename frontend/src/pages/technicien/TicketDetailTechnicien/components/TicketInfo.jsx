@@ -157,7 +157,7 @@ if (["assigned", "updated"].includes(ticket.assigned_action) && (ticket.assigned
   })();
 
   // ── Initial attachments (from ticket creation) ───────────────────────────
-  const attachments = (ticket.attachments ?? []).filter(a => !a.comment_id);
+  const attachments = (ticket.ticket_attachments ?? []).filter(a => !a.comment_id);
 
   return (
     <>

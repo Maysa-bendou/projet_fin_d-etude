@@ -4,13 +4,13 @@ const getMyTickets = async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
 
-    const tickets = await prisma.tickets.findMany({
+    const tickets = await prisma.ticket.findMany({
       where: { created_by: userId },
       include: {
-        users_tickets_assigned_toTousers: {
+        user_ticket_assigned_toTouser: {
           select: { name: true, surname: true },
         },
-        services: {
+        service: {
           select: { name: true },
         },
       },
@@ -20,9 +20,9 @@ const getMyTickets = async (req, res) => {
     const mapped = tickets.map((t) => ({
       id:       t.id,
       title:    t.title,
-      service:  t.services?.name || "N/A",
-      technicien: t.users_tickets_assigned_toTousers
-        ? `${t.users_tickets_assigned_toTousers.name || ""} ${t.users_tickets_assigned_toTousers.surname || ""}`.trim()
+      service:  t.service?.name || "N/A",
+      technicien: t.assignee
+        ? `${t.assignee.name || ""} ${t.assignee.surname || ""}`.trim()
         : "Non assigné",
       status:   t.status,
       priority: t.priority,

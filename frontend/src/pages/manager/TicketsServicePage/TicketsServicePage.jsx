@@ -227,7 +227,7 @@ const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
   const tPriority = (key) => tc(`priority.${key}`, { defaultValue: key });
   const tCategory = (key) => tc(`category.${key}`, { defaultValue: key });
 
-  const technician = ticket.assignedTo || ticket.assigned_to || ticket.users_tickets_assigned_toTousers;
+  const technician = ticket.assignedTo || ticket.assigned_to || ticket.user_ticket_assigned_toTouser;
   const empName  = ticket.employee ? `${ticket.employee.name || ""} ${ticket.employee.surname || ""}`.trim() : null;
   const empParts = ticket.employee
     ? { name: ticket.employee.name, surname: ticket.employee.surname }
@@ -450,7 +450,7 @@ const TicketsServicePage = () => {
     const q = debouncedSearch.trim().toLowerCase();
     return list.filter(tk => {
       const cat      = tk.category || tk.categorie || "";
-      const assigned = !!(tk.assignedTo || tk.assigned_to || tk.users_tickets_assigned_toTousers);
+      const assigned = !!(tk.assignedTo || tk.assigned_to || tk.assignee);
       const month    = isArchive ? getMonth(tk.closed_at) : getMonth(tk.created_at);
       return (
         (!q                || String(tk.id).includes(q) || (tk.title || "").toLowerCase().includes(q)) &&

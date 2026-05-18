@@ -16,7 +16,7 @@ const employeeConfirmReply = async (req, res) => {
 
     const isConfirmed = confirmed === true || confirmed === "true";
 
-    const lastConfirm = await prisma.ticket_comments.findFirst({
+    const lastConfirm = await prisma.message.findFirst({
       where: { ticket_id: id, comment_type: "confirm" },
       orderBy: { created_at: "desc" },
     });
@@ -25,7 +25,7 @@ const employeeConfirmReply = async (req, res) => {
       return res.status(400).json({ error: "Aucune demande de confirmation" });
     }
 
-    const alreadyReplied = await prisma.ticket_comments.findFirst({
+    const alreadyReplied = await prisma.message.findFirst({
       where: {
         ticket_id: id,
         comment_type: { in: ["confirmed", "rejected_confirm"] },
@@ -38,13 +38,13 @@ const employeeConfirmReply = async (req, res) => {
     }
 
     // ── Récupérer le ticket pour les notifications ──
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id },
       select: { assigned_to: true, title: true, created_by: true },
     });
 
     await prisma.$executeRaw`
-  UPDATE tickets 
+  UPDATE ticket
   SET 
     is_resolved_confirmed = ${isConfirmed},
     confirmation_requested = false,
@@ -53,7 +53,7 @@ const employeeConfirmReply = async (req, res) => {
   WHERE id = ${id}
 `;
 
-    await prisma.ticket_comments.create({
+    await prisma.message.create({
       data: {
         ticket_id: id,
         user_id: parseInt(employeeId),
@@ -65,7 +65,7 @@ const employeeConfirmReply = async (req, res) => {
 
     // ── Notifier le technicien ──
     if (ticket.assigned_to) {
-      const employee = await prisma.users.findUnique({
+      const employee = await prisma.user.findUnique({
         where: { id: parseInt(employeeId) },
         select: { name: true, surname: true },
       });
@@ -96,12 +96,12 @@ const employeeReply = async (req, res) => {
     }
 
     // ── Récupérer le ticket pour les notifications ──
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id },
       select: { assigned_to: true, title: true },
     });
 
-    const comment = await prisma.ticket_comments.create({
+    const comment = await prisma.message.create({
       data: {
         ticket_id: id,
         user_id: parseInt(employeeId),
@@ -124,14 +124,14 @@ const employeeReply = async (req, res) => {
       });
     }
 
-    await prisma.tickets.update({
+    await prisma.ticket.update({
       where: { id },
       data: { updated_at: new Date() },
     });
 
     // ── Notifier le technicien ──
     if (ticket.assigned_to) {
-      const employee = await prisma.users.findUnique({
+      const employee = await prisma.user.findUnique({
         where: { id: parseInt(employeeId) },
         select: { name: true, surname: true },
       });

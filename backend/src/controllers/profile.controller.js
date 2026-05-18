@@ -14,9 +14,9 @@ const getProfile = async (req, res) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const user = await prisma.users.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      include: { services: true }
+      include: { service: true }
     });
 
     if (!user)

@@ -7,129 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model services {
-  id                                                                              Int                          @id @default(autoincrement())
-  name                                                                            String                       @unique @db.VarChar(100)
-  ticket_assignments_history_ticket_assignments_history_from_service_idToservices ticket_assignments_history[] @relation("ticket_assignments_history_from_service_idToservices")
-  ticket_assignments_history_ticket_assignments_history_to_service_idToservices   ticket_assignments_history[] @relation("ticket_assignments_history_to_service_idToservices")
-  tickets                                                                         tickets[]
-  users                                                                           users[]
-}
-
-model sla_config {
-  id             Int    @id @default(autoincrement())
-  priority       String @unique @db.VarChar(50)
-  duration_hours Int
-}
-
-model ticket_assignments_history {
-  id                                                            Int       @id @default(autoincrement())
-  ticket_id                                                     Int?
-  from_user_id                                                  Int?
-  to_user_id                                                    Int?
-  from_service_id                                               Int?
-  to_service_id                                                 Int?
-  action                                                        String?   @db.VarChar(50)
-  reason                                                        String?
-  created_at                                                    DateTime? @default(now()) @db.Timestamp(6)
-  assigned_by                                                   Int?
-  users_ticket_assignments_history_assigned_byTousers           users?    @relation("ticket_assignments_history_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  services_ticket_assignments_history_from_service_idToservices services? @relation("ticket_assignments_history_from_service_idToservices", fields: [from_service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_ticket_assignments_history_from_user_idTousers          users?    @relation("ticket_assignments_history_from_user_idTousers", fields: [from_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tickets                                                       tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  services_ticket_assignments_history_to_service_idToservices   services? @relation("ticket_assignments_history_to_service_idToservices", fields: [to_service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_ticket_assignments_history_to_user_idTousers            users?    @relation("ticket_assignments_history_to_user_idTousers", fields: [to_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model ticket_attachments {
-  id              Int              @id @default(autoincrement())
-  ticket_id       Int?
-  file_name       String?          @db.VarChar(255)
-  file_path       String?
-  uploaded_by     Int?
-  uploaded_at     DateTime?        @default(now()) @db.Timestamp(6)
-  comment_id      Int?
-  ticket_comments ticket_comments? @relation(fields: [comment_id], references: [id], onUpdate: NoAction)
-  tickets         tickets?         @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users           users?           @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model ticket_comments {
-  id                 Int                  @id @default(autoincrement())
+model message {
+  id                 Int                  @id(map: "ticket_comments_pkey") @default(autoincrement())
   ticket_id          Int?
   user_id            Int?
   comment            String
   created_at         DateTime?            @default(now()) @db.Timestamp(6)
   comment_type       String?              @default("comment") @db.VarChar(50)
+  ticket             ticket?              @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ticket_comments_ticket_id_fkey")
+  user               user?                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_comments_user_id_fkey")
   ticket_attachments ticket_attachments[]
-  tickets            tickets?             @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users              users?               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model tickets {
-  id                               Int                          @id @default(autoincrement())
-  title                            String                       @db.VarChar(255)
-  description                      String?
-  category                         category_enum
-  status                           ticket_status_enum?          @default(open)
-  priority                         priority_enum?
-  impact                           impact_enum?
-  urgency                          urgency_enum?
-  service_id                       Int?
-  created_by                       Int?
-  assigned_to                      Int?
-  solution                         String?
-  is_resolved_confirmed            Boolean?                     @default(false)
-  sla_due_date                     DateTime?                    @db.Timestamp(6)
-  created_at                       DateTime?                    @default(now()) @db.Timestamp(6)
-  updated_at                       DateTime?                    @default(now()) @db.Timestamp(6)
-  type                             request_type_enum?
-  employee_confirm_note            String?
-  sla_duree                        sla_duree?
-  sla_date_debut                   DateTime?                    @default(now()) @db.Timestamptz(6)
-  sla_date_limite                  DateTime?                    @db.Timestamptz(6)
-  sla_statut                       String?                      @default("en_cours")
-  solution_date_resolved           DateTime?                    @db.Timestamptz(6)
-  confirmation_requested           Boolean?                     @default(false)
-  closing_note                     String?
-  closed_at                        DateTime?                    @db.Timestamp(6)
-  assigned_at                      DateTime?                    @db.Timestamp(6)
-  sla_pause_elapsed_ms             BigInt?
-  redirect_note                    String?
-  notifications                    notifications[]
-  ticket_assignments_history       ticket_assignments_history[]
-  ticket_attachments               ticket_attachments[]
-  ticket_comments                  ticket_comments[]
-  users_tickets_assigned_toTousers users?                       @relation("tickets_assigned_toTousers", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_tickets_created_byTousers  users?                       @relation("tickets_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  services                         services?                    @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model users {
-  id                                                                        Int                          @id @default(autoincrement())
-  name                                                                      String?                      @db.VarChar(100)
-  surname                                                                   String?                      @db.VarChar(100)
-  email                                                                     String                       @unique @db.VarChar(255)
-  password                                                                  String                       @db.VarChar(255)
-  role                                                                      user_role                    @default(employee)
-  phone                                                                     String?                      @db.VarChar(20)
-  department                                                                String?                      @db.VarChar(100)
-  job_title                                                                 String?                      @db.VarChar(100)
-  office                                                                    String?                      @db.VarChar(50)
-  block_number                                                              String?                      @db.VarChar(20)
-  is_active                                                                 Boolean?                     @default(true)
-  created_at                                                                DateTime?                    @default(now()) @db.Timestamp(6)
-  service_id                                                                Int?
-  notifications                                                             notifications[]
-  ticket_assignments_history_ticket_assignments_history_assigned_byTousers  ticket_assignments_history[] @relation("ticket_assignments_history_assigned_byTousers")
-  ticket_assignments_history_ticket_assignments_history_from_user_idTousers ticket_assignments_history[] @relation("ticket_assignments_history_from_user_idTousers")
-  ticket_assignments_history_ticket_assignments_history_to_user_idTousers   ticket_assignments_history[] @relation("ticket_assignments_history_to_user_idTousers")
-  ticket_attachments                                                        ticket_attachments[]
-  ticket_comments                                                           ticket_comments[]
-  tickets_tickets_assigned_toTousers                                        tickets[]                    @relation("tickets_assigned_toTousers")
-  tickets_tickets_created_byTousers                                         tickets[]                    @relation("tickets_created_byTousers")
-  services                                                                  services?                    @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model notifications {
@@ -140,11 +27,122 @@ model notifications {
   message    String
   is_read    Boolean?  @default(false)
   created_at DateTime? @default(now()) @db.Timestamp(6)
-  tickets    tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ticket     ticket?   @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       user      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id, is_read], map: "idx_notifications_is_read")
   @@index([user_id], map: "idx_notifications_user_id")
+}
+
+model service {
+  id                                                     Int              @id @default(autoincrement())
+  name                                                   String           @unique @db.VarChar(100)
+  ticket                                                 ticket[]
+  ticket_history_ticket_history_from_service_idToservice ticket_history[] @relation("ticket_history_from_service_idToservice")
+  ticket_history_ticket_history_to_service_idToservice   ticket_history[] @relation("ticket_history_to_service_idToservice")
+  user                                                   user[]
+}
+
+model sla_config {
+  id             Int    @id @default(autoincrement())
+  priority       String @unique @db.VarChar(50)
+  duration_hours Int
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ticket {
+  id                            Int                  @id @default(autoincrement())
+  title                         String               @db.VarChar(255)
+  description                   String?
+  category                      category_enum
+  status                        ticket_status_enum?  @default(open)
+  priority                      priority_enum?
+  impact                        impact_enum?
+  urgency                       urgency_enum?
+  service_id                    Int?
+  created_by                    Int?
+  assigned_to                   Int?
+  solution                      String?
+  is_resolved_confirmed         Boolean?             @default(false)
+  created_at                    DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at                    DateTime?            @default(now()) @db.Timestamp(6)
+  type                          request_type_enum?
+  sla_duree                     sla_duree?
+  sla_date_debut                DateTime?            @default(now()) @db.Timestamptz(6)
+  sla_date_limite               DateTime?            @db.Timestamptz(6)
+  sla_statut                    String?              @default("en_cours")
+  solution_date_resolved        DateTime?            @db.Timestamptz(6)
+  confirmation_requested        Boolean?             @default(false)
+  closing_note                  String?
+  closed_at                     DateTime?            @db.Timestamp(6)
+  assigned_at                   DateTime?            @db.Timestamp(6)
+  sla_pause_elapsed_ms          BigInt?
+  redirect_note                 String?
+  message                       message[]
+  notifications                 notifications[]
+  user_ticket_assigned_toTouser user?                @relation("ticket_assigned_toTouser", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_ticket_created_byTouser  user?                @relation("ticket_created_byTouser", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service                       service?             @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ticket_attachments            ticket_attachments[]
+  ticket_history                ticket_history[]
+}
+
+model ticket_attachments {
+  id          Int       @id @default(autoincrement())
+  ticket_id   Int?
+  file_name   String?   @db.VarChar(255)
+  file_path   String?
+  uploaded_by Int?
+  uploaded_at DateTime? @default(now()) @db.Timestamp(6)
+  comment_id  Int?
+  message     message?  @relation(fields: [comment_id], references: [id], onUpdate: NoAction)
+  ticket      ticket?   @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user        user?     @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ticket_history {
+  id                                              Int       @id @default(autoincrement())
+  ticket_id                                       Int?
+  from_user_id                                    Int?
+  to_user_id                                      Int?
+  from_service_id                                 Int?
+  to_service_id                                   Int?
+  action                                          String?   @db.VarChar(50)
+  reason                                          String?
+  created_at                                      DateTime? @default(now()) @db.Timestamp(6)
+  assigned_by                                     Int?
+  user_ticket_history_assigned_byTouser           user?     @relation("ticket_history_assigned_byTouser", fields: [assigned_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_assignments_history_assigned_by_fkey")
+  service_ticket_history_from_service_idToservice service?  @relation("ticket_history_from_service_idToservice", fields: [from_service_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_assignments_history_from_service_id_fkey")
+  user_ticket_history_from_user_idTouser          user?     @relation("ticket_history_from_user_idTouser", fields: [from_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_assignments_history_from_user_id_fkey")
+  ticket                                          ticket?   @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ticket_assignments_history_ticket_id_fkey")
+  service_ticket_history_to_service_idToservice   service?  @relation("ticket_history_to_service_idToservice", fields: [to_service_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_assignments_history_to_service_id_fkey")
+  user_ticket_history_to_user_idTouser            user?     @relation("ticket_history_to_user_idTouser", fields: [to_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ticket_assignments_history_to_user_id_fkey")
+}
+
+model user {
+  id                                               Int                  @id @default(autoincrement())
+  name                                             String?              @db.VarChar(100)
+  surname                                          String?              @db.VarChar(100)
+  email                                            String               @unique @db.VarChar(255)
+  password                                         String               @db.VarChar(255)
+  role                                             user_role            @default(employee)
+  phone                                            String?              @db.VarChar(20)
+  department                                       String?              @db.VarChar(100)
+  job_title                                        String?              @db.VarChar(100)
+  office                                           String?              @db.VarChar(50)
+  block_number                                     String?              @db.VarChar(20)
+  is_active                                        Boolean?             @default(true)
+  created_at                                       DateTime?            @default(now()) @db.Timestamp(6)
+  service_id                                       Int?
+  message                                          message[]
+  notifications                                    notifications[]
+  ticket_ticket_assigned_toTouser                  ticket[]             @relation("ticket_assigned_toTouser")
+  ticket_ticket_created_byTouser                   ticket[]             @relation("ticket_created_byTouser")
+  ticket_attachments                               ticket_attachments[]
+  ticket_history_ticket_history_assigned_byTouser  ticket_history[]     @relation("ticket_history_assigned_byTouser")
+  ticket_history_ticket_history_from_user_idTouser ticket_history[]     @relation("ticket_history_from_user_idTouser")
+  ticket_history_ticket_history_to_user_idTouser   ticket_history[]     @relation("ticket_history_to_user_idTouser")
+  service                                          service?             @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_service_id_fkey")
 }
 
 enum category_enum {

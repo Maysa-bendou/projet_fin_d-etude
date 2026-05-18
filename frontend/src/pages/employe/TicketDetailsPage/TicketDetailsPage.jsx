@@ -357,7 +357,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
       if (!res.ok) throw new Error(t('ticketDetails.notFound'));
       const data = await res.json();
       setTicket(data);
-      setReopenCount((data.comments ?? []).filter(c => c.comment_type === "reopen").length);
+      setReopenCount((data.message  ?? []).filter(c => c.comment_type === "reopen").length);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -391,7 +391,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
     : t('common.unassigned');
   const techInitials = techName.split(" ").filter(Boolean).map(n => n[0]).join("").toUpperCase() || "?";
 
-  const comments = ticket?.comments ?? [];
+  const comments = ticket?.message  ?? [];
   const lastConfirmReq = [...comments].reverse().find(c => c.comment_type === "confirm");
   const responsesAfter = lastConfirmReq
     ? comments.filter(c => new Date(c.date) > new Date(lastConfirmReq.date) && ["confirmed","rejected_confirm"].includes(c.comment_type))

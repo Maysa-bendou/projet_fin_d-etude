@@ -180,7 +180,7 @@ const translateLegacyMsg = (msg) => {
   );
 
   const tk = ticket;
-  const employee = tk.employee || tk.users_tickets_created_byTousers;
+  const employee = tk.employee || tk.user_ticket_created_byTouser;
   const isAssigned = !!(tk.technician?.id || tk.technicienId);
   const isAssignedToMe = (tk.technician?.id === currentUser?.id) || (tk.technicienId === currentUser?.id);
 
@@ -245,7 +245,7 @@ const translateLegacyMsg = (msg) => {
     background: "#fff", borderRadius: 14, border: "0.5px solid #e8e8e8",
     maxWidth: 380, width: "100%", overflow: "hidden",
   };
-const attachmentComments = (tk.comments ?? []).filter(c => c.comment_type === "attachment");
+const attachmentComments = (tk.message ?? []).filter(c => c.comment_type === "attachment");
 const creationFiles = attachmentComments.flatMap(c => c.files ?? []);
   return (
     <div style={{ fontFamily: " sans-serif", minHeight: "100vh"}}>

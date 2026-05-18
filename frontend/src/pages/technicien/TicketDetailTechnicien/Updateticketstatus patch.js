@@ -7,7 +7,7 @@ const updateTicketStatus = async (req, res) => {
     if (!valid.includes(status)) return res.status(400).json({ error: "Statut invalide" });
 
     // Fetch the old status first so we can log the transition
-    const current = await prisma.tickets.findUnique({ where: { id }, select: { status: true } });
+    const current = await prisma.ticket.findUnique({ where: { id }, select: { status: true } });
     const oldStatus = current?.status ?? "open";
 
     const STATUS_FR = {
@@ -16,14 +16,14 @@ const updateTicketStatus = async (req, res) => {
     };
 
     // Update the ticket status
-    const updated = await prisma.tickets.update({
+    const updated = await prisma.ticket.update({
       where: { id },
       data: { status, updated_at: new Date() },
     });
 
     // Save a comment so the status change persists and shows in actuality on refresh
     if (technicianId) {
-      await prisma.ticket_comments.create({
+      await prisma.message.create({
         data: {
           ticket_id:    id,
           user_id:      parseInt(technicianId),

@@ -178,7 +178,7 @@ async function notifyManagerTechTook(managerId, ticketId, ticketTitle, techName)
 
 // REPLACE notifyAllManagersOfService with this:
 async function notifyAllManagersOfService(serviceId, ticketId, ticketTitle, techName = "") {
-  const managers = await prisma.users.findMany({
+  const managers = await prisma.user.findMany({
     where: { service_id: serviceId, role: "manager", is_active: true },
     select: { id: true },
   });
@@ -192,7 +192,7 @@ async function notifyAllManagersOfService(serviceId, ticketId, ticketTitle, tech
 }
 
 async function notifyAllTechsOfService(serviceId, ticketId, ticketTitle) {
-  const techs = await prisma.users.findMany({
+  const techs = await prisma.user.findMany({
     where: { service_id: serviceId, role: "technician", is_active: true },
     select: { id: true },
   });

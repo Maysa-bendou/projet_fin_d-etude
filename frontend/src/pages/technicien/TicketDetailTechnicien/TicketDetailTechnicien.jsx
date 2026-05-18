@@ -155,9 +155,9 @@ if (updateMatch) {
       setTicket(data);
       setStatus(data.status);
 
-      const lastConfirmReq = [...data.comments].reverse().find(c => c.comment_type === "confirm");
+      const lastConfirmReq = [...data.message ].reverse().find(c => c.comment_type === "confirm");
       const responsesAfterLastConfirm = lastConfirmReq
-        ? data.comments.filter(c =>
+        ? data.message .filter(c =>
             new Date(c.date) > new Date(lastConfirmReq.date) &&
             (c.comment_type === "confirmed" || c.comment_type === "rejected_confirm")
           )
@@ -171,7 +171,7 @@ if (updateMatch) {
 
       const CONV_EXCLUDED = new Set(["status", "update", "reopen", "redirect", "taken", "assigned"]);
 
-      data.comments.forEach((c) => {
+      data.message .forEach((c) => {
         const type = c.comment_type ?? "comment";
         const dateObj = new Date(c.date);
         const dateStr = fmt(c.date);

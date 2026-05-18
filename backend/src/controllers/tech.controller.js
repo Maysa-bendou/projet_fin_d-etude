@@ -4,12 +4,16 @@ const prisma = require("../prismaClient");
 const getAllTickets = async (req, res) => {
   try {
     const tickets = await prisma.ticket.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { employee: true } // Added to see who created the ticket
+      orderBy: { created_at: "desc" },
+      include: {
+  user_ticket_created_byTouser: true,
+  user_ticket_assigned_toTouser: true
+} // Added to see who created the ticket
     });
     res.json(tickets);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch tickets" });
+    console.error("❌ getAllTickets ERROR:", err.message);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -19,10 +23,10 @@ const getTicketById = async (req, res) => {
   try {
     const ticket = await prisma.ticket.findUnique({
       where: { id },
-      include: { 
-        employee: true,
-        technician: true // Added to see if anyone is assigned
-      }
+include: {
+  user_ticket_created_byTouser: true,
+  user_ticket_assigned_toTouser: true
+}
     });
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
     res.json(ticket);
@@ -36,7 +40,7 @@ const getTechniciansByService = async (req, res) => {
   try {
     const serviceId = parseInt(req.params.serviceId);
 
-    const technicians = await prisma.users.findMany({
+    const technicians = await prisma.user.findMany({
       where: {
         service_id: serviceId,
         role: "technician",   // 🔴 VERY IMPORTANT
@@ -66,7 +70,7 @@ const assignTicket = async (req, res) => {
   const { technicienId } = req.body;
 
   try {
-    const updatedTicket = await prisma.tickets.update({
+    const updatedTicket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
         assigned_to: parseInt(technicienId),
@@ -102,14 +106,14 @@ const sendMessage = async (req, res) => {
   const type = req.params.type; 
 
   try {
-    const newMsg = await prisma.ticketMessage.create({
-      data: {
-        ticketId: id,
-        type,
-        message,
-        createdAt: new Date(),
-      },
-    });
+const newMsg = await prisma.message.create({
+  data: {
+    ticket_id: id,
+    comment_type: type,
+    comment: message,
+    created_at: new Date(),
+  },
+});
     res.json(newMsg);
   } catch (err) {
     res.status(500).json({ error: "Failed to send message" });

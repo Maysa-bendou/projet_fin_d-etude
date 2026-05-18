@@ -79,17 +79,22 @@ const translateStatusMsg = (msg) => {
   }
 
   // ── technician_took_over ─────────────────────────────────────────
-  if (msg === "technician_took_over")
-    return tC("history.technicianTookOver");
+if (msg === "technician_took_over" || msg.startsWith("technician_took_over:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return tC("history.technicianTookOver", { name });
+}
 
   // ── ticket_assigned ──────────────────────────────────────────────
-  if (msg === "ticket_assigned")
-    return tC("history.ticketAssigned");
+if (msg === "ticket_assigned" || msg.startsWith("ticket_assigned:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return tC("history.ticketAssigned", { name });
+}
 
   // ── employee_reopened ────────────────────────────────────────────
-  if (msg === "employee_reopened")
-    return tC("history.employeeReopened");
-
+if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
+  const name = msg.includes(":") ? msg.split(":").slice(1).join(":") : "";
+  return tC("history.employeeReopened", { name });
+}
 const updateMatch = msg.match(/^employee_updated:(.+)$/);
 if (updateMatch) {
   const translatedDetail = updateMatch[1]
@@ -150,9 +155,9 @@ if (updateMatch) {
       setTicket(data);
       setStatus(data.status);
 
-      const lastConfirmReq = [...data.comments].reverse().find(c => c.comment_type === "confirm");
+      const lastConfirmReq = [...data.message ].reverse().find(c => c.comment_type === "confirm");
       const responsesAfterLastConfirm = lastConfirmReq
-        ? data.comments.filter(c =>
+        ? data.message .filter(c =>
             new Date(c.date) > new Date(lastConfirmReq.date) &&
             (c.comment_type === "confirmed" || c.comment_type === "rejected_confirm")
           )
@@ -162,17 +167,11 @@ if (updateMatch) {
       const convItems = [];
       const actItems = [];
 
-      actItems.push({
-        id: "act-assigned", type: "assigned",
-        messageKey: "ticketDetailTech.actuality.assigned",
-        date: fmt(data.createdAt),
-        rawDate: new Date(data.createdAt),
-      });
 
 
       const CONV_EXCLUDED = new Set(["status", "update", "reopen", "redirect", "taken", "assigned"]);
 
-      data.comments.forEach((c) => {
+      data.message .forEach((c) => {
         const type = c.comment_type ?? "comment";
         const dateObj = new Date(c.date);
         const dateStr = fmt(c.date);
@@ -200,30 +199,41 @@ if (updateMatch) {
 
         if (type === "status") {
           actItems.push({ id: `act-${c.id}`, type: "status", message: translateStatusMsg(c.message), date: dateStr, rawDate: dateObj });
+        } else if (type === "taken" || type === "assigned") {
+          actItems.push({
+            id: `act-${c.id}`,
+            type: "assigned",
+            message: translateStatusMsg(c.message),
+            date: dateStr,
+            rawDate: dateObj,
+          });
         } else if (type === "update") {
-// AFTER
-actItems.push({ id: `act-${c.id}`, type: "update", message: translateStatusMsg(`${c.message}`), date: dateStr, rawDate: dateObj });
- } else if (type === "reopen") {
-          actItems.push({ id: `act-${c.id}`, type: "reopen", messageKey: "ticketDetailTech.actuality.reopened", date: dateStr, rawDate: dateObj });
-// AFTER
-} else if (type === "redirect") {
-  const raw = c.message.replace(/^\[REDIRECTION\]\s*/, "");
-
-  // parse "ticket_redirected:Karim Haddad:reason" or "ticket_redirected:Karim Haddad"
-  const redirMatch = raw.match(/^ticket_redirected:([^:]+)(?::(.+))?$/);
-  const by     = redirMatch ? redirMatch[1].trim() : (c.author ?? "?");
-  const reason = redirMatch ? (redirMatch[2]?.trim() || "—") : (raw || "—");
-
-  actItems.push({
-    id: `act-${c.id}`,
-    type: "redirect",
-    message: tC("history.ticketRedirected", { by }),
-    date: dateStr,
-    rawDate: dateObj,
-  });
-} else if (ACT_LABEL_KEYS[type]) {
-  actItems.push({ id: `act-${c.id}`, type, messageKey: ACT_LABEL_KEYS[type], date: dateStr, rawDate: dateObj });
-}
+          actItems.push({ id: `act-${c.id}`, type: "update", message: translateStatusMsg(`${c.message}`), date: dateStr, rawDate: dateObj });
+        } else if (type === "reopen") {
+          const reopenName = c.message?.startsWith("employee_reopened:")
+            ? c.message.split(":").slice(1).join(":").trim()
+            : (c.author ?? "");
+          actItems.push({
+            id: `act-${c.id}`,
+            type: "reopen",
+            message: tC("history.employeeReopened", { name: reopenName }),
+            date: dateStr,
+            rawDate: dateObj,
+          });
+        } else if (type === "redirect") {
+          const raw = c.message.replace(/^\[REDIRECTION\]\s*/, "");
+          const redirMatch = raw.match(/^ticket_redirected:([^:]+)(?::(.+))?$/);
+          const by = redirMatch ? redirMatch[1].trim() : (c.author ?? "?");
+          actItems.push({
+            id: `act-${c.id}`,
+            type: "redirect",
+            message: tC("history.ticketRedirected", { by }),
+            date: dateStr,
+            rawDate: dateObj,
+          });
+        } else if (ACT_LABEL_KEYS[type]) {
+          actItems.push({ id: `act-${c.id}`, type, messageKey: ACT_LABEL_KEYS[type], date: dateStr, rawDate: dateObj });
+        }
       });
 
 
@@ -236,11 +246,9 @@ actItems.push({ id: `act-${c.id}`, type: "update", message: translateStatusMsg(`
       setLoading(false);
     }
   }, [id, t]);
-
-  // Chargement initial
 useEffect(() => { fetchTicket(); }, [fetchTicket]);
 
-// AFTER
+
 useEffect(() => {
   if (conversation.length === 0) return;
   if (convEndRef.current) {

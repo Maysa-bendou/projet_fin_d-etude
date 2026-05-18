@@ -4,9 +4,9 @@ const bcrypt = require("bcrypt");
 // GET ALL USERS
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await prisma.users.findMany({
+    const users = await prisma.user.findMany({
       include: {
-        services: true,
+        service: true,
       },
       orderBy: {
         created_at: "desc",
@@ -22,7 +22,7 @@ exports.getAllUsers = async (req, res) => {
 // GET ALL SERVICES for dropdowns
 exports.getServices = async (req, res) => {
   try {
-    const services = await prisma.services.findMany({
+    const services = await prisma.service.findMany({
       select: { id: true, name: true },
       orderBy: { name: 'asc' }
     });
@@ -46,21 +46,21 @@ exports.createUser = async (req, res) => {
 
   // Check service exists
   if (parsedServiceId) {
-    const service = await prisma.services.findUnique({ where: { id: parsedServiceId } });
+    const service = await prisma.service.findUnique({ where: { id: parsedServiceId } });
     if (!service) {
       return res.status(400).json({ error: "Service sélectionné n'existe pas." });
     }
   }
 
   // Check email unique
-  const existingUser = await prisma.users.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     return res.status(409).json({ error: "Email déjà utilisé." });
   }
 
   try {
     const defaultPassword = await bcrypt.hash("12345678", 10);
-    const newUser = await prisma.users.create({
+    const newUser = await prisma.user.create({
       data: {
         name,
         surname,
@@ -95,7 +95,7 @@ exports.updateUser = async (req, res) => {
 
   // Check service exists
   if (parsedServiceId) {
-    const service = await prisma.services.findUnique({ where: { id: parsedServiceId } });
+    const service = await prisma.service.findUnique({ where: { id: parsedServiceId } });
     if (!service) {
       return res.status(400).json({ error: "Service sélectionné n'existe pas." });
     }
@@ -117,7 +117,7 @@ exports.updateUser = async (req, res) => {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    const updatedUser = await prisma.users.update({
+    const updatedUser = await prisma.user.update({
       where: { id },
       data: updateData,
     });
@@ -133,9 +133,9 @@ exports.toggleActive = async (req, res) => {
   const id = parseInt(req.params.id);
 
   try {
-    const user = await prisma.users.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({ where: { id } });
 
-    const updated = await prisma.users.update({
+    const updated = await prisma.user.update({
       where: { id },
       data: {
         is_active: !user.is_active,

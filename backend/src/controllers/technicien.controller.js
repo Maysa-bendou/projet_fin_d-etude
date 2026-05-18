@@ -13,43 +13,43 @@ const {
 const getTicketDetailTech = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id },
       include: {
-        users_tickets_created_byTousers: {
+        user_ticket_created_byTouser: {
           select: {
             id: true, name: true, surname: true, email: true,
             department: true, job_title: true, phone: true,
             office: true, block_number: true, role: true,
           },
         },
-        users_tickets_assigned_toTousers: {
+        user_ticket_assigned_toTouser: {
           select: { id: true, name: true, surname: true, email: true, phone: true },
         },
-        services: { select: { id: true, name: true } },
-        ticket_assignments_history: {
+        service: { select: { id: true, name: true } },
+        ticket_history: {
           orderBy: { created_at: "desc" },
           take: 5,
           include: {
-            users_ticket_assignments_history_assigned_byTousers: {
+            user_ticket_history_assigned_byTouser: {
               select: { id: true, name: true, surname: true, role: true },
             },
-            users_ticket_assignments_history_from_user_idTousers: {
+            user_ticket_history_from_user_idTouser: {
               select: { id: true, name: true, surname: true },
             },
           },
         },
-        ticket_comments: {
+        message: {
           orderBy: { created_at: "asc" },
           include: {
-            users: { select: { id: true, name: true, surname: true, role: true } },
+            user: { select: { id: true, name: true, surname: true, role: true } },
             ticket_attachments: true,
           },
         },
         ticket_attachments: {
           orderBy: { uploaded_at: "asc" },
           include: {
-            users: { select: { id: true, name: true, surname: true } },
+            user: { select: { id: true, name: true, surname: true } },
           },
         },
       },
@@ -58,12 +58,12 @@ const getTicketDetailTech = async (req, res) => {
     if (!ticket) return res.status(404).json({ error: "Ticket non trouvé" });
 
     // ── assignedBy : premier assignment (asc) ─────────────────────────────
-    const firstAssignment = [...ticket.ticket_assignments_history]
+    const firstAssignment = [...ticket.ticket_history]
       .reverse()
       .find(h => h.action !== "redirect");
     let assignedBy = { label: "Auto / Système", type: "auto" };
-    if (firstAssignment?.users_ticket_assignments_history_assigned_byTousers) {
-      const u = firstAssignment.users_ticket_assignments_history_assigned_byTousers;
+if (firstAssignment?.user_ticket_history_assigned_byTouser) {
+  const u = firstAssignment.user_ticket_history_assigned_byTouser;
       assignedBy = {
         id: u.id, name: u.name, surname: u.surname,
         role: u.role,
@@ -73,17 +73,17 @@ const getTicketDetailTech = async (req, res) => {
     }
 
     // ── redirectInfo : dernière redirection ───────────────────────────────
-    const lastRedirect = ticket.ticket_assignments_history.find(h => h.action === "redirect");
-    const redirectInfo = lastRedirect ? {
-      by: lastRedirect.users_ticket_assignments_history_assigned_byTousers
-        ? `${lastRedirect.users_ticket_assignments_history_assigned_byTousers.name} ${lastRedirect.users_ticket_assignments_history_assigned_byTousers.surname}`.trim()
-        : "Inconnu",
-      from: lastRedirect.users_ticket_assignments_history_from_user_idTousers
-        ? `${lastRedirect.users_ticket_assignments_history_from_user_idTousers.name} ${lastRedirect.users_ticket_assignments_history_from_user_idTousers.surname}`.trim()
-        : null,
-      reason: lastRedirect.reason,
-      date: lastRedirect.created_at,
-    } : null;
+    const lastRedirect = ticket.ticket_history.find(h => h.action === "redirect");
+const redirectInfo = lastRedirect ? {
+  by: lastRedirect.user_ticket_history_assigned_byTouser 
+    ? `${lastRedirect.user_ticket_history_assigned_byTouser.name} ${lastRedirect.user_ticket_history_assigned_byTouser.surname}`.trim()
+    : "Inconnu",
+  from: lastRedirect.user_ticket_history_from_user_idTouser 
+    ? `${lastRedirect.user_ticket_history_from_user_idTouser.name} ${lastRedirect.user_ticket_history_from_user_idTouser.surname}`.trim()
+    : null,
+  reason: lastRedirect.reason,
+  date: lastRedirect.created_at,
+} : null;
 
     res.json({
       id: ticket.id,
@@ -109,18 +109,20 @@ const getTicketDetailTech = async (req, res) => {
       closing_note: ticket.closing_note,
       is_resolved_confirmed: ticket.is_resolved_confirmed,
       confirmation_requested: ticket.confirmation_requested,
-      employee: ticket.users_tickets_created_byTousers,
-      technician: ticket.users_tickets_assigned_toTousers,
-      service: ticket.services?.name ?? null,
-      serviceId: ticket.services?.id ?? null,
+      employee: ticket.user_ticket_created_byTouser,
+      technician: ticket.user_ticket_assigned_toTouser,
+      service: ticket.service?.name ?? null,
+      serviceId: ticket.service?.id ?? null,
       assignedBy,
-      comments: (ticket.ticket_comments || []).map((c) => ({
+assigned_action: ticket.ticket_history?.[0]?.action ||
+  (ticket.assigned_to ? "assigned" : null),
+      message: (ticket.message  || []).map((c) => ({
         id: c.id,
         message: c.comment,
         comment_type: c.comment_type ?? "comment",
-        author: `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole: c.users?.role ?? "",
-        authorId: c.users?.id,
+        author: `${c.user?.name ?? ""} ${c.user?.surname ?? ""}`.trim(),
+        authorRole: c.user?.role ?? "",
+        authorId: c.user?.id,
         date: c.created_at,
         files: (c.ticket_attachments || []).map(a => {
           const relativePath = a.file_path
@@ -133,8 +135,7 @@ const getTicketDetailTech = async (req, res) => {
           };
         }),
       })),
-    // AFTER
-attachments: (ticket.ticket_comments || [])
+ticket_attachments: (ticket.message  || [])
   .filter(c => c.comment_type === "attachment")
   .flatMap(c => c.ticket_attachments || [])
   .map((a) => ({
@@ -143,7 +144,7 @@ attachments: (ticket.ticket_comments || [])
     filePath: a.file_path
       ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
       : null,
-    uploadedBy: `${a.users?.name ?? ""} ${a.users?.surname ?? ""}`.trim(),
+    uploadedBy: `${a.user?.name ?? ""} ${a.user?.surname ?? ""}`.trim(),
     uploadedAt: a.uploaded_at,
   })),
     });
@@ -167,7 +168,7 @@ const updateTicketStatus = async (req, res) => {
     const PAUSED   = ["pending", "pending_supplier"];
     const TERMINAL = ["resolved", "closed", "rejected"];
 
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id },
       select: {
         status: true,
@@ -216,13 +217,13 @@ else if (!PAUSED.includes(status) && wasPaused) {
       closed: "Fermé", rejected: "Rejeté",
     };
 
-    await prisma.tickets.update({
+    await prisma.ticket.update({
       where: { id },
       data: { status, updated_at: now, ...extra },
     });
 
     if (technicianId) {
-      await prisma.ticket_comments.create({
+      await prisma.message.create({
         data: {
           ticket_id: id,
           user_id: parseInt(technicianId),
@@ -250,12 +251,12 @@ const sendSolution = async (req, res) => {
     const id = parseInt(req.params.id);
     const { message, technicianId, type } = req.body;
 
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id },
       select: { created_by: true, title: true },
     });
 
-    const comment = await prisma.ticket_comments.create({
+    const comment = await prisma.message.create({
       data: {
         ticket_id: id,
         user_id: parseInt(technicianId),
@@ -266,7 +267,7 @@ const sendSolution = async (req, res) => {
     });
 
     if (type === "solution") {
-      await prisma.tickets.update({
+      await prisma.ticket.update({
         where: { id },
         data: {
           solution: message,
@@ -280,7 +281,7 @@ const sendSolution = async (req, res) => {
         await notifyEmployeeSolution(ticket.created_by, id, ticket.title);
       }
     } else {
-      await prisma.tickets.update({
+      await prisma.ticket.update({
         where: { id },
         data: { updated_at: new Date() },
       });
@@ -322,12 +323,12 @@ const requestConfirmation = async (req, res) => {
     const id = parseInt(req.params.id);
     const { technicianId } = req.body;
 
-    await prisma.tickets.update({
+    await prisma.ticket.update({
       where: { id },
       data: { confirmation_requested: true, updated_at: new Date() },
     });
 
-    await prisma.ticket_comments.create({
+    await prisma.message.create({
       data: {
         ticket_id: id,
         user_id: parseInt(technicianId),
@@ -350,7 +351,7 @@ const closeTicketManually = async (req, res) => {
     const id = parseInt(req.params.id);
     const { technicianId, closingNote, solution } = req.body;
 
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id },
       select: { sla_date_limite: true, created_by: true, title: true },
     });
@@ -359,7 +360,7 @@ const closeTicketManually = async (req, res) => {
     const sla_statut = ticket.sla_date_limite && now <= ticket.sla_date_limite
       ? "respecte" : "depasse";
 
-    await prisma.tickets.update({
+    await prisma.ticket.update({
       where: { id },
       data: {
         status: "closed",
@@ -371,7 +372,7 @@ const closeTicketManually = async (req, res) => {
       },
     });
 
-    const comment = await prisma.ticket_comments.create({
+    const comment = await prisma.message.create({
       data: {
         ticket_id: id,
         user_id: parseInt(technicianId),
@@ -424,13 +425,13 @@ const redirectTicket = async (req, res) => {
       return res.status(400).json({ error: "La raison est obligatoire." });
     }
 
-    const current = await prisma.tickets.findUnique({
+    const current = await prisma.ticket.findUnique({
       where: { id },
       select: { assigned_to: true, service_id: true, title: true, created_by: true },
     });
 
     // Récupérer infos du technicien qui redirige (pour afficher "par qui")
-    const redirectedBy = assignedById ? await prisma.users.findUnique({
+    const redirectedBy = assignedById ? await prisma.user.findUnique({
       where: { id: parseInt(assignedById) },
       select: { name: true, surname: true },
     }) : null;
@@ -439,7 +440,7 @@ const redirectTicket = async (req, res) => {
       : "Inconnu";
 
     // ── Mise à jour du ticket ──────────────────────────────────────────────
-    await prisma.tickets.update({
+    await prisma.ticket.update({
       where: { id },
       data: {
         assigned_to: newTechId ? parseInt(newTechId) : null, // ← désasigne l'ancien toujours
@@ -452,7 +453,7 @@ const redirectTicket = async (req, res) => {
     });
   console.log("✅ assigned_to mis à:", newTechId ? parseInt(newTechId) : null);
     // ── Historique ────────────────────────────────────────────────────────
-    await prisma.ticket_assignments_history.create({
+    await prisma.ticket_history.create({
       data: {
         ticket_id:       id,
         from_user_id:    current.assigned_to,
@@ -467,7 +468,7 @@ const redirectTicket = async (req, res) => {
     });
 
     // ── Commentaire visible dans la conversation ──────────────────────────
-    await prisma.ticket_comments.create({
+    await prisma.message.create({
       data: {
         ticket_id:    id,
         user_id:      assignedById ? parseInt(assignedById) : null,
@@ -485,7 +486,7 @@ if (current.created_by) {
 if (newTechId) {
   await notifyTechAssigned(parseInt(newTechId), id, current.title);
 }
-const svc = await prisma.services.findUnique({
+const svc = await prisma.service.findUnique({
   where: { id: parseInt(newServiceId) },
   select: { id: true },
 });
@@ -503,7 +504,7 @@ if (svc) {
 // ── GET services ───────────────────────────────────────────────────────────
 const getServices = async (req, res) => {
   try {
-    const services = await prisma.services.findMany({
+    const services = await prisma.service.findMany({
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });
@@ -516,7 +517,7 @@ const getServices = async (req, res) => {
 // ── GET techniciens ────────────────────────────────────────────────────────
 const getAllTechniciens = async (req, res) => {
   try {
-    const techs = await prisma.users.findMany({
+    const techs = await prisma.user.findMany({
       where: { role: "technician", is_active: true },
       select: { id: true, name: true, surname: true, email: true, phone: true },
       orderBy: { name: "asc" },
@@ -531,7 +532,7 @@ const getAllTechniciens = async (req, res) => {
 const getAssignedTickets = async (req, res) => {
   try {
     const techId = parseInt(req.params.techId);
-    const tickets = await prisma.tickets.findMany({
+    const tickets = await prisma.ticket.findMany({
       where: { assigned_to: techId },
       select: {
         id: true, title: true, description: true,
@@ -539,7 +540,7 @@ const getAssignedTickets = async (req, res) => {
         created_at: true, sla_date_limite: true, sla_date_debut: true,
          assigned_at: true,        // ← ajouter
   closed_at: true,
-        users_tickets_created_byTousers: { select: { name: true, surname: true } },
+        user_ticket_created_byTouser: { select: { name: true, surname: true } },
         sla_pause_elapsed_ms: true,
 sla_statut: true,
       },
@@ -559,7 +560,7 @@ sla_statut: true,
       sla_date_debut:  t.sla_date_debut,
       sla_pause_elapsed_ms: t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null,
 sla_statut: t.sla_statut,
-      employee_name: `${t.users_tickets_created_byTousers?.name ?? ""} ${t.users_tickets_created_byTousers?.surname ?? ""}`.trim(),
+      employee_name: `${t.user_ticket_created_byTouser?.name ?? ""} ${t.user_ticket_created_byTouser?.surname ?? ""}`.trim(),
     })));
   } catch (err) {
     console.error(err);

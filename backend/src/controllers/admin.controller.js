@@ -4,8 +4,8 @@ const prisma = require("../prismaClient");
 // GET STATS
 exports.getStats = async (req, res) => {
   try {
-    const totalUsers = await prisma.users.count();
-    const totalTickets = await prisma.tickets.count();
+    const totalUsers = await prisma.user.count();
+    const totalTickets = await prisma.ticket.count();
 
     res.json({ totalUsers, totalTickets });
   } catch (err) {
@@ -23,14 +23,19 @@ const categories = ["hardware", "software", "network", "access", "security", "me
     const statuses = ["open", "in_progress", "pending", "pending_supplier", "resolved", "closed", "rejected"];
     const impacts = ["low", "medium", "high"];
     const urgencies = ["low", "medium", "high"];
-    const roles = ["employee", "technician", "chef_service", "manager", "admin"];
+    const roles = ["employee", "technician", "director", "manager", "admin"];
    
     // Dynamic data
-    const departments = await prisma.departments.findMany({ select: { id: true, name: true } });
-    const services = await prisma.services.findMany({ select: { id: true, name: true } });
+const departmentRows = await prisma.user.findMany({
+  where: { department: { not: null } },
+  select: { department: true },
+  distinct: ["department"],
+});
+const departments = departmentRows.map(r => r.department).filter(Boolean);
+    const services = await prisma.service.findMany({ select: { id: true, name: true } });
 
     // Role stats
-    const roleStats = await prisma.users.groupBy({
+    const roleStats = await prisma.user.groupBy({
       by: ['role'],
       _count: { id: true }
     });

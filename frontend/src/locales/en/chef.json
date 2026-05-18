@@ -120,7 +120,7 @@
 
   "global": {
     "header": {
-      "subtitle": "Chef View · All services"
+      "subtitle": "director View · All services"
     },
     "section": {
       "flowDistributionAll": "Flow Distribution — All Services",
@@ -129,7 +129,7 @@
       "timeTrendsAll":       "Time Trends — All Services"
     },
     "pdf": {
-      "reportTitle":          "Chef Performance Report — All Services",
+      "reportTitle":          "director Performance Report — All Services",
       "totalAllServices":     "Total Tickets (All services)",
       "resolutionAllServices":"Resolution Rate (All services)",
       "reportFile":           "Performance_Chef"

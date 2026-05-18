@@ -5,11 +5,11 @@ const chefController = {
   // 1. STATISTIQUES GLOBALES (Pour la page principale)
   getAllServices: async (req, res) => {
     try {
-      const totalTicketsAbsolu = await prisma.tickets.count();
+      const totalTicketsAbsolu = await prisma.ticket.count();
 
-      const allServices = await prisma.services.findMany({
+      const allServices = await prisma.service.findMany({
         include: {
-          tickets: {
+          ticket: {
             select: {
               status: true,
               created_at: true,
@@ -20,12 +20,12 @@ const chefController = {
         }
       });
 
-      const unassignedTickets = await prisma.tickets.findMany({
+      const unassignedTickets = await prisma.ticket.findMany({
         where: { service_id: null }
       });
 
       let servicesWithStats = allServices.map(service => {
-        const tickets = service.tickets || [];
+        const tickets = service.ticket || [];
         const total = tickets.length;
         
         const resoluCount = tickets.filter(t => t.status === 'resolved').length;
@@ -103,7 +103,7 @@ getServiceStats: async (req, res) => {
     // ── Service name ─────────────────────────────────────────────────────────
     let serviceName = "Non Assignés";
     if (serviceId !== 0) {
-      const service = await prisma.services.findUnique({
+      const service = await prisma.service.findUnique({
         where: { id: serviceId },
         select: { name: true }
       });
@@ -123,12 +123,12 @@ getServiceStats: async (req, res) => {
     const allCategories = dbCategories.map(r => r.enumlabel);
 
     // ── 2. Technician Performance (filtered) ──────────────────────────────────
-    const techPerformanceRaw = await prisma.users.findMany({
+    const techPerformanceRaw = await prisma.user.findMany({
       where: { service_id: sFilter, role: 'technician' },
       select: {
         name: true,
         surname: true,
-        tickets_tickets_assigned_toTousers: {
+        ticket_ticket_assigned_toTouser: {
           where: Object.keys(dateFilter).length ? dateFilter : undefined,
           select: { status: true }
         }
@@ -136,7 +136,7 @@ getServiceStats: async (req, res) => {
     });
 
     const techPerformance = techPerformanceRaw.map(t => {
-      const tkts         = t.tickets_tickets_assigned_toTousers;
+      const tkts         = t.ticket_ticket_assigned_toTouser;
       const totalAssigned = tkts.length;
       const resolved      = tkts.filter(tk => tk.status === 'resolved').length;
       const rejected      = tkts.filter(tk => tk.status === 'rejected').length;
@@ -155,14 +155,14 @@ getServiceStats: async (req, res) => {
     const baseWhere = { service_id: sFilter, ...dateFilter };
 
     const [statusCounts, priorityCounts, categoryCounts, typeCounts] = await Promise.all([
-      prisma.tickets.groupBy({ by: ['status'],   where: baseWhere, _count: { id: true } }),
-      prisma.tickets.groupBy({ by: ['priority'], where: baseWhere, _count: { id: true } }),
-      prisma.tickets.groupBy({ by: ['category'], where: baseWhere, _count: { id: true } }),
-      prisma.tickets.groupBy({ by: ['type'],     where: baseWhere, _count: { id: true } })
+      prisma.ticket.groupBy({ by: ['status'],   where: baseWhere, _count: { id: true } }),
+      prisma.ticket.groupBy({ by: ['priority'], where: baseWhere, _count: { id: true } }),
+      prisma.ticket.groupBy({ by: ['category'], where: baseWhere, _count: { id: true } }),
+      prisma.ticket.groupBy({ by: ['type'],     where: baseWhere, _count: { id: true } })
     ]);
 
-    const totalTickets  = await prisma.tickets.count({ where: baseWhere });
-    const resolvedCount = await prisma.tickets.count({ where: { ...baseWhere, status: 'resolved' } });
+    const totalTickets  = await prisma.ticket.count({ where: baseWhere });
+    const resolvedCount = await prisma.ticket.count({ where: { ...baseWhere, status: 'resolved' } });
 
     const statusStats   = allStatuses.map(label => ({ name: label, value: statusCounts.find(s => s.status === label)?._count.id   || 0 }));
     const priorityStats = allPriorities.map(label => ({ name: label, value: priorityCounts.find(p => p.priority === label)?._count.id || 0 }));
@@ -174,7 +174,7 @@ getServiceStats: async (req, res) => {
     }));
 
 // ── 4. SLA (filtered) ─────────────────────────────────────────────────────
-const allTicketsForSla = await prisma.tickets.findMany({
+const allTicketsForSla = await prisma.ticket.findMany({
   where: baseWhere,
   select: {
     status: true,
@@ -210,7 +210,7 @@ for (const ticket of allTicketsForSla) {
 
     if (!filterMonth) {
       // Full year → monthly breakdown
-      const monthlyRaw = await prisma.tickets.findMany({
+      const monthlyRaw = await prisma.ticket.findMany({
         where: {
           service_id: sFilter,
           created_at: { gte: new Date(currentYear, 0, 1), lte: new Date(currentYear, 11, 31, 23, 59, 59) }
@@ -225,7 +225,7 @@ for (const ticket of allTicketsForSla) {
     } else {
       // Specific month → daily breakdown
       const daysInMonth = new Date(currentYear, filterMonth, 0).getDate();
-      const dailyRaw    = await prisma.tickets.findMany({
+      const dailyRaw    = await prisma.ticket.findMany({
         where: {
           service_id: sFilter,
           created_at: {
@@ -244,7 +244,7 @@ for (const ticket of allTicketsForSla) {
     // ── 6. Available years for filter dropdown ────────────────────────────────
     const yearsRaw = await prisma.$queryRaw`
       SELECT DISTINCT EXTRACT(YEAR FROM created_at)::int AS year
-      FROM tickets
+      FROM ticket
       WHERE service_id = ${sFilter}
       ORDER BY year DESC
     `;
@@ -281,7 +281,7 @@ for (const ticket of allTicketsForSla) {
   // 3. GLOBAL STATS (Helper)
   getGlobalStats: async (req, res) => {
     try {
-      const services = await prisma.services.findMany({ include: { tickets: true } });
+      const services = await prisma.service.findMany({ include: { tickets: true } });
       let totalGlobal = 0;
       const servicesFormatted = services.map(service => {
         const total = service.tickets.length;
@@ -309,7 +309,7 @@ for (const ticket of allTicketsForSla) {
       const month  = req.query.month ? parseInt(req.query.month) : null;
 
       // 1. Get the chef user and their service_id
-      const chefUser = await prisma.users.findUnique({
+      const chefUser = await prisma.user.findUnique({
         where: { id: chefId },
         select: { service_id: true, name: true, surname: true }
       });
@@ -317,10 +317,7 @@ for (const ticket of allTicketsForSla) {
       if (!chefUser) {
         return res.status(404).json({ message: "Chef introuvable" });
       }
-
-      // If service_id is NULL → chef manages ALL services
-      // If service_id is set  → chef manages only that service
-      const chefServices = await prisma.services.findMany({
+      const chefServices = await prisma.service.findMany({
         where: chefUser.service_id ? { id: chefUser.service_id } : undefined,
         select: { id: true, name: true }
       });
@@ -386,12 +383,12 @@ for (const ticket of allTicketsForSla) {
         categoryCounts,
         typeCounts
       ] = await Promise.all([
-        prisma.tickets.count({ where: baseWhere }),
-        prisma.tickets.count({ where: { ...baseWhere, status: 'resolved' } }),
-        prisma.tickets.groupBy({ by: ['status'],   where: baseWhere, _count: { id: true } }),
-        prisma.tickets.groupBy({ by: ['priority'], where: baseWhere, _count: { id: true } }),
-        prisma.tickets.groupBy({ by: ['category'], where: baseWhere, _count: { id: true } }),
-        prisma.tickets.groupBy({ by: ['type'],     where: baseWhere, _count: { id: true } })
+        prisma.ticket.count({ where: baseWhere }),
+        prisma.ticket.count({ where: { ...baseWhere, status: 'resolved' } }),
+        prisma.ticket.groupBy({ by: ['status'],   where: baseWhere, _count: { id: true } }),
+        prisma.ticket.groupBy({ by: ['priority'], where: baseWhere, _count: { id: true } }),
+        prisma.ticket.groupBy({ by: ['category'], where: baseWhere, _count: { id: true } }),
+        prisma.ticket.groupBy({ by: ['type'],     where: baseWhere, _count: { id: true } })
       ]);
 
       const resolutionRate = totalTickets > 0
@@ -399,7 +396,7 @@ for (const ticket of allTicketsForSla) {
         : 0;
 
 // 5. SLA across ALL services
-const allTicketsForSla = await prisma.tickets.findMany({
+const allTicketsForSla = await prisma.ticket.findMany({
   where: baseWhere,
   select: {
     status: true,
@@ -438,8 +435,8 @@ const slaStats = [
       const serviceBreakdown = await Promise.all(
         chefServices.map(async (service) => {
           const sWhere    = { service_id: service.id, ...dateFilter };
-          const sTotal    = await prisma.tickets.count({ where: sWhere });
-          const sResolved = await prisma.tickets.count({ where: { ...sWhere, status: 'resolved' } });
+          const sTotal    = await prisma.ticket.count({ where: sWhere });
+          const sResolved = await prisma.ticket.count({ where: { ...sWhere, status: 'resolved' } });
           return {
             id: service.id,
             name: service.name,
@@ -450,13 +447,13 @@ const slaStats = [
       );
 
       // 7. Technicians across ALL services
-      const techRaw = await prisma.users.findMany({
+      const techRaw = await prisma.user.findMany({
         where: { service_id: { in: serviceIds }, role: 'technician' },
         select: {
           name: true,
           surname: true,
           service_id: true,
-          tickets_tickets_assigned_toTousers: {
+          ticket_ticket_assigned_toTouser: {
             select: { status: true }
           }
         }
@@ -465,7 +462,7 @@ const slaStats = [
       const serviceMap = Object.fromEntries(chefServices.map(s => [s.id, s.name]));
 
       const techPerformance = techRaw.map(t => {
-        const tkts          = t.tickets_tickets_assigned_toTousers;
+        const tkts          = t.ticket_ticket_assigned_toTouser;
         const totalAssigned = tkts.length;
         const resolu        = tkts.filter(tk => tk.status === 'resolved').length;
         const rejete        = tkts.filter(tk => tk.status === 'rejected').length;
@@ -505,7 +502,7 @@ const slaStats = [
       let monthlyStats = [];
       if (month && year) {
         const daysInMonth = new Date(year, month, 0).getDate();
-        const dailyRaw = await prisma.tickets.findMany({
+        const dailyRaw = await prisma.ticket.findMany({
           where: baseWhere,
           select: { created_at: true }
         });
@@ -520,7 +517,7 @@ const slaStats = [
         }));
       } else {
         const targetYear = year || new Date().getFullYear();
-        const monthlyRaw = await prisma.tickets.findMany({
+        const monthlyRaw = await prisma.ticket.findMany({
           where: {
             service_id: { in: serviceIds },
             created_at: {
@@ -541,7 +538,7 @@ const slaStats = [
       }
 
       // 10. Available years for dropdown filter
-      const allTicketDates = await prisma.tickets.findMany({
+      const allTicketDates = await prisma.ticket.findMany({
         where: { service_id: { in: serviceIds } },
         select: { created_at: true }
       });

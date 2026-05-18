@@ -40,7 +40,7 @@
   "roles": {
     "technician": "Technician",
     "manager": "Manager",
-    "chef_service": "Service Manager",
+    "director": "Director",
     "employee": "Employee",
     "admin": "Administrator"
   }

@@ -238,7 +238,7 @@
       "service": "Service",
       "technician": "Technician",
       "redirectedAt": "Redirected on",
-      "reason": "Reason"
+      "reason": "Reason" 
     },
     "modal": {
       "title": "Ticket taken over by ",

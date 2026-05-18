@@ -92,7 +92,6 @@ function UsersPage() {
   const [error,          setError]          = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [services,       setServices]       = useState([]);
-  const [departments,    setDepartments]    = useState([]);
   const [successMsg,     setSuccessMsg]     = useState("");
 
   const [searchTerm,   setSearchTerm]   = useState("");
@@ -105,11 +104,9 @@ function UsersPage() {
       const [uRes, sRes, dRes] = await Promise.all([
         fetch("http://localhost:3001/api/users"),
         fetch("http://localhost:3001/api/users/services"),
-        fetch("http://localhost:3001/api/departments"),
       ]);
       if (uRes.ok) setUsers(await uRes.json());
       if (sRes.ok) setServices(await sRes.json());
-      if (dRes.ok) setDepartments(await dRes.json());
     } catch { setError(t("users.loadError")); }
     finally { setLoading(false); }
   }, [t]);
@@ -160,7 +157,7 @@ function UsersPage() {
     } catch (err) { setError(err.message); }
   };
 
-  const ROLES = ["employee", "technician", "chef_service", "manager", "admin"];
+  const ROLES = ["employee", "technician", "director", "manager", "admin"];
 
   const filteredUsers = useMemo(() => {
     const s = searchTerm.toLowerCase();
@@ -258,16 +255,15 @@ function UsersPage() {
         <UsersTable users={filteredUsers} onRowClick={setSelectedUser} />
       </div>
 
-      {/* Modals */}
-      {isAddModalOpen && (
-        <UserModal key="add" services={services} departments={departments}
-          setUser={setIsAddModalOpen} saveUser={addUser} mode="add" />
-      )}
-      {selectedUser && (
-        <UserModal key={selectedUser.id} services={services} departments={departments}
-          user={selectedUser} setUser={setSelectedUser}
-          saveUser={updateUser} toggleActive={toggleActive} mode="edit" />
-      )}
+{isAddModalOpen && (
+  <UserModal key="add" services={services}
+    setUser={setIsAddModalOpen} saveUser={addUser} mode="add" />
+)}
+{selectedUser && (
+  <UserModal key={selectedUser.id} services={services}
+    user={selectedUser} setUser={setSelectedUser}
+    saveUser={updateUser} toggleActive={toggleActive} mode="edit" />
+)}
 
       {/* Success toast */}
       {successMsg && <SuccessCard message={successMsg} onClose={() => setSuccessMsg("")} t={t} />}

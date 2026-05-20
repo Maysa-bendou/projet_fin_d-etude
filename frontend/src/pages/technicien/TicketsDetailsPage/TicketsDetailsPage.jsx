@@ -54,6 +54,8 @@ const TicketDetailPage = () => {
   const [taking, setTaking] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  // Add this state at the top with your other states (line ~54)
+const [localAssigned, setLocalAssigned] = useState(null);
 
   useEffect(() => {
     fetch(`http://localhost:3001/api/tickets/${id}`)
@@ -74,7 +76,18 @@ const TicketDetailPage = () => {
       if (response.ok) {
         const refreshed = await fetch(`http://localhost:3001/api/tickets/${id}`);
         const data = await refreshed.json();
-        setTicket(data);
+setTicket({
+  ...data,
+  technician: {
+    id: currentUser.id,
+    name: currentUser.name,
+    surname: currentUser.surname,
+  },
+  technicienId: currentUser.id,
+  assigned_action: "taken",
+});
+
+setLocalAssigned(currentUser.id);
         setShowModal(true);
       }
     } catch (err) {
@@ -181,9 +194,8 @@ const translateLegacyMsg = (msg) => {
 
   const tk = ticket;
   const employee = tk.employee || tk.user_ticket_created_byTouser;
-  const isAssigned = !!(tk.technician?.id || tk.technicienId);
-  const isAssignedToMe = (tk.technician?.id === currentUser?.id) || (tk.technicienId === currentUser?.id);
-
+const isAssigned = !!(tk.technician?.id || tk.technicienId || localAssigned);
+const isAssignedToMe = (tk.technician?.id === currentUser?.id) || (tk.technicienId === currentUser?.id) || (localAssigned === currentUser?.id);
   const calculateSLA = () => {
     if (!tk.sla_date_limite) return null;
     const PAUSED   = ["pending", "pending_supplier"];
@@ -467,7 +479,7 @@ const creationFiles = attachmentComments.flatMap(c => c.files ?? []);
                 </span>
               )}
 
-              {(tk.technician?.id || tk.technicienId) && (
+              {(tk.technician?.id || tk.technicienId || localAssigned) && (
                 <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
                   {tk.assigned_action === "taken" ? (
                     <>

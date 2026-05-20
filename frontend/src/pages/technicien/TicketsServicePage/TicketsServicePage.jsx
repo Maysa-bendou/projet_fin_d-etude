@@ -214,7 +214,7 @@ const fmtDate = makeFmtDate(tc("date.locale"), tc("date.long"));
   const tPriority = (key) => tc(`priority.${key}`, { defaultValue: key });
   const tCategory = (key) => tc(`category.${key}`, { defaultValue: key });
 
-  const technician = t.assignedTo || t.assignee || null;
+const technician = t.technician ?? t.assignedTo ?? null;
   const empName  = t.employee ? `${t.employee.name||""} ${t.employee.surname||""}`.trim()||null : t.employee_name||null;
   const empParts = t.employee ? { name:t.employee.name, surname:t.employee.surname } : { name:empName?.split(" ")[0], surname:empName?.split(" ")[1] };
   const techName = technician && typeof technician === "object" ? `${technician.name||""} ${technician.surname||""}`.trim()||null : null;
@@ -350,24 +350,28 @@ const TicketsServicePage = () => {
 
   const debouncedSearch = useDebounce(filterSearch, 220);
 
-  const fetchData = useCallback(async () => {
+const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const u = JSON.parse(localStorage.getItem("user")||"null");
-      const userServiceId = u?.serviceId||u?.service_id;
+      const userServiceId = u?.service_id ?? u?.serviceId ?? null;
+      console.log("🔑 user from localStorage:", u);
+      console.log("🔑 userServiceId resolved:", userServiceId);
+      if (!userServiceId) {
+        console.error("❌ serviceId is null — your login route is not saving service_id on the user object");
+        setLoading(false);
+        return;
+      }
       const [enumRes, ticketsRes] = await Promise.all([
         fetch("http://localhost:3001/api/tech/enums"),
-        fetch("http://localhost:3001/api/tickets"),
+        fetch(`http://localhost:3001/api/tickets/service/${userServiceId}`),
       ]);
       const enumData = await enumRes.json();
       setDbEnums(enumData);
       if (!ticketsRes.ok) throw new Error("Erreur tickets");
       const allTickets = await ticketsRes.json();
-      const filtered = userServiceId
-        ? allTickets.filter(t => (t.serviceId||t.service_id) === userServiceId)
-        : allTickets;
-      setTickets(filtered);
-      setServiceName(filtered[0]?.serviceName||"");
+      setTickets(allTickets);
+      setServiceName(allTickets[0]?.serviceName || u?.serviceName || "");
     } catch (err) {
       console.error("Erreur fetchData:", err);
     } finally {
@@ -376,6 +380,10 @@ const TicketsServicePage = () => {
   }, [serviceId, role]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+
+
+
 
   const { actuelsList, archivesList, archiveYears } = useMemo(() => {
     const actuals=[], archives=[];
@@ -392,7 +400,7 @@ const TicketsServicePage = () => {
 
   return list.filter(t => {
     const cat      = t.category || t.categorie || "";
-    const assigned = !!(t.assignedTo || t.assigned_to || t.assignee);
+    const assigned = !!(t.technician || t.assigned_to || t.technicienId);
 
    const month = isArchive ? getMonth(t.closed_at) : getMonth(t.created_at);
 

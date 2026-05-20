@@ -30,7 +30,14 @@ async function notifyEmployeeAssigned(employeeId, ticketId, ticketTitle, techNam
     message:  `Votre ticket "${ticketTitle}" a été assigné à ${techName}.`,
   });
 }
-
+async function notifyEmployeeTechTook(employeeId, ticketId, ticketTitle, techName) {
+  await createNotification({
+    userId: employeeId,
+    ticketId,
+    type: "taken",
+    message: `${techName} a pris en charge votre ticket "${ticketTitle}".`,
+  });
+}
 // Changement de statut
 async function notifyEmployeeStatusChanged(employeeId, ticketId, ticketTitle, newStatus) {
   const STATUS_FR = {
@@ -167,8 +174,8 @@ async function notifyManagerTechTook(managerId, ticketId, ticketTitle, techName)
   await createNotification({
     userId:   managerId,
     ticketId,
-    type:     "assigned",
-    message:  `${techName} a pris en charge le ticket "${ticketTitle}".`,
+type: "taken",
+message: `${techName} took charge of the ticket "${ticketTitle}".`,
   });
 }
 
@@ -226,6 +233,7 @@ module.exports = {
   // Manager
   notifyManagerNewTicket,
   notifyManagerTechTook,
+  notifyEmployeeTechTook,
   // Utilitaires
   notifyAllManagersOfService,
   notifyAllTechsOfService,

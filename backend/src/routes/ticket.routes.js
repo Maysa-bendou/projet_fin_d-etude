@@ -12,6 +12,7 @@ const {
   notifyAllTechsOfService,
   notifyTechAssigned,
   notifyEmployeeAssigned,
+  notifyEmployeeTechTook, 
   notifyTechTicketUpdated, 
 } = require("../controllers/notification.service");
 
@@ -54,15 +55,25 @@ const CATEGORY_SERVICE_MAP = {
   software:   1,  // IT Support
   network:    2,  // IT Network
   security:   3,  // IT Security
-  access:     5,  // Service Desk
+  access:     4,  // Service Desk
   
 };
 
 // ── POST /create ──────────────────────────────────────────────────────────
 router.post("/create", uploadCreate.array("files", 10), async (req, res) => {
   try {
-    const { title, description, impact, urgency, type, created_by } = req.body;
-    // ── ML classification ──────────────────────────────────────────────
+const { title, description, impact, urgency, type, created_by } = req.body;
+
+// ✅ Block non-employees from creating tickets
+const creator = await prisma.user.findUnique({
+  where: { id: parseInt(created_by) },
+  select: { role: true }
+});
+if (!creator || creator.role !== "employee") {
+  return res.status(403).json({ error: "Only employees can create tickets" });
+}
+
+// ── ML classification ──────────────────────────────────────────────
 let category = "access"; // safe default if ML fails
 
 try {
@@ -241,16 +252,72 @@ router.get("/assigned/:techId", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+// ── GET all tickets by service ────────────────────────────────────────────
+router.get("/service/:serviceId", async (req, res) => {
   try {
+    const serviceId = parseInt(req.params.serviceId);
+    if (!serviceId) return res.status(400).json({ error: "serviceId invalide" });
+
     const tickets = await prisma.ticket.findMany({
-      include: {
-        user_ticket_created_byTouser: true,
-        user_ticket_assigned_toTouser: true,
-        service: true,
+        where: {
+    service_id: serviceId,
+    user_ticket_created_byTouser: {  // ✅ add this
+      role: "employee"
+    }
+  },
+      select: {
+        id: true, title: true, category: true,
+        priority: true, status: true,
+        created_at: true, assigned_at: true, closed_at: true,
+        sla_date_limite: true, sla_date_debut: true,
+        sla_statut: true, sla_pause_elapsed_ms: true,
+        assigned_to: true,
+        user_ticket_created_byTouser:  { select: { name: true, surname: true } },
+        user_ticket_assigned_toTouser: { select: { id: true, name: true, surname: true } },
+        service: { select: { name: true } },
       },
       orderBy: { created_at: "desc" },
     });
+
+    res.json(tickets.map(t => ({
+      id:          t.id,
+      title:       t.title,
+      category:    t.category,
+      priority:    t.priority,
+      status:      t.status,
+      created_at:  t.created_at,
+      assigned_at: t.assigned_at,
+      closed_at:   t.closed_at,
+      sla_date_limite:      t.sla_date_limite,
+      sla_date_debut:       t.sla_date_debut,
+      sla_statut:           t.sla_statut,
+      sla_pause_elapsed_ms: t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null,
+      serviceName:  t.service?.name ?? null,
+      employee:     t.user_ticket_created_byTouser,
+      technician:   t.user_ticket_assigned_toTouser,
+      technicienId: t.assigned_to,
+    })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+const tickets = await prisma.ticket.findMany({
+  where: {
+    user_ticket_created_byTouser: {
+      role: "employee"  // ✅ add this
+    }
+  },
+  include: {
+    user_ticket_created_byTouser: true,
+    user_ticket_assigned_toTouser: true,
+    service: true,
+  },
+  orderBy: { created_at: "desc" },
+});
     const formatted = tickets.map((t) => ({
       id:              t.id,
       title:           t.title,
@@ -273,7 +340,7 @@ router.get("/", async (req, res) => {
       sla_statut:      t.sla_statut, 
       createdBy:       t.user_ticket_created_byTouser?.name,
       employee:        t.user_ticket_created_byTouser,
-      assignedTo: t.assignee,
+      assignedTo: t.user_ticket_assigned_toTouser,
       technicienId:    t.assigned_to,
     }));
     res.json(formatted);
@@ -430,7 +497,7 @@ assigned_by_manager:
         authorRole:   c.user?.role ?? "",
         authorId:     c.user?.id,
         date:         c.created_at,
-        files: (c.ticketAttachment ?? []).map(a => ({
+        files: (c.ticket_attachments  ?? []).map(a => ({
           fileName: a.file_name,
           filePath: a.file_path
             ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
@@ -619,7 +686,7 @@ router.put("/:id/assign", async (req, res) => {
     await prisma.message.create({
       data: {
         ticket_id:    ticketId,
-        user_id:      assigned_by || null,
+        user_id: action === "taken" ? techId : (assigned_by || null),
         comment:      action === "taken"
                         ? `technician_took_over:${techFullName}`
                         : `ticket_assigned:${techFullName}`,
@@ -634,13 +701,20 @@ router.put("/:id/assign", async (req, res) => {
         to_user_id:   techId,
         action:       action || "taken",
         reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
-        assigned_by:  assigned_by ? parseInt(assigned_by) : null,
+        assigned_by:
+  action === "taken"
+    ? techId
+    : (assigned_by ? parseInt(assigned_by) : null),
       },
     });
-
+console.log("assigned_to:", assigned_to);
+console.log("technicienId:", technicienId);
+console.log("techId:", techId);
+console.log("action:", action);
     if (action === "taken") {
       if (ticket.created_by) {
-        await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techFullName);
+       
+await notifyEmployeeTechTook(ticket.created_by, ticketId, ticket.title, techFullName);
       }
       const ticketFull = await prisma.ticket.findUnique({
         where: { id: ticketId },

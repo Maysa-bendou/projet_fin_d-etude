@@ -78,6 +78,7 @@ model ticket {
   assigned_at                   DateTime?            @db.Timestamp(6)
   sla_pause_elapsed_ms          BigInt?
   redirect_note                 String?
+  assigned_action               String?              @db.VarChar(50)
   message                       message[]
   notifications                 notifications[]
   user_ticket_assigned_toTouser user?                @relation("ticket_assigned_toTouser", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -151,7 +152,6 @@ enum category_enum {
   network
   access
   security
-  messagerie
 }
 
 enum impact_enum {

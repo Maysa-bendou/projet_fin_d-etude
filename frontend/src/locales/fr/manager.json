@@ -139,6 +139,7 @@
   },
 
   "ticketsService": {
+    "exportedBy": "Exporté par",
     "headerManage": "Gestion des tickets",
     "headerService": "Tickets du service",
     "allTickets": "Tous les tickets",
@@ -165,7 +166,9 @@
       "reset": "Réinitialiser",
       "count": "{{shown}} ticket{{shownPlural}} sur {{total}} total",
       "countSimple": "{{shown}} ticket{{shownPlural}}",
-      "monthAll": "mois"
+      "monthAll": "mois",
+      
+        "month": "Mois"
     },
     "cols": {
       "id": "ID",

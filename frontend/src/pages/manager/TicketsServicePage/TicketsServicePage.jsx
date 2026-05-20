@@ -15,6 +15,7 @@ import jsPDF from "jspdf";
 import RefreshButton from "../../../components/common/RefreshButton";
 import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
 import Pill from "../../../components/common/Pill";
+import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ const makeFmtDate = (locale, longFormat) => (str) => {
   const d = new Date(str);
   if (isNaN(d)) return "—";
   const day   = String(d.getDate());
-  const month = d.toLocaleString(locale, { month: "long" });
+  const month = d.toLocaleString(locale, { month: "short" });
   const year  = d.getFullYear();
   return (longFormat || "D MMMM YYYY")
     .replace("MMMM", month)
@@ -37,7 +38,7 @@ const makeFmtDate = (locale, longFormat) => (str) => {
 // FIX: locale-aware month list for the filter dropdown
 const makeMonths = (locale) =>
   Array.from({ length: 12 }, (_, i) =>
-    new Date(2024, i, 1).toLocaleString(locale, { month: "short" })
+    new Date(2024, i, 1).toLocaleString(locale, { month: "long" })
   );
 
 const getArchiveYear  = (t) => t.closed_at  ? new Date(t.closed_at).getFullYear()  : null;
@@ -376,9 +377,14 @@ const TicketsServicePage = () => {
   const tableRef = useRef(null);
   const [exporting, setExporting] = useState(false);
 
-  const { role, serviceId } = useMemo(() => {
+const { role, serviceId, managerName } = useMemo(() => {
     const u = JSON.parse(localStorage.getItem("user") || "null");
-    return { role: u?.role || "", serviceId: u?.serviceId || u?.service_id || null };
+    const fullName = u ? `${u.name || ""} ${u.surname || ""}`.trim() : "";
+    return {
+      role:        u?.role || "",
+      serviceId:   u?.serviceId || u?.service_id || null,
+      managerName: fullName || u?.username || u?.email || "",
+    };
   }, []);
 
   const [tickets,     setTickets]     = useState([]);
@@ -476,21 +482,19 @@ const TicketsServicePage = () => {
   }, []);
 
   // ── Export PDF ─────────────────────────────────────────────────────────
-  const exportPDF = useCallback(async () => {
+const exportPDF = useCallback(async () => {
     if (!tableRef.current) return;
     setExporting(true);
     try {
       const wrapperEl = tableRef.current;
 
       // ── 1. Deep-clone the table into a hidden off-screen container
-      //       that has NO width constraint → browser lays it out at full
-      //       natural width so every column (incl. ASSIGNED) is rendered.
       const offscreen = document.createElement("div");
       offscreen.style.cssText = [
         "position:fixed",
         "top:0",
-        "left:-99999px",        // off-screen, not clipped
-        "width:max-content",    // expand to fit all columns
+        "left:-99999px",
+        "width:max-content",
         "min-width:100vw",
         "background:#ffffff",
         "z-index:-1",
@@ -499,30 +503,25 @@ const TicketsServicePage = () => {
       ].join(";");
 
       const clone = wrapperEl.cloneNode(true);
-      // Remove any overflow/width constraints from the clone itself
-      clone.style.overflow  = "visible";
-      clone.style.overflowX = "visible";
-      clone.style.overflowY = "visible";
-      clone.style.width     = "max-content";
-      clone.style.minWidth  = "unset";
-      clone.style.maxWidth  = "unset";
+      clone.style.overflow     = "visible";
+      clone.style.overflowX    = "visible";
+      clone.style.overflowY    = "visible";
+      clone.style.width        = "max-content";
+      clone.style.minWidth     = "unset";
+      clone.style.maxWidth     = "unset";
       clone.style.borderRadius = "0";
 
-      // Also remove scroll containers inside the clone
       clone.querySelectorAll("*").forEach(child => {
         const cs = window.getComputedStyle(child);
-        if (cs.overflowX === "auto" || cs.overflowX === "scroll" ||
-            cs.overflowX === "hidden") {
+        if (cs.overflowX === "auto" || cs.overflowX === "scroll" || cs.overflowX === "hidden") {
           child.style.overflowX = "visible";
           child.style.width     = "max-content";
         }
-        if (cs.overflowY === "auto" || cs.overflowY === "scroll" ||
-            cs.overflowY === "hidden") {
+        if (cs.overflowY === "auto" || cs.overflowY === "scroll" || cs.overflowY === "hidden") {
           child.style.overflowY = "visible";
         }
       });
 
-      // Force table inside clone to auto layout so all columns expand for capture
       clone.querySelectorAll("table").forEach(tbl => {
         tbl.style.width       = "max-content";
         tbl.style.minWidth    = "100%";
@@ -535,13 +534,12 @@ const TicketsServicePage = () => {
       offscreen.appendChild(clone);
       document.body.appendChild(offscreen);
 
-      // Wait one frame for the browser to paint the clone at full width
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
       const fullW = offscreen.scrollWidth;
       const fullH = offscreen.scrollHeight;
 
-      // ── 2. Capture the off-screen clone (no viewport clipping)
+      // ── 2. Capture the off-screen clone
       const canvas = await html2canvas(offscreen, {
         scale: 2,
         useCORS: true,
@@ -556,7 +554,7 @@ const TicketsServicePage = () => {
         y: 0,
       });
 
-      // ── 3. Get row boundaries from the CLONE (not the live DOM)
+      // ── 3. Get row boundaries from the clone
       const cloneRect = clone.getBoundingClientRect();
       const allRows   = Array.from(clone.querySelectorAll("thead tr, tbody tr"));
       const rowBands  = allRows.map(row => {
@@ -570,29 +568,36 @@ const TicketsServicePage = () => {
       // ── 4. Remove the off-screen clone
       document.body.removeChild(offscreen);
 
-      // ── 5. Build the PDF
+      // ── 5. Pre-load logo — compute dimensions inside onload so they are never NaN
+      const { logoDataUrl, logoW, logoH } = await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const c = document.createElement("canvas");
+          c.width  = img.naturalWidth;
+          c.height = img.naturalHeight;
+          c.getContext("2d").drawImage(img, 0, 0);
+          const dataUrl = c.toDataURL("image/png");
+          const h = 18;
+          const w = (img.naturalWidth / img.naturalHeight) * h;
+          resolve({ logoDataUrl: dataUrl, logoW: w, logoH: h });
+        };
+        img.onerror = () => resolve({ logoDataUrl: null, logoW: 0, logoH: 0 });
+        img.src = djezzyLogoImg;
+      });
+
+      // ── 6. Build the PDF
       const margin  = 24;
-      const headerH = 32;
+      const headerH = 55;
       const pdf     = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
       const pdfW    = pdf.internal.pageSize.getWidth();
       const pdfH    = pdf.internal.pageSize.getHeight();
       const usableW = pdfW - margin * 2;
       const usableH = pdfH - margin * 2 - headerH;
 
-      // Scale factor: canvas pixels → PDF px  (canvas is scale:2)
       const imgW  = canvas.width / 2;
       const ratio = usableW / imgW;
 
-      const activeFilters = [];
-      if (filterStatus)     activeFilters.push(tStatus(filterStatus));
-      if (filterCategory)   activeFilters.push(tCategory(filterCategory));
-      if (filterAssignment) activeFilters.push(filterAssignment === "assigned" ? t("ticketsService.filters.assigned") : t("ticketsService.filters.unassigned"));
-      if (filterMonth)      activeFilters.push(MONTHS_LOC[parseInt(filterMonth)]);
-      if (filterYear)       activeFilters.push(String(filterYear));
-      if (filterSearch)     activeFilters.push(`"${filterSearch}"`);
-      const filterText = activeFilters.length ? activeFilters.join(" · ") : "—";
-
-      let pageNum = 1;
       const totalPages = (() => {
         let curY = 0; let pages = 1;
         for (const band of rowBands) {
@@ -604,26 +609,60 @@ const TicketsServicePage = () => {
       })();
 
       const drawHeader = (pNum) => {
+        // ── Logo (top-left, correct aspect ratio)
+        if (logoDataUrl) {
+          pdf.addImage(logoDataUrl, "PNG", margin, margin - 4, logoW, logoH);
+        }
+
+        // ── Line 1: title (indented past logo) + ticket count (right)
         pdf.setFontSize(13);
         pdf.setTextColor(15, 23, 42);
         pdf.setFont(undefined, "bold");
         const title = serviceName
           ? `${t("ticketsService.service")} ${serviceName}`
           : t("ticketsService.allTickets");
-        pdf.text(title, margin, margin + 4);
+        const titleX = logoDataUrl ? margin + logoW + 10 : margin;
+        pdf.text(title, titleX, margin + 10);
+        pdf.text(
+          `${displayedTickets.length} ticket${displayedTickets.length !== 1 ? "s" : ""}${totalPages > 1 ? `  ${pNum}/${totalPages}` : ""}`,
+          pdfW - margin, margin + 10, { align: "right" }
+        );
+
+        // ── Separator line (black, sits below logo + title)
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, margin + 22, pdfW - margin, margin + 22);
+
+        // ── Line 2: Exported by + Date
         pdf.setFontSize(8.5);
         pdf.setFont(undefined, "normal");
         pdf.setTextColor(100, 116, 139);
-        pdf.text(filterText, margin, margin + 16);
-        pdf.text(
-          `${displayedTickets.length} ticket${displayedTickets.length !== 1 ? "s" : ""}${totalPages > 1 ? `   ${pNum}/${totalPages}` : ""}`,
-          pdfW - margin, margin + 4, { align: "right" }
-        );
+        const exportedAt = new Date().toLocaleString(dateLocale, {
+          day: "numeric", month: "long", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
+        });
+        pdf.text(`${t("ticketsService.exportedBy")}: ${managerName || "—"}`, margin, margin + 30);
+        pdf.text(`Date: ${exportedAt}`, pdfW - margin, margin + 30, { align: "right" });
+
+        // ── Line 3: Active filters evenly spaced
+        const filters = [];
+        if (filterStatus)     filters.push(`${t("ticketsService.cols.status")}: ${tStatus(filterStatus)}`);
+        if (filterCategory)   filters.push(`${t("ticketsService.cols.category")}: ${tCategory(filterCategory)}`);
+        if (filterAssignment) filters.push(`${t("ticketsService.cols.technician")}: ${filterAssignment === "assigned" ? t("ticketsService.filters.assigned") : t("ticketsService.filters.unassigned")}`);
+        if (filterMonth)      filters.push(`Month: ${MONTHS_LOC[parseInt(filterMonth)]}`);
+
+        if (filters.length > 0) {
+          const step = (pdfW - margin * 2) / filters.length;
+          filters.forEach((f, i) => {
+            pdf.text(f, margin + i * step, margin + 42);
+          });
+        }
       };
 
       drawHeader(1);
 
       let cursorY = 0;
+      let pageNum = 1;
 
       for (const band of rowBands) {
         const rowH       = band.bottom - band.top;
@@ -636,7 +675,6 @@ const TicketsServicePage = () => {
           cursorY = 0;
         }
 
-        // Slice this row out of the full canvas
         const sliceCanvas  = document.createElement("canvas");
         sliceCanvas.width  = canvas.width;
         sliceCanvas.height = Math.ceil(rowH * 2);
@@ -662,17 +700,17 @@ const TicketsServicePage = () => {
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+
     } catch (err) {
       console.error("PDF export error:", err);
-      // Clean up offscreen div if something went wrong
       document.querySelectorAll("div[style*='-99999px']").forEach(n => n.remove());
     } finally {
       setExporting(false);
     }
-  }, [tableRef, displayedTickets, serviceName, filterStatus, filterCategory, filterAssignment, filterMonth, filterYear, filterSearch, MONTHS_LOC, t, tStatus, tCategory]);
-
-  // ── Loading ────────────────────────────────────────────────────────────
-
+  }, [tableRef, displayedTickets, serviceName, filterStatus, filterCategory, filterAssignment, filterMonth, filterYear, filterSearch, MONTHS_LOC, t, tc, tStatus, tCategory, managerName, dateLocale]);
+  
+  
+  
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#faf9f7" }}>
       <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>

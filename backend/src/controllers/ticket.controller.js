@@ -21,8 +21,8 @@ const getMyTickets = async (req, res) => {
       id:       t.id,
       title:    t.title,
       service:  t.service?.name || "N/A",
-      technicien: t.assignee
-        ? `${t.assignee.name || ""} ${t.assignee.surname || ""}`.trim()
+      technicien: t.user_ticket_assigned_toTouser
+        ? `${t.user_ticket_assigned_toTouser.name || ""} ${t.user_ticket_assigned_toTouser.surname || ""}`.trim()
         : "Non assigné",
       status:   t.status,
       priority: t.priority,

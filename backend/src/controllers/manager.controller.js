@@ -51,17 +51,20 @@ const getManagerStats = async (req, res) => {
     const allCategories = dbCategories.map(r => r.enumlabel);
 
     // 3. Performance per Technician (filtered by date)
-    const techPerformanceRaw = await prisma.user.findMany({
-      where: { service_id: sId, role: 'technician' },
-      select: {
-        name: true,
-        surname: true,
-        ticket_ticket_assigned_toTouser: {
-          where: Object.keys(dateFilter).length ? dateFilter : undefined,
-          select: { status: true },
-        }
-      }
-    });
+const techPerformanceRaw = await prisma.user.findMany({
+  where: { service_id: sId, role: 'technician' },
+  select: {
+    name: true,
+    surname: true,
+    ticket_ticket_assigned_toTouser: {
+      where: {
+        service_id: sId,          // ✅ ajouter filtre service
+        ...dateFilter              // ✅ ajouter filtre date
+      },
+      select: { status: true },
+    }
+  }
+});
 
     const techPerformance = techPerformanceRaw.map(t => {
       const tickets = t.ticket_ticket_assigned_toTouser;
@@ -135,90 +138,18 @@ const dateTo = filterYear
   ? new Date(filterYear, filterMonth ? filterMonth : 12, 0, 23, 59, 59)
   : new Date('2099-12-31');
 
-// DÉPASSÉ — resolved & closed
-const overdueResolvedRaw = await prisma.$queryRaw`
-  SELECT COUNT(*)::int AS count FROM ticket
-  WHERE service_id = ${sId}
-    AND status IN ('resolved', 'closed')
-    AND sla_date_limite IS NOT NULL
-    AND sla_date_debut IS NOT NULL
-    AND (COALESCE(closed_at, updated_at) - created_at) > (sla_date_limite - sla_date_debut)
-    AND created_at >= ${dateFrom} AND created_at <= ${dateTo}
-`;
+const overdueCount = await prisma.ticket.count({
+  where: {
+    service_id: sId,
+    sla_date_limite: { lt: now },
+    status: { notIn: ['resolved', 'closed', 'rejected'] },
+    ...dateFilter
+  }
+});
 
-// DÉPASSÉ — rejected
-const overdueRejectedRaw = await prisma.$queryRaw`
-  SELECT COUNT(*)::int AS count FROM ticket
-  WHERE service_id = ${sId}
-    AND status = 'rejected'
-    AND sla_date_limite IS NOT NULL
-    AND sla_date_debut IS NOT NULL
-    AND (COALESCE(closed_at, updated_at) - created_at) > (sla_date_limite - sla_date_debut)
-    AND created_at >= ${dateFrom} AND created_at <= ${dateTo}
-`;
-
-// DÉPASSÉ — still active (open, in_progress, pending, pending_supplier)
-const overdueActiveRaw = await prisma.$queryRaw`
-  SELECT COUNT(*)::int AS count FROM ticket
-  WHERE service_id = ${sId}
-    AND status NOT IN ('resolved', 'closed', 'rejected')
-    AND sla_date_limite IS NOT NULL
-    AND sla_date_debut IS NOT NULL
-    AND (${now}::timestamptz - created_at) > (sla_date_limite - sla_date_debut)
-    AND created_at >= ${dateFrom} AND created_at <= ${dateTo}
-`;
-
-const overdueCount = Number(overdueResolvedRaw[0]?.count ?? 0)
-                   + Number(overdueRejectedRaw[0]?.count ?? 0)
-                   + Number(overdueActiveRaw[0]?.count ?? 0);
-
-// RESPECTÉ — resolved & closed
-const slaOkResolvedRaw = await prisma.$queryRaw`
-  SELECT COUNT(*)::int AS count FROM ticket
-  WHERE service_id = ${sId}
-    AND status IN ('resolved', 'closed')
-    AND sla_date_limite IS NOT NULL
-    AND sla_date_debut IS NOT NULL
-    AND (COALESCE(closed_at, updated_at) - created_at) <= (sla_date_limite - sla_date_debut)
-    AND created_at >= ${dateFrom} AND created_at <= ${dateTo}
-`;
-
-// RESPECTÉ — rejected
-const slaOkRejectedRaw = await prisma.$queryRaw`
-  SELECT COUNT(*)::int AS count FROM ticket
-  WHERE service_id = ${sId}
-    AND status = 'rejected'
-    AND sla_date_limite IS NOT NULL
-    AND sla_date_debut IS NOT NULL
-    AND (COALESCE(closed_at, updated_at) - created_at) <= (sla_date_limite - sla_date_debut)
-    AND created_at >= ${dateFrom} AND created_at <= ${dateTo}
-`;
-
-// RESPECTÉ — still active
-const slaOkActiveRaw = await prisma.$queryRaw`
-  SELECT COUNT(*)::int AS count FROM ticket
-  WHERE service_id = ${sId}
-    AND status NOT IN ('resolved', 'closed', 'rejected')
-    AND sla_date_limite IS NOT NULL
-    AND sla_date_debut IS NOT NULL
-    AND (${now}::timestamptz - created_at) <= (sla_date_limite - sla_date_debut)
-    AND created_at >= ${dateFrom} AND created_at <= ${dateTo}
-`;
-
-const slaIn = Number(slaOkResolvedRaw[0]?.count ?? 0)
-            + Number(slaOkRejectedRaw[0]?.count ?? 0)
-            + Number(slaOkActiveRaw[0]?.count ?? 0);
-
-            
-    // 8. Taux de résolution GLOBAL (tous les services, filtered)
-    const globalTotal = await prisma.ticket.count({
-      where: { ...dateFilter }
-    });
-    const globalResolved = await prisma.ticket.count({
-      where: { status: 'resolved', ...dateFilter }
-    });
-    const globalResolutionRate = globalTotal > 0 ? Math.round((globalResolved / globalTotal) * 100) : 0;
-
+// ✅ slaIn = tout le reste
+const slaIn = totalTickets - overdueCount;
+          
     // 9. Tickets by Type (filtered)
     const typeStatsRaw = await prisma.ticket.groupBy({
       by: ['type'],
@@ -304,9 +235,7 @@ const slaIn = Number(slaOkResolvedRaw[0]?.count ?? 0)
       totalTickets,
       resolvedCount,
       resolutionRate: serviceResolutionRate,
-      globalResolutionRate,
-      globalTotal,
-      globalResolved,
+
       slaStats: [
         { name: 'Respecté', value: slaIn },
         { name: 'Dépassé', value: overdueCount }

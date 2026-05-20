@@ -43,7 +43,7 @@ const getDashboardData = async (req, res) => {
 
       // ── Stats cards ──────────────────────────────────────────────────────
       // Statuts "actifs" (non fermés / non rejetés)
-      const ACTIVE_STATUSES = ['open', 'in_progress', 'pending', 'pending_supplier', 'resolved'];
+      const ACTIVE_STATUSES = [ 'in_progress', 'pending', 'pending_supplier', 'resolved'];
       const CLOSED_STATUSES  = ['closed', 'rejected', 'resolved'];
 
       const [

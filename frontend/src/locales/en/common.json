@@ -14,8 +14,7 @@
     "software": "Software",
     "network": "Network",
     "access": "Access",
-    "security": "Security",
-    "messagerie": "Messaging"
+    "security": "Security"
   },
 
 "urgency": {
@@ -111,5 +110,6 @@
 "type": {
   "service_request": "Service Request",
   "problem": "Problem"
-}
+},
+"exportedBy": "Exported by {{name}} · {{date}}"
 }

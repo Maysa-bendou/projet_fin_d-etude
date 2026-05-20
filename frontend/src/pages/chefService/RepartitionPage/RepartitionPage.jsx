@@ -568,7 +568,16 @@ if (selectedMonth) {
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={stats.techPerformance} barCategoryGap="30%" barGap={3}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }} interval={0} />
+<XAxis
+  dataKey="name"
+  axisLine={false}
+  tickLine={false}
+  interval={0}
+  tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }}
+  angle={-45}
+  textAnchor="end"
+  height={80}
+/>
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
               <Bar dataKey="resolu" name={t('table.resolved')} fill="#10b981" radius={[5, 5, 0, 0]} maxBarSize={22}>
                 <LabelList content={<BarTopLabel />} />

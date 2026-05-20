@@ -21,7 +21,7 @@ const makeFmtDate = (locale, longFormat) => (str) => {
   const d = new Date(str);
   if (isNaN(d)) return "—";
   const day   = String(d.getDate());
-  const month = d.toLocaleString(locale, { month: "long" });
+  const month = d.toLocaleString(locale, { month: "short" });
   const year  = d.getFullYear();
   return (longFormat || "D MMMM YYYY")
     .replace("D", day)

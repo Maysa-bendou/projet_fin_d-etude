@@ -119,7 +119,7 @@ if (loading) return (
             <div style={{ marginTop: 12 }}>
               <InfoRow icon={MdWork}   label={t("fields.jobTitle")}   value={user.job_title}  iconColor="#8d1212" />
               <InfoRow icon={MdDomain} label={t("fields.department")} value={user.department} iconColor="#0ea5e9" />
-              {(user.role === "technician" || user.role === "manager" || user.role === "director") && (
+              {(user.role === "technician" || user.role === "manager" ) && (
                 <InfoRow icon={MdBadge} label={t("fields.service")} value={user.service?.name} iconColor="#7c3aed" />
               )}
             </div>

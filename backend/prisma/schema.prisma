@@ -151,7 +151,6 @@ enum category_enum {
   network
   access
   security
-  messagerie
 }
 
 enum impact_enum {

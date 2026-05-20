@@ -99,7 +99,7 @@ const makeFmtDate = (locale) => (str) => {
 };
 
 const isArchived = (t) => {
-  const terminal = ["Résolu", "Fermé", "Rejeté"];
+  const terminal = ["Fermé", "Rejeté"];
   if (!terminal.includes(t.statut)) return false;
   const ref = t.closedAt || t.createdAt;
   if (!ref) return false;

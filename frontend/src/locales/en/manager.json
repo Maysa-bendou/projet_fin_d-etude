@@ -139,6 +139,7 @@
   },
 
   "ticketsService": {
+          "exportedBy": "Exported by",
     "headerManage": "Ticket Management",
     "headerService": "Service Tickets",
     "allTickets": "All Tickets",
@@ -165,7 +166,8 @@
       "reset": "Reset",
       "count": "{{shown}} ticket{{shownPlural}} of {{total}} total",
       "countSimple": "{{shown}} ticket{{shownPlural}}",
-      "monthAll": "months"
+      "monthAll": "months",
+        "month": "Month"
     },
     "cols": {
       "id": "ID",

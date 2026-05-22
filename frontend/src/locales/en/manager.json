@@ -52,7 +52,6 @@
     "title": "Analytics & Performance",
     "managerView": "Manager View",
     "loading": "Loading dashboard...",
-
     "kpi": {
       "total": "Total Tickets",
       "serviceRate": "Resolution Rate",
@@ -69,47 +68,57 @@
       "allPeriods": "All periods",
       "reset": "Reset"
     },
-
-    "export": {
-      "excel": "Excel",
-      "pdf": "PDF Report",
-      "reportTitle": "Performance Report",
-      "period": "Period",
-      "indicator": "Indicator",
-      "value": "Value",
-      "count": "Count",
-      "totalService": "Total Tickets (Service)",
-      "resolutionService": "Resolution Rate (Service)",
-      "resolutionGlobal": "Resolution Rate (Global)",
-      "slaIn": "Tickets Within SLA",
-      "slaOut": "Tickets Outside SLA"
-    },
-
-    "sheets": {
-      "statuses": "Statuses",
-      "technicians": "Technicians",
-      "priorities": "Priorities",
-      "trends": "Trends"
-    },
-
+"sheets": {
+  "statuses":    "Statuses",
+  "technicians": "Technicians",
+  "priorities":  "Priorities",
+  "trends":      "Trends",
+  "categories":  "Categories",
+  "types":       "Types",
+  "urgency":     "Urgency",
+  "impact":      "Impact"
+},
+"export": {
+  "excel":              "Excel",
+  "pdf":                "PDF Report",
+  "reportTitle":        "Performance Report",
+  "period":             "Period",
+  "indicator":          "Indicator",
+  "value":              "Value",
+  "count":              "Count",
+  "month":              "Month",
+  "totalService":       "Total Tickets (Service)",
+  "resolutionService":  "Resolution Rate (Service)",
+  "resolutionGlobal":   "Resolution Rate (Global)",
+  "slaIn":              "Tickets Within SLA",
+  "slaOut":             "Tickets Outside SLA",
+  "status":   "Status",
+"category": "Category",
+"priority": "Priority",
+"type":     "Type",
+"urgency":  "Urgency",
+"impact":   "Impact"
+},
     "sections": {
       "teamEfficiency": "Team Efficiency",
       "fluxDistribution": "Ticket Distribution",
       "categoryDistribution": "Distribution by Category",
       "timeTrends": "Time Trends"
     },
-
-    "charts": {
-      "workVolume": "Workload by Technician",
-      "currentStatus": "Current Ticket Status",
-      "typeDistribution": "Distribution by Type",
-      "ticketsByCategory": "Tickets by Category",
-      "dailyEvolution": "Daily Evolution",
-      "monthlyEvolution": "Monthly Evolution",
-      "avg": "Avg",
-      "total": "Total",
-      "priorityDistribution": "Distribution by Priority"
-    },
+"charts": {
+  "workVolume":              "Workload by Technician",
+  "currentStatus":           "Current Ticket Status",
+  "typeDistribution":        "Distribution by Type",
+  "ticketsByCategory":       "Tickets by Category",
+  "dailyEvolution":          "Daily Evolution",
+  "monthlyEvolution":        "Monthly Evolution",
+  "avg":                     "Avg",
+  "total":                   "Total",
+  "priorityDistribution":    "Distribution by Priority",
+  "categoryDistribution":    "Distribution by Category",
+  "urgencyDistribution":     "Distribution by Urgency",
+  "impactDistribution":      "Distribution by Impact"
+},
 
     "techDetail": {
       "title": "Technician Details",

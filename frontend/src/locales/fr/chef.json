@@ -93,31 +93,40 @@
     "weak":      "< 40% Faible"
   },
 
-  "pdf": {
-    "reportTitle":        "Rapport de Performance",
-    "period":             "Période",
-    "indicator":          "Indicateur",
-    "value":              "Valeur",
-    "totalTickets":       "Total Tickets (Service)",
-    "resolutionRate":     "Taux de Résolution (Service)",
-    "slaIn":              "Tickets Dans SLA",
-    "slaOut":             "Tickets Hors SLA",
-    "slaConform":         "SLA Conformes",
-    "slaExceeded":        "SLA Dépassés",
-    "techPerf":           "Performance Techniciens",
-    "reportFile":         "Rapport",
-    "resolvedTickets":    "Tickets Résolus"
-  },
+"pdf": {
+  "reportTitle":    "Rapport de Performance",
+  "period":         "Période",
+  "indicator":      "Indicateur",
+  "value":          "Valeur",
+  "count":          "Nombre",
+  "month":          "Mois",
+  "day":            "Jour",
+  "ticketCount":    "Tickets",
+  "status":         "Statut",
+  "type":           "Type",
+  "category":       "Catégorie",
+  "priority":       "Priorité",
+  "totalTickets":   "Total Tickets (Service)",
+  "resolutionRate": "Taux de Résolution (Service)",
+  "slaIn":          "Tickets Dans les Délais SLA",
+  "slaOut":         "Tickets Hors Délais SLA",
+  "slaConform":     "SLA Conforme",
+  "slaExceeded":    "SLA Dépassé",
+  "techPerf":       "Performance des Techniciens",
+  "reportFile":     "Rapport",
+  "resolvedTickets":"Tickets Résolus"
+},
 
-  "excel": {
-    "statuses":     "Statuts",
-    "technicians":  "Techniciens",
-    "priorities":   "Priorités",
-    "trends":       "Tendances",
-    "statsFile":    "Stats",
-    "services":     "Services"
-  },
-
+"excel": {
+  "statuses":    "Statuts",
+  "technicians": "Techniciens",
+  "priorities":  "Priorités",
+  "trends":      "Tendances",
+  "types":       "Types",
+  "categories":  "Catégories",
+  "statsFile":   "Statistiques",
+  "services":    "Services"
+},
   "global": {
     "header": {
       "subtitle": "directeur  · Tous les services"

@@ -189,8 +189,13 @@
       "emptySubtitle": "Ajustez vos filtres ou ajoutez un nouveau membre."
     },
     "modal": {
-          "role": "Rôle",   
-    "department":        "Département", 
+      "required": "obligatoire",
+"emailExists": "Cet email existe déjà",
+"unexpectedError": "Une erreur inattendue s'est produite",
+"service": "Service",
+      "missingFields": "Champs obligatoires manquants",
+      "role": "Rôle",   
+      "department":        "Département", 
       "titleAdd":        "Ajouter un utilisateur",
       "titleEdit":       "Détails de l'utilisateur",
       "surname":         "Prénom",

@@ -187,8 +187,13 @@
       "emptySubtitle": "Adjust your filters or add a new member."
     },
     "modal": {
-  "role":       "Role",
-  "department": "Department",
+      "required": "required",
+"emailExists": "This email already exists",
+"unexpectedError": "An unexpected error occurred",
+"service": "Service",
+      "missingFields": "Missing required fields",
+      "role":       "Role",
+      "department": "Department",
       "titleAdd":        "Add user",
       "titleEdit":       "User details",
       "surname":         "First name",

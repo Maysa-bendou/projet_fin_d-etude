@@ -4,6 +4,9 @@ import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import djezzyLogoImg from "../../assets/images/djezzy-logo.png";
 
+const _preloadedLogo = new Image();
+_preloadedLogo.src = djezzyLogoImg;
+
 export default function LoginPage() {
   const { t } = useTranslation("login");
   const [email, setEmail] = useState("");

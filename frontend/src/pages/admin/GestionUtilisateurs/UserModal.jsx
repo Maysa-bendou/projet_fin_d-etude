@@ -5,7 +5,7 @@ import { HiOutlineXMark } from "react-icons/hi2";
 const ROLE_AVATAR = {
   employee:     { bg: "#fce7f3", color: "#9d174d", border: "#fecaca" },
   technician:   { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  chef_service: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
+  director: { bg: "#f0fdf4", color: "#16a34a", border: "#bbf7d0" },
   manager:      { bg: "#f3f4f6", color: "#374151", border: "#e5e7eb" },
   admin:        { color: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
 };
@@ -101,7 +101,7 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
     </label>
   );
 
-  const ROLES = ["employee", "technician", "chef_service", "manager", "admin"];
+  const ROLES = ["employee", "technician", "director", "manager", "admin"];
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }}>
@@ -178,15 +178,17 @@ function UserModal({ user = {}, setUser, saveUser, toggleActive, mode, services 
             </div>
           </div>
 
-          <div>
-            <Label fieldKey="department">{t("users.modal.department")}</Label>
-            <select name="department" value={form.department} onChange={handleChange}
-              style={{ ...inputStyle("department"), cursor: isEditing ? "pointer" : "default", appearance: "none" }}
-              disabled={!isEditing}>
-              <option value="">{t("users.modal.selectDepartment")}</option>
-              {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-            </select>
-          </div>
+<div>
+  <Label fieldKey="department">{t("users.modal.department")}</Label>
+  <input
+    name="department"
+    value={form.department}
+    onChange={handleChange}
+    style={inputStyle("department")}
+    disabled={!isEditing}
+    placeholder={t("users.modal.departmentPlaceholder")}
+  />
+</div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>

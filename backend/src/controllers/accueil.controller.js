@@ -9,13 +9,13 @@ const getDashboardData = async (req, res) => {
     /* ─────────────── EMPLOYEE ─────────────── */
     if (userRole === 'employee') {
       const [total, resolved, open, in_progress] = await Promise.all([
-        prisma.tickets.count({ where: { created_by: userId } }),
-        prisma.tickets.count({ where: { created_by: userId, status: 'resolved' } }),
-        prisma.tickets.count({ where: { created_by: userId, status: 'open' } }),
-        prisma.tickets.count({ where: { created_by: userId, status: 'in_progress' } }),
+        prisma.ticket.count({ where: { created_by: userId } }),
+        prisma.ticket.count({ where: { created_by: userId, status: 'resolved' } }),
+        prisma.ticket.count({ where: { created_by: userId, status: 'open' } }),
+        prisma.ticket.count({ where: { created_by: userId, status: 'in_progress' } }),
       ]);
 
-      const ticketList = await prisma.tickets.findMany({
+      const ticketList = await prisma.ticket.findMany({
         where:   { created_by: userId },
         orderBy: { updated_at: 'desc' },
         select: {
@@ -25,7 +25,7 @@ const getDashboardData = async (req, res) => {
           status:     true,
           created_at: true,
           updated_at: true,
-          services: { select: { name: true } },
+          service: { select: { name: true } },
         },
       });
 
@@ -43,7 +43,7 @@ const getDashboardData = async (req, res) => {
 
       // ── Stats cards ──────────────────────────────────────────────────────
       // Statuts "actifs" (non fermés / non rejetés)
-      const ACTIVE_STATUSES = ['open', 'in_progress', 'pending', 'pending_supplier', 'resolved'];
+      const ACTIVE_STATUSES = [ 'in_progress', 'pending', 'pending_supplier', 'resolved'];
       const CLOSED_STATUSES  = ['closed', 'rejected', 'resolved'];
 
       const [
@@ -53,7 +53,7 @@ const getDashboardData = async (req, res) => {
         totalActive,    // total "vivant" : open + in_progress + pending + pending_supplier + resolved
       ] = await Promise.all([
         // En retard
-        prisma.tickets.count({
+        prisma.ticket.count({
           where: {
             assigned_to:     userId,
             sla_date_limite: { lt: now },
@@ -61,18 +61,18 @@ const getDashboardData = async (req, res) => {
           },
         }),
         // En cours
-        prisma.tickets.count({
+        prisma.ticket.count({
           where: { assigned_to: userId, status: 'in_progress' },
         }),
         // En attente (pending + pending_supplier)
-        prisma.tickets.count({
+        prisma.ticket.count({
           where: {
             assigned_to: userId,
             status:      { in: ['pending', 'pending_supplier'] },
           },
         }),
         // Total actif (résolu + en cours + attente + open)
-        prisma.tickets.count({
+        prisma.ticket.count({
           where: {
             assigned_to: userId,
             status:      { in: ACTIVE_STATUSES },
@@ -81,7 +81,7 @@ const getDashboardData = async (req, res) => {
       ]);
 
       // ── Graphe priorité : on exclut closed et rejected ───────────────────
-      const priorityCounts = await prisma.tickets.groupBy({
+      const priorityCounts = await prisma.ticket.groupBy({
         by:    ['priority'],
         where: {
           assigned_to: userId,
@@ -110,7 +110,7 @@ const getDashboardData = async (req, res) => {
           EXTRACT(MONTH FROM assigned_at)::int AS month,
           status,
           COUNT(*)::int AS cnt
-        FROM tickets
+        FROM ticket
         WHERE assigned_to = ${userId}
           AND assigned_at >= ${yearStart}
           AND assigned_at < ${new Date(now.getFullYear() + 1, 0, 1)}
@@ -134,7 +134,7 @@ const getDashboardData = async (req, res) => {
 
       // ── Graphe catégories : filtré par service du technicien ──────────────
       // Récupérer le service_id du technicien
-      const techUser = await prisma.users.findUnique({
+      const techUser = await prisma.user.findUnique({
         where:  { id: userId },
         select: { service_id: true },
       });
@@ -145,7 +145,7 @@ const getDashboardData = async (req, res) => {
         ...(techUser?.service_id && { service_id: techUser.service_id }),
       };
 
-      const categoryCounts = await prisma.tickets.groupBy({
+      const categoryCounts = await prisma.ticket.groupBy({
         by:    ['category'],
         where: categoryFilter,
         _count: { id: true },
@@ -167,13 +167,13 @@ const getDashboardData = async (req, res) => {
       })).sort((a, b) => b.value - a.value);
 
       // ── 5 tickets récemment assignés + leur dernière activité ────────────
-      const top5Tickets = await prisma.tickets.findMany({
+      const top5Tickets = await prisma.ticket.findMany({
         where:   { assigned_to: userId, assigned_at: { not: null } },
         orderBy: { assigned_at: 'desc' },
         take:    5,
         select: {
           id: true, title: true, priority: true, status: true, assigned_at: true,
-          ticket_comments: {
+          message: {
             orderBy: { created_at: 'desc' },
             take: 1,
             where: { comment_type: { in: ['status','confirm','solution','info','reopen','assigned'] } },
@@ -190,10 +190,10 @@ const getDashboardData = async (req, res) => {
         priority:    t.priority,
         status:      t.status,
         assigned_at: t.assigned_at,
-        lastActivity: t.ticket_comments[0] ? {
-          type:  t.ticket_comments[0].comment_type,
-          label: ACT_LABEL[t.ticket_comments[0].comment_type] || t.ticket_comments[0].comment?.slice(0,40),
-          date:  t.ticket_comments[0].created_at,
+        lastActivity: t.message[0] ? {
+          type:  t.message[0].comment_type,
+          label: ACT_LABEL[t.message[0].comment_type] || t.message[0].comment?.slice(0,40),
+          date:  t.message[0].created_at,
         } : null,
       }));
 

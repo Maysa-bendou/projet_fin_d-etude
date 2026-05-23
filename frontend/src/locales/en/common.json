@@ -14,8 +14,7 @@
     "software": "Software",
     "network": "Network",
     "access": "Access",
-    "security": "Security",
-    "messagerie": "Messaging"
+    "security": "Security"
   },
 
 "urgency": {
@@ -84,26 +83,33 @@
 },
 "history": {
   "technicianTookOver": "Technician {{name}} took charge of the ticket",
+"ticketAssigned":     "Ticket assigned to technician {{name}} by the manager",
   "statusChanged": "Status changed to: {{status}}",
   "confirmationRequested": "Resolution confirmation requested from employee",
-  "ticketClosed": "Ticket closed manually by technician",
   "ticketClosedWithNote": "Ticket closed. Note: {{note}}",
-"ticketRedirected": "Redirected by {{by}}",
+  "ticketRedirected": "Redirected by {{by}}",
   "employeeConfirmed": "Employee confirmed the resolution",
   "employeeRejected": "Employee reported the problem persists",
   "employeeUpdated": "Updated by employee: {{detail}}",
+  "ticketClosed": "Ticket closed manually by technician: {{name}}",
+  "employeeReopened": "Ticket reopened by employee: {{name}}",
+  "internalNote": "Internal note added by {{name}}",
+  "solutionProposed": "Solution proposed by technician: {{name}}",
+  "ticketCreated": "Ticket created by employee: {{name}}",
+  "ticketReassigned": "Ticket reassigned from {{from}} to {{to}}",
+  "employeeReply": "Employee replied: {{detail}}",
+  "technicianReply": "Technician replied: {{detail}}",
   "changes": {
     "title_changed": "Title modified",
     "description_changed": "Description modified",
     "impact_changed": "Impact: {{from}} → {{to}}",
     "urgency_changed": "Urgency: {{from}} → {{to}}",
     "status_changed": "Status: {{from}} → {{to}}"
-  },
-  "ticketAssigned": "Ticket assigned to a technician",
-    "employeeReopened": "Ticket reopened by employee"
+  }
 },
 "type": {
   "service_request": "Service Request",
   "problem": "Problem"
-}
+},
+"exportedBy": "Exported by {{name}} · {{date}}"
 }

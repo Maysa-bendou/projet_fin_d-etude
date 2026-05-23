@@ -94,11 +94,10 @@ const TicketDetailPage = () => {
 
   const handleAssign = async () => {
     if (!selectedTech) return;
-    const isUpdating = !!(ticket?.technician?.id);
     const res = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ technicienId: selectedTech.id, action: isUpdating ? "updated" : "assigned", assigned_by: user.id }),
+      body: JSON.stringify({ technicienId: selectedTech.id, action: "assigned", assigned_by: user.id }),
     });
    if (res.ok) {
   setShowList(false);
@@ -149,7 +148,7 @@ const TicketDetailPage = () => {
   );
 
   const tk = ticket;
-  const employee    = tk.employee || tk.users_tickets_created_byTousers;
+  const employee    = tk.employee || tk.user_ticket_created_byTouser;
   const assignedTech = tk.technician || null;
   const isAssigned  = !!(assignedTech?.id);
   const isTerminal  = ["resolved", "closed", "rejected"].includes(tk.status);
@@ -176,7 +175,7 @@ const TicketDetailPage = () => {
 
   const modalStyle = { position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.18)", backdropFilter: "blur(3px)" };
   const modalBox   = { background: "#fff", borderRadius: 14, border: "0.5px solid #e8e8e8", maxWidth: 380, width: "100%", overflow: "hidden" };
-const attachmentComments = (tk.comments ?? []).filter(c => c.comment_type === "attachment");
+const attachmentComments = (tk.message ?? []).filter(c => c.comment_type === "attachment");
 const creationFiles = attachmentComments.flatMap(c => c.files ?? []);
   return (
     <div style={{ fontFamily: " sans-serif", minHeight: "100vh"}}>

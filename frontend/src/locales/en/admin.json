@@ -88,7 +88,7 @@
       "roles": {
         "employee":    "Employee",
         "technician":  "Technician",
-        "chef_service":"Head of Service",
+        "director": "Director",
         "manager":     "Manager",
         "admin":       "Administrator"
       },
@@ -171,7 +171,7 @@
       "technician": "Technician",
       "manager":    "Manager",
       "admin":      "Admin",
-      "chef_service":       "Chef"
+      "director": "Director"
     },
     "table": {
       "id":            "ID",
@@ -187,8 +187,13 @@
       "emptySubtitle": "Adjust your filters or add a new member."
     },
     "modal": {
-  "role":       "Role",
-  "department": "Department",
+      "required": "required",
+"emailExists": "This email already exists",
+"unexpectedError": "An unexpected error occurred",
+"service": "Service",
+      "missingFields": "Missing required fields",
+      "role":       "Role",
+      "department": "Department",
       "titleAdd":        "Add user",
       "titleEdit":       "User details",
       "surname":         "First name",
@@ -206,7 +211,8 @@
       "save":            "Save",
       "edit":            "Edit",
       "activate":        "Activate",
-      "deactivate":      "Deactivate"
+      "deactivate":      "Deactivate",
+      "departmentPlaceholder": "Enter department name"
     }
   },
   "adminTickets": {
@@ -234,6 +240,7 @@
     "roles": {
       "employee":   "employee",
       "technician": "technician",
+       "director":   "director",
       "manager":    "manager",
       "admin":      "admin"
     },

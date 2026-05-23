@@ -14,8 +14,7 @@
     "software": "Logiciel",
     "network": "Réseau",
     "access": "Accès",
-    "security": "Sécurité",
-    "messagerie": "Messagerie"
+    "security": "Sécurité"
   },
 
 "urgency": {
@@ -83,27 +82,34 @@
   "loading": "Actualisation…"
 },
 "history": {
+  "technicianTookOver": "Le technicien {{name}} a pris en charge le ticket",
+"ticketAssigned":     "Ticket assigné au technicien {{name}} par le manager",
   "statusChanged": "Statut changé en : {{status}}",
-  "confirmationRequested": "Demande de confirmation envoyée à l'employé",
-  "ticketClosed": "Ticket fermé manuellement par le technicien",
+  "confirmationRequested": "Demande de confirmation de résolution envoyée à l'employé",
   "ticketClosedWithNote": "Ticket fermé. Note : {{note}}",
-"ticketRedirected": "Redirigé par {{by}} ",
-  "employeeConfirmed": "Employé a confirmé la résolution",
-  "employeeRejected": "Employé a signalé que le problème persiste",
-"technicianTookOver": "Le technicien {{name}} a pris en charge le ticket",
-  "employeeUpdated": "Modifié par l'employé : {{detail}}",
-"changes": {
-  "title_changed": "Titre modifié",
-  "description_changed": "Description modifiée",
-  "impact_changed": "Impact : {{from}} → {{to}}",
-  "urgency_changed": "Urgence : {{from}} → {{to}}",
-  "status_changed": "Statut : {{from}} → {{to}}"
-},
-  "ticketAssigned": "Ticket assigné à un technicien",
-    "employeeReopened": "Ticket réouvert par l'employé"
+  "ticketRedirected": "Redirigé par {{by}}",
+  "employeeConfirmed": "L'employé a confirmé la résolution",
+  "employeeRejected": "L'employé a signalé que le problème persiste",
+  "employeeUpdated": "Mis à jour par l'employé : {{detail}}",
+  "ticketClosed": "Ticket fermé manuellement par le technicien : {{name}}",
+  "employeeReopened": "Ticket réouvert par l'employé : {{name}}",
+  "internalNote": "Note interne ajoutée par {{name}}",
+  "solutionProposed": "Solution proposée par le technicien : {{name}}",
+  "ticketCreated": "Ticket créé par l'employé : {{name}}",
+  "ticketReassigned": "Ticket réassigné de {{from}} à {{to}}",
+  "employeeReply": "Réponse de l'employé : {{detail}}",
+  "technicianReply": "Réponse du technicien : {{detail}}",
+  "changes": {
+    "title_changed": "Titre modifié",
+    "description_changed": "Description modifiée",
+    "impact_changed": "Impact : {{from}} → {{to}}",
+    "urgency_changed": "Urgence : {{from}} → {{to}}",
+    "status_changed": "Statut : {{from}} → {{to}}"
+  }
 },
 "type": {
   "service_request": "Demande de service",
   "problem": "Problème"
-}
+},
+"exportedBy": "Exporté par {{name}} · {{date}}"
 }

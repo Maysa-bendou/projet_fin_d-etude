@@ -39,7 +39,6 @@ export default function SidebarAdmin() {
   const { t } = useTranslation("sidbar");
 
 
-  {/* { icon: Layers,   label: t("admin.departments"), path: "/admin/departements" },  */}
   const menuItems = [
     { 
       icon: Users, 

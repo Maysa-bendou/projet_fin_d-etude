@@ -14,6 +14,10 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
 import { MdCalendarMonth, MdCalendarViewMonth ,MdOutlineInfo } from 'react-icons/md';
+import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
+
+const _preloadedLogo = new Image();
+_preloadedLogo.src = djezzyLogoImg;
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -243,96 +247,306 @@ export default function ChefPerformancesPage() {
   }, [selectedYear, selectedMonth, t, MONTHS]);
 
   // ── Export PDF ────────────────────────────────────────────────────────────
-  const exportPDF = () => {
-    if (!stats) return;
-    const doc = new jsPDF('p', 'pt', 'a4');
-    doc.setFontSize(20);
-    doc.text(t('global.pdf.reportTitle'), 40, 50);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`${t('pdf.period')} : ${filterLabel}`, 40, 72);
-    autoTable(doc, {
-      startY: 90,
-      head: [[t('pdf.indicator'), t('pdf.value')]],
-      body: [
-        [t('global.pdf.totalAllServices'),      stats.totalTickets],
-        [t('global.pdf.resolutionAllServices'),  `${stats.resolutionRate}%`],
-        [t('pdf.resolvedTickets'),               stats.resolvedCount],
-        [t('pdf.slaIn'),                         stats.slaStats[0].value],
-        [t('pdf.slaOut'),                        stats.slaStats[1].value],
-      ],
-      theme: 'striped'
-    });
-    if (stats.serviceBreakdown?.length) {
-      doc.text(t('section.servicePerformance'), 40, doc.lastAutoTable.finalY + 30);
-      autoTable(doc, {
-        startY: doc.lastAutoTable.finalY + 40,
-        head: [[t('table.service'), t('table.totalTickets'), t('table.resolutionRate')]],
-        body: stats.serviceBreakdown.map(s => [s.name, s.totalTickets, `${s.resolutionRate}%`]),
-        headStyles: { fillColor: [99, 102, 241] }
-      });
+const exportPDF = async () => {
+  if (!stats) return;
+  const RED = [180, 25, 25];
+  const doc = new jsPDF('p', 'pt', 'a4');
+  const pageW = doc.internal.pageSize.getWidth();
+  const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+  const MARGIN = 40;
+
+  // ── Logo + Title on one line ──
+let titleX = 40;
+try {
+  await new Promise((resolve) => {
+    if (_preloadedLogo.complete) {
+      const logoH = 32;
+      const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
+      doc.addImage(_preloadedLogo, 'PNG', 40, 28, logoW, logoH);
+      titleX = 40 + logoW + 12;
+      resolve();
+    } else {
+      _preloadedLogo.onload = () => {
+        const logoH = 32;
+        const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
+        doc.addImage(_preloadedLogo, 'PNG', 40, 28, logoW, logoH);
+        titleX = 40 + logoW + 12;
+        resolve();
+      };
+      _preloadedLogo.onerror = () => resolve();
     }
-    doc.text(t('pdf.techPerf'), 40, doc.lastAutoTable.finalY + 30);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 40,
-      head: [[t('table.technician'), t('table.service'), t('table.assigned'), t('table.resolved'), t('table.rejected'), t('table.resolutionRate')]],
-      body: stats.techPerformance.map(tech => [tech.name, tech.serviceName || '', tech.totalAssigned, tech.resolu, tech.rejete, `${tech.resolutionRate}%`]),
-      headStyles: { fillColor: [99, 102, 241] }
-    });
-    doc.text(t('chart.currentStatus'), 40, doc.lastAutoTable.finalY + 30);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 40,
-      head: [[t('table.status'), t('table.count')]],
-      // Use translated status names in PDF export
-      body: translatedStatusStats.map(s => [s.displayName, s.value]),
-    });
-    doc.save(`${t('global.pdf.reportFile')}_${filterLabel.replace(/\s/g, '_')}.pdf`);
+  });
+} catch (_) { /* skip logo */ }
+  doc.setFontSize(18);
+  doc.setTextColor(...RED);
+  doc.setFont(undefined, 'bold');
+  doc.text(t('global.pdf.reportTitle'), titleX, 50);
+
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${t('pdf.period')} : ${filterLabel}`, 40, 72);
+
+  // ── Section title helper ──
+  const sectionTitle = (label, y) => {
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...RED);
+    doc.text(label, 40, y);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(60, 60, 60);
   };
 
-  // ── Export Excel ──────────────────────────────────────────────────────────
-  const exportExcel = () => {
-    if (!stats) return;
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
-      { [t('pdf.indicator')]: t('global.pdf.totalAllServices'),     [t('pdf.value')]: stats.totalTickets },
-      { [t('pdf.indicator')]: t('global.pdf.resolutionAllServices'), [t('pdf.value')]: `${stats.resolutionRate}%` },
-      { [t('pdf.indicator')]: t('pdf.resolvedTickets'),              [t('pdf.value')]: stats.resolvedCount },
-      { [t('pdf.indicator')]: t('pdf.slaConform'),                   [t('pdf.value')]: stats.slaStats[0].value },
-      { [t('pdf.indicator')]: t('pdf.slaExceeded'),                  [t('pdf.value')]: stats.slaStats[1].value },
-      { [t('pdf.indicator')]: t('pdf.period'),                       [t('pdf.value')]: filterLabel },
-    ]), "KPIs");
-    if (stats.serviceBreakdown?.length) {
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-        stats.serviceBreakdown.map(s => ({
-          [t('table.service')]:        s.name,
-          [t('table.totalTickets')]:   s.totalTickets,
-          [t('table.resolutionRate')]: `${s.resolutionRate}%`
-        }))
-      ), t('excel.services'));
-    }
-    // Use translated status names in Excel export
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      translatedStatusStats.map(s => ({ name: s.displayName, value: s.value }))
-    ), t('excel.statuses'));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      stats.techPerformance.map(tech => ({
-        [t('table.technician')]:     tech.name,
-        [t('table.service')]:        tech.serviceName || '',
-        [t('table.assigned')]:       tech.totalAssigned,
-        [t('table.resolved')]:       tech.resolu,
-        [t('table.rejected')]:       tech.rejete,
-        [t('table.resolutionRate')]: `${tech.resolutionRate}%`
-      }))
-    ), t('excel.technicians'));
-    // Use translated priority names in Excel export
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      translatedPriorityStats.map(p => ({ name: p.displayName, value: p.value }))
-    ), t('excel.priorities'));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-      sortedMonthlyStats.map(m => ({ month: m.displayMonth, value: m.value }))
-    ), t('excel.trends'));
-    XLSX.writeFile(wb, `${t('global.excel.statsFile')}_${filterLabel.replace(/\s/g, '_')}.xlsx`);
+  const tableDefaults = {
+    theme: 'striped',
+    headStyles: { fillColor: RED, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 9 },
+    alternateRowStyles: { fillColor: [255, 245, 245] },
+    margin: { left: 40, right: 40 },
   };
+
+  // ── helper: ensure enough space before each section ──
+  const ensureSpace = (neededHeight) => {
+    const currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 160;
+    if (currentY + neededHeight > PAGE_HEIGHT - 40) {
+      doc.addPage();
+      return MARGIN + 20;
+    }
+    return currentY + 40;
+  };
+
+  // ── 1. KPIs ──
+  sectionTitle(t('pdf.indicator'), 92);
+  autoTable(doc, {
+    ...tableDefaults,
+    startY: 100,
+    head: [[t('pdf.indicator'), t('pdf.value')]],
+    body: [
+      [t('global.pdf.totalAllServices'),     stats.totalTickets],
+      [t('global.pdf.resolutionAllServices'), `${stats.resolutionRate}%`],
+      [t('pdf.resolvedTickets'),              stats.resolvedCount],
+      [t('pdf.slaIn'),                        stats.slaStats[0].value],
+      [t('pdf.slaOut'),                       stats.slaStats[1].value],
+      [t('pdf.period'),                       filterLabel],
+    ],
+  });
+
+  // ── 2. Service Breakdown ──
+  if (stats.serviceBreakdown?.length) {
+    const y = ensureSpace(60);
+    sectionTitle(t('section.servicePerformance'), y);
+    autoTable(doc, {
+      ...tableDefaults,
+      startY: y + 10,
+      head: [[t('table.service'), t('table.totalTickets'), t('table.resolutionRate')]],
+      body: stats.serviceBreakdown.map(s => [s.name, s.totalTickets, `${s.resolutionRate}%`]),
+    });
+  }
+
+  // ── 3. Technician Performance ──
+  if (stats.techPerformance?.length) {
+    const y = ensureSpace(60);
+    sectionTitle(t('pdf.techPerf'), y);
+    autoTable(doc, {
+      ...tableDefaults,
+      startY: y + 10,
+      head: [[t('table.technician'), t('table.service'), t('table.assigned'), t('table.resolved'), t('table.rejected'), t('table.resolutionRate')]],
+      body: stats.techPerformance.map(tech => [
+        tech.name, tech.serviceName || '—', tech.totalAssigned, tech.resolu, tech.rejete, `${tech.resolutionRate}%`
+      ]),
+    });
+  }
+
+  // ── 4. Status Distribution ──
+  if (translatedStatusStats?.length) {
+    const y = ensureSpace(60);
+    sectionTitle(t('chart.currentStatus'), y);
+    autoTable(doc, {
+      ...tableDefaults,
+      startY: y + 10,
+      head: [[t('pdf.status'), t('pdf.value')]],
+      body: translatedStatusStats.map(s => [s.displayName, s.value]),
+    });
+  }
+
+  // ── 5. Type Distribution ──
+  if (translatedTypeStats?.length) {
+    const y = ensureSpace(60);
+    sectionTitle(t('chart.typeDistribution'), y);
+    autoTable(doc, {
+      ...tableDefaults,
+      startY: y + 10,
+      head: [[t('pdf.type'), t('pdf.value'), '%']],
+      body: translatedTypeStats.map(s => [s.displayName, s.value, `${s.percentage}%`]),
+    });
+  }
+
+  // ── 6. Category Distribution ──
+  if (translatedCategoryStats?.length) {
+    const y = ensureSpace(60);
+    sectionTitle(t('global.section.categoryAll'), y);
+    autoTable(doc, {
+      ...tableDefaults,
+      startY: y + 10,
+      head: [[t('pdf.category'), t('pdf.value')]],
+      body: translatedCategoryStats.map(c => [c.displayName, c.value]),
+    });
+  }
+
+  // ── 7. Priority Distribution ──
+  if (translatedPriorityStats?.length) {
+    const y = ensureSpace(60);
+    sectionTitle(t('chart.priorityDistribution'), y);
+    autoTable(doc, {
+      ...tableDefaults,
+      startY: y + 10,
+      head: [[t('pdf.priority'), t('pdf.value')]],
+      body: translatedPriorityStats.map(p => [p.displayName, p.value]),
+    });
+  }
+
+  // ── 8. Monthly / Daily Trend ──
+  if (sortedMonthlyStats?.length) {
+    const y = ensureSpace(60);
+    sectionTitle(
+      selectedMonth ? t('chart.dailyEvolution') : t('chart.monthlyEvolution'),
+      y
+    );
+    autoTable(doc, {
+      ...tableDefaults,
+      startY: y + 10,
+      head: [[selectedMonth ? t('pdf.day') : t('pdf.month'), t('pdf.ticketCount')]],
+      body: sortedMonthlyStats.map(m => [m.displayMonth, m.value]),
+    });
+  }
+
+  // ── Page numbers ──
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(8);
+    doc.setTextColor(160);
+    doc.text(`${p} / ${totalPages}`, pageW - 40, PAGE_HEIGHT - 20, { align: 'right' });
+  }
+
+  doc.save(`${t('global.pdf.reportFile')}_${filterLabel.replace(/\s/g, '_')}.pdf`);
+};
+
+  // ── Export Excel ──────────────────────────────────────────────────────────
+const exportExcel = () => {
+  if (!stats) return;
+  const RED_HEX = 'B41919';
+  const wb = XLSX.utils.book_new();
+
+  const styleHeaders = (ws, headers) => {
+    headers.forEach((_, ci) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: ci });
+      if (!ws[cellRef]) return;
+      ws[cellRef].s = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: RED_HEX } },
+        alignment: { horizontal: 'center' },
+      };
+    });
+  };
+
+  // ── 1. KPIs ──
+  const kpiH = [t('pdf.indicator'), t('pdf.value')];
+  const wsKpi = XLSX.utils.json_to_sheet([
+    { [kpiH[0]]: t('global.pdf.totalAllServices'),     [kpiH[1]]: stats.totalTickets },
+    { [kpiH[0]]: t('global.pdf.resolutionAllServices'), [kpiH[1]]: `${stats.resolutionRate}%` },
+    { [kpiH[0]]: t('pdf.resolvedTickets'),              [kpiH[1]]: stats.resolvedCount },
+    { [kpiH[0]]: t('pdf.slaIn'),                        [kpiH[1]]: stats.slaStats[0].value },
+    { [kpiH[0]]: t('pdf.slaOut'),                       [kpiH[1]]: stats.slaStats[1].value },
+    { [kpiH[0]]: t('pdf.period'),                       [kpiH[1]]: filterLabel },
+  ]);
+  styleHeaders(wsKpi, kpiH);
+  XLSX.utils.book_append_sheet(wb, wsKpi, 'KPIs');
+
+  // ── 2. Service Breakdown ──
+  if (stats.serviceBreakdown?.length) {
+    const h = [t('table.service'), t('table.totalTickets'), t('table.resolutionRate')];
+    const ws = XLSX.utils.json_to_sheet(
+      stats.serviceBreakdown.map(s => ({
+        [h[0]]: s.name,
+        [h[1]]: s.totalTickets,
+        [h[2]]: `${s.resolutionRate}%`,
+      }))
+    );
+    styleHeaders(ws, h);
+    XLSX.utils.book_append_sheet(wb, ws, t('excel.services'));
+  }
+
+  // ── 3. Technician Performance ──
+  if (stats.techPerformance?.length) {
+    const h = [t('table.technician'), t('table.service'), t('table.assigned'), t('table.resolved'), t('table.rejected'), t('table.resolutionRate')];
+    const ws = XLSX.utils.json_to_sheet(
+      stats.techPerformance.map(tech => ({
+        [h[0]]: tech.name,
+        [h[1]]: tech.serviceName || '—',
+        [h[2]]: tech.totalAssigned,
+        [h[3]]: tech.resolu,
+        [h[4]]: tech.rejete,
+        [h[5]]: `${tech.resolutionRate}%`,
+      }))
+    );
+    styleHeaders(ws, h);
+    XLSX.utils.book_append_sheet(wb, ws, t('excel.technicians'));
+  }
+
+  // ── 4. Status Distribution ──
+  if (translatedStatusStats?.length) {
+    const h = [t('pdf.status'), t('pdf.value')];
+    const ws = XLSX.utils.json_to_sheet(
+      translatedStatusStats.map(s => ({ [h[0]]: s.displayName, [h[1]]: s.value }))
+    );
+    styleHeaders(ws, h);
+    XLSX.utils.book_append_sheet(wb, ws, t('excel.statuses'));
+  }
+
+  // ── 5. Type Distribution ──
+  if (translatedTypeStats?.length) {
+    const h = [t('pdf.type'), t('pdf.value'), '%'];
+    const ws = XLSX.utils.json_to_sheet(
+      translatedTypeStats.map(s => ({ [h[0]]: s.displayName, [h[1]]: s.value, '%': `${s.percentage}%` }))
+    );
+    styleHeaders(ws, h);
+    XLSX.utils.book_append_sheet(wb, ws, t('excel.types') || 'Types');
+  }
+
+  // ── 6. Category Distribution ──
+  if (translatedCategoryStats?.length) {
+    const h = [t('pdf.category'), t('pdf.value')];
+    const ws = XLSX.utils.json_to_sheet(
+      translatedCategoryStats.map(c => ({ [h[0]]: c.displayName, [h[1]]: c.value }))
+    );
+    styleHeaders(ws, h);
+    XLSX.utils.book_append_sheet(wb, ws, t('excel.categories') || 'Catégories');
+  }
+
+  // ── 7. Priority Distribution ──
+  if (translatedPriorityStats?.length) {
+    const h = [t('pdf.priority'), t('pdf.value')];
+    const ws = XLSX.utils.json_to_sheet(
+      translatedPriorityStats.map(p => ({ [h[0]]: p.displayName, [h[1]]: p.value }))
+    );
+    styleHeaders(ws, h);
+    XLSX.utils.book_append_sheet(wb, ws, t('excel.priorities'));
+  }
+
+  // ── 8. Monthly / Daily Trend ──
+  if (sortedMonthlyStats?.length) {
+    const trendKey = selectedMonth ? (t('pdf.day') || 'Jour') : (t('pdf.month') || 'Mois');
+    const h = [trendKey, t('pdf.ticketCount') || 'Tickets'];
+    const ws = XLSX.utils.json_to_sheet(
+      sortedMonthlyStats.map(m => ({ [h[0]]: m.displayMonth, [h[1]]: m.value }))
+    );
+    styleHeaders(ws, h);
+    XLSX.utils.book_append_sheet(wb, ws, t('excel.trends'));
+  }
+
+  XLSX.writeFile(wb, `${t('global.excel.statsFile')}_${filterLabel.replace(/\s/g, '_')}.xlsx`);
+};
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (!stats && loading) return (

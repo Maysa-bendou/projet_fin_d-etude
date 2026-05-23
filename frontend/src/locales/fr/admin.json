@@ -89,7 +89,7 @@
       "roles": {
         "employee":    "Employé",
         "technician":  "Technicien",
-        "chef_service":"Chef de service",
+        "director": "directeur",
         "manager":     "Manager",
         "admin":       "Administrateur"
       },
@@ -173,7 +173,7 @@
       "technician": "Technicien",
       "manager":    "Manager",
       "admin":      "Admin",
-      "chef_service":       "Chef"
+      "director": "directeur"
     },
     "table": {
       "id":            "ID",
@@ -189,8 +189,13 @@
       "emptySubtitle": "Ajustez vos filtres ou ajoutez un nouveau membre."
     },
     "modal": {
-          "role": "Rôle",   
-    "department":        "Département", 
+      "required": "obligatoire",
+"emailExists": "Cet email existe déjà",
+"unexpectedError": "Une erreur inattendue s'est produite",
+"service": "Service",
+      "missingFields": "Champs obligatoires manquants",
+      "role": "Rôle",   
+      "department":        "Département", 
       "titleAdd":        "Ajouter un utilisateur",
       "titleEdit":       "Détails de l'utilisateur",
       "surname":         "Prénom",
@@ -208,7 +213,8 @@
       "save":            "Enregistrer",
       "edit":            "Modifier",
       "activate":        "Activer",
-      "deactivate":      "Désactiver"
+      "deactivate":      "Désactiver",
+      "departmentPlaceholder": "Entrer le nom de département"
     }
   },
   "adminTickets": {
@@ -236,6 +242,7 @@
     "roles": {
       "employee":   "employé",
       "technician": "technicien",
+       "director":   "directeur",
       "manager":    "manager",
       "admin":      "admin"
     },

@@ -9,14 +9,14 @@ import {
 // ─── Role keys only (no labels here — labels come from i18n) ───────────────
 const ROLE_PATH = {
   technician: "technician", technicien: "technician",
-  manager: "manager", chef_service: "chef",
+  manager: "manager", director: "director",
   employee: "employee", admin: "admin",
 };
 
 // Role key → i18n translation key
 const ROLE_I18N_KEY = {
   technician: "roles.technician", technicien: "roles.technician",
-  manager: "roles.manager", chef_service: "roles.chef_service",
+  manager: "roles.manager", director: "roles.director",
   employee: "roles.employee", admin: "roles.admin",
 };
 
@@ -296,6 +296,7 @@ export default function TopNavbar({ pageTitle = "" }) {
             )}
           </div>
 
+          {rolePath !== "director" && rolePath !== "admin" && <>
           <div className="w-[1px] h-8 bg-slate-100 mx-1" />
 
           {/* ── Notifications ── */}
@@ -374,8 +375,9 @@ export default function TopNavbar({ pageTitle = "" }) {
                   )}
                 </div>
               </div>
-            )}
+)}
           </div>
+          </>}
 
           <div className="w-[1px] h-8 bg-slate-100 mx-1" />
 

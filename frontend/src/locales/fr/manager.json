@@ -70,46 +70,57 @@
       "reset": "Réinitialiser"
     },
 
-    "export": {
-      "excel": "Excel",
-      "pdf": "Rapport PDF",
-      "reportTitle": "Rapport de performance",
-      "period": "Période",
-      "indicator": "Indicateur",
-      "value": "Valeur",
-      "count": "Nombre",
-      "totalService": "Total tickets (service)",
-      "resolutionService": "Taux de résolution (service)",
-      "resolutionGlobal": "Taux de résolution (global)",
-      "slaIn": "Tickets dans les délais SLA",
-      "slaOut": "Tickets hors délais SLA"
-    },
-
-    "sheets": {
-      "statuses": "Statuts",
-      "technicians": "Techniciens",
-      "priorities": "Priorités",
-      "trends": "Tendances"
-    },
-
     "sections": {
       "teamEfficiency": "Efficacité de l'équipe",
       "fluxDistribution": "Répartition des tickets",
       "categoryDistribution": "Répartition par catégorie",
       "timeTrends": "Tendances temporelles"
     },
-
-    "charts": {
-      "workVolume": "Charge par technicien",
-      "currentStatus": "Statut actuel des tickets",
-      "typeDistribution": "Répartition par type",
-      "ticketsByCategory": "Tickets par catégorie",
-      "dailyEvolution": "Évolution journalière",
-      "monthlyEvolution": "Évolution mensuelle",
-      "avg": "Moy.",
-      "total": "Total",
-      "priorityDistribution": "Répartition par priorité"
-    },
+"sheets": {
+  "statuses":    "Statuts",
+  "technicians": "Techniciens",
+  "priorities":  "Priorités",
+  "trends":      "Tendances",
+  "categories":  "Catégories",
+  "types":       "Types",
+  "urgency":     "Urgence",
+  "impact":      "Impact"
+},
+"export": {
+  "excel":              "Excel",
+  "pdf":                "Rapport PDF",
+  "reportTitle":        "Rapport de Performance",
+  "period":             "Période",
+  "indicator":          "Indicateur",
+  "value":              "Valeur",
+  "count":              "Nombre",
+  "month":              "Mois",
+  "totalService":       "Total Tickets (Service)",
+  "resolutionService":  "Taux de résolution (Service)",
+  "resolutionGlobal":   "Taux de résolution (Global)",
+  "slaIn":              "Tickets dans les délais",
+  "slaOut":             "Tickets hors délais",
+  "status":   "Statut",
+"category": "Catégorie",
+"priority": "Priorité",
+"type":     "Type",
+"urgency":  "Urgence",
+"impact":   "Impact"
+},
+"charts": {
+  "workVolume":              "Charge de travail par technicien",
+  "currentStatus":           "Statut actuel des tickets",
+  "typeDistribution":        "Répartition par type",
+  "ticketsByCategory":       "Tickets par catégorie",
+  "dailyEvolution":          "Évolution journalière",
+  "monthlyEvolution":        "Évolution mensuelle",
+  "avg":                     "Moy",
+  "total":                   "Total",
+  "priorityDistribution":    "Répartition par priorité",
+  "categoryDistribution":    "Répartition par catégorie",
+  "urgencyDistribution":     "Répartition par urgence",
+  "impactDistribution":      "Répartition par impact"
+},
 
     "techDetail": {
       "title": "Détail des techniciens",
@@ -139,6 +150,7 @@
   },
 
   "ticketsService": {
+    "exportedBy": "Exporté par",
     "headerManage": "Gestion des tickets",
     "headerService": "Tickets du service",
     "allTickets": "Tous les tickets",
@@ -165,7 +177,9 @@
       "reset": "Réinitialiser",
       "count": "{{shown}} ticket{{shownPlural}} sur {{total}} total",
       "countSimple": "{{shown}} ticket{{shownPlural}}",
-      "monthAll": "mois"
+      "monthAll": "mois",
+      
+        "month": "Mois"
     },
     "cols": {
       "id": "ID",

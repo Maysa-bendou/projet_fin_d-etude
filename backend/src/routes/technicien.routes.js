@@ -41,7 +41,7 @@ router.get("/techniciens",                 getAllTechniciens);
 router.get("/techniciens/service/:serviceId", async (req, res) => {  // ← ici
   try {
     const prisma = require("../prismaClient");
-    const techs = await prisma.users.findMany({
+    const techs = await prisma.user.findMany({
       where: { role: "technician", is_active: true, service_id: parseInt(req.params.serviceId) },
       select: { id: true, name: true, surname: true },
       orderBy: { name: "asc" },
@@ -58,7 +58,7 @@ router.delete("/attachments/:id", deleteAttachment);
 router.put("/tickets/:id/clear-solution", async (req, res) => {
   try {
     const prisma = require("../prismaClient");
-    await prisma.tickets.update({
+    await prisma.ticket.update({
       where: { id: parseInt(req.params.id) },
       data: { solution: null, updated_at: new Date() },
     });

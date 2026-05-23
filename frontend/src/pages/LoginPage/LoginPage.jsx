@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import djezzyLogoImg from "../../assets/images/Logo_Djezzy.png";
+import djezzyLogoImg from "../../assets/images/djezzy-logo.png";
+
+const _preloadedLogo = new Image();
+_preloadedLogo.src = djezzyLogoImg;
 
 export default function LoginPage() {
   const { t } = useTranslation("login");
@@ -33,7 +36,7 @@ export default function LoginPage() {
       const roles = {
         admin: "/admin",
         technician: "/technician",
-        chef_service: "/chef",
+        director: "/director",
         manager: "/manager"
       };
 
@@ -53,7 +56,7 @@ export default function LoginPage() {
 
         {/* HEADER */}
         <div className="flex flex-col items-center gap-4 mb-6">
-          <img src={djezzyLogoImg} alt="Djezzy" className="h-12" />
+         <img src={djezzyLogoImg} alt="Djezzy" style={{ width: 80, height: "auto" }} />
 
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900">

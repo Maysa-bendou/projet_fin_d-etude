@@ -15,6 +15,10 @@ import { useTranslation } from 'react-i18next';
 import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
 import { MdCalendarMonth, MdOutlineInfo } from 'react-icons/md';
 import { MdCalendarViewMonth } from 'react-icons/md';
+import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
+
+const _preloadedLogo = new Image();
+_preloadedLogo.src = djezzyLogoImg;
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -213,51 +217,177 @@ const translatedMonthlyStats = useMemo(() => {
   const translatedUrgencyStats  = useMemo(() => translateStatArray(stats?.urgencyStats,  tUrgency),  [stats, tUrgency, translateStatArray]);
   const translatedImpactStats   = useMemo(() => translateStatArray(stats?.impactStats,   tImpact),   [stats, tImpact, translateStatArray]);
 
-  // ── Export PDF ────────────────────────────────────────────────────────────
-  const exportPDF = () => {
-    if (!stats) return;
-    const doc = new jsPDF('p', 'pt', 'a4');
-    doc.setFontSize(20);
-    doc.text(`${t("performances.export.reportTitle")} : ${stats.serviceName}`, 40, 50);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`${t("performances.export.period")} : ${filterLabel}`, 40, 72);
-    autoTable(doc, {
-      startY: 90,
-      head: [[t("performances.export.indicator"), t("performances.export.value")]],
-      body: [
-        [t("performances.export.totalService"), stats.totalTickets],
-        [t("performances.export.resolutionService"), `${stats.resolutionRate}%`],
-        [t("performances.export.resolutionGlobal"), `${stats.globalResolutionRate}%`],
-        [t("performances.export.slaIn"), stats.slaStats[0].value],
-        [t("performances.export.slaOut"), stats.slaStats[1].value],
-      ],
-      theme: 'striped'
-    });
-    doc.text(t("performances.techDetail.title"), 40, doc.lastAutoTable.finalY + 30);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 40,
-      head: [[
-        t("performances.techDetail.tech"),
-        t("performances.techDetail.assigned"),
-        t("performances.techDetail.resolved"),
-        t("performances.techDetail.closed"),
-        t("performances.techDetail.rejected"),
-        t("performances.techDetail.resolutionRate"),
-      ]],
-      body: stats.techPerformance.map(tech => [tech.name, tech.totalAssigned, tech.resolu, tech.ferme, tech.rejete, `${tech.resolutionRate}%`]),
-      headStyles: { fillColor: [99, 102, 241] }
-    });
-    doc.text(t("performances.statusDistribution"), 40, doc.lastAutoTable.finalY + 30);
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 40,
-      head: [[t("table.status"), t("performances.export.count")]],
-      // Use translated labels in the PDF export
-      body: translatedStatusStats.map(s => [s.label, s.value]),
-      headStyles: { fillColor: [99, 102, 241] }
-    });
-    doc.save(`Performance_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.pdf`);
+// ── Export PDF ────────────────────────────────────────────────────────────
+const exportPDF = async () => {
+  if (!stats) return;
+  const doc = new jsPDF('p', 'pt', 'a4');
+  const BLACK = [30, 30, 30];
+  const RED = [180, 25, 25];
+  const PAGE_WIDTH = doc.internal.pageSize.getWidth();
+  const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
+  const MARGIN = 40;
+
+  const tableOptions = {
+    headStyles: { fillColor: RED, textColor: [255, 255, 255], fontStyle: 'bold' },
+    showHead: 'everyPage',
+    margin: { left: MARGIN, right: MARGIN },
+    styles: { fontSize: 10, cellPadding: 7 },
+    alternateRowStyles: { fillColor: [255, 245, 245] },
   };
+
+  // ── helper: ensure enough space before each section ──
+  const ensureSpace = (neededHeight) => {
+    const currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 160;
+    if (currentY + neededHeight > PAGE_HEIGHT - 40) {
+      doc.addPage();
+      return MARGIN + 20;
+    }
+    return currentY + 40;  // more space between tables
+  };
+
+  // ── Logo + Title on same line ──
+// ── Logo + Title on same line ──
+await new Promise((resolve) => {
+  if (_preloadedLogo.complete && _preloadedLogo.naturalWidth > 0) {
+    const logoH = 40;
+    const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
+    try { doc.addImage(_preloadedLogo, 'PNG', MARGIN, 20, logoW, logoH); } catch (_) {}
+    resolve();
+  } else {
+    _preloadedLogo.onload = () => {
+      const logoH = 40;
+      const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
+      try { doc.addImage(_preloadedLogo, 'PNG', MARGIN, 20, logoW, logoH); } catch (_) {}
+      resolve();
+    };
+    _preloadedLogo.onerror = () => resolve();
+  }
+});
+
+  doc.setFontSize(18);
+  doc.setTextColor(...BLACK);
+  doc.setFont(undefined, 'bold');
+  doc.text(`${t("performances.export.reportTitle")} — ${stats.serviceName}`, MARGIN + 115, 47);
+
+  // ── Period subtitle ──
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 120);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${t("performances.export.period")} : ${filterLabel}`, MARGIN + 115, 62);
+
+  // ── Divider line ──
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.8);
+  doc.line(MARGIN, 72, PAGE_WIDTH - MARGIN, 72);
+
+  // ── KPIs ──
+  autoTable(doc, {
+    ...tableOptions,
+    startY: 90,
+    head: [[t("performances.export.indicator"), t("performances.export.value")]],
+    body: [
+      [t("performances.export.totalService"),      stats.totalTickets],
+      [t("performances.export.resolutionService"), `${stats.resolutionRate}%`],
+      [t("performances.export.resolutionGlobal"),  `${stats.globalResolutionRate}%`],
+      [t("performances.export.slaIn"),             stats.slaStats[0].value],
+      [t("performances.export.slaOut"),            stats.slaStats[1].value],
+    ],
+    theme: 'striped',
+  });
+
+  // ── Section helper ──
+const addSection = (title, head, body) => {
+  const y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 40 : 160;
+
+  doc.setFontSize(12);
+  doc.setTextColor(...BLACK);
+  doc.setFont(undefined, 'bold');
+  doc.text(title, MARGIN, y);
+
+  autoTable(doc, {
+    ...tableOptions,
+    startY: y + 14,
+    head: [head],
+    body,
+  });
+};
+
+  // ── Technician Details ──
+  addSection(
+    t("performances.techDetail.title"),
+    [
+      t("performances.techDetail.tech"),
+      t("performances.techDetail.assigned"),
+      t("performances.techDetail.resolved"),
+      t("performances.techDetail.closed"),
+      t("performances.techDetail.rejected"),
+      t("performances.techDetail.resolutionRate"),
+    ],
+    stats.techPerformance.map(tech => [
+      tech.name,
+      tech.totalAssigned,
+      tech.resolu,
+      tech.ferme,
+      tech.rejete,
+      `${tech.resolutionRate}%`,
+    ])
+  );
+
+  // ── Status Distribution ──
+  addSection(
+    t("performances.statusDistribution"),
+    [t("performances.export.status"), t("performances.export.count")],
+    translatedStatusStats.map(s => [s.label, s.value])
+  );
+
+  // ── Category Distribution ──
+  addSection(
+    t("performances.charts.categoryDistribution"),
+    [t("performances.export.category"), t("performances.export.count")],
+    translatedCategoryStats.map(s => [s.label, s.value])
+  );
+
+  // ── Priority Distribution ──
+  addSection(
+    t("performances.charts.priorityDistribution"),
+    [t("performances.export.priority"), t("performances.export.count")],
+    translatedPriorityStats.map(s => [s.label, s.value])
+  );
+
+  // ── Type Distribution ──
+  addSection(
+    t("performances.charts.typeDistribution"),
+    [t("performances.export.type"), t("performances.export.count")],
+    translatedTypeStats.map(s => [s.label, s.value])
+  );
+
+  // ── Monthly Trends ──
+  addSection(
+    t("performances.charts.monthlyEvolution"),
+    [t("performances.export.month"), t("performances.export.count")],
+    translatedMonthlyStats.map(s => [s.month, s.value])
+  );
+
+  // ── Urgency (if exists) ──
+  if (translatedUrgencyStats?.length > 0) {
+    addSection(
+      t("performances.charts.urgencyDistribution"),
+      [t("performances.export.urgency"), t("performances.export.count")],
+      translatedUrgencyStats.map(s => [s.label, s.value])
+    );
+  }
+
+  // ── Impact (if exists) ──
+  if (translatedImpactStats?.length > 0) {
+    addSection(
+      t("performances.charts.impactDistribution"),
+      [t("performances.export.impact"), t("performances.export.count")],
+      translatedImpactStats.map(s => [s.label, s.value])
+    );
+  }
+
+  doc.save(`Performance_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.pdf`);
+};
 
   // ── Export Excel ──────────────────────────────────────────────────────────
   const exportExcel = () => {
@@ -290,6 +420,31 @@ const translatedMonthlyStats = useMemo(() => {
       translatedPriorityStats.map(p => ({ name: p.label, value: p.value }))
     ), t("performances.sheets.priorities"));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(translatedMonthlyStats), t("performances.sheets.trends"));
+    // ── Add after priorities sheet (after line 291) ──
+
+// Category sheet
+XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+  translatedCategoryStats.map(s => ({ name: s.label, value: s.value }))
+), t("performances.sheets.categories"));
+
+// Type sheet
+XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+  translatedTypeStats.map(s => ({ name: s.label, value: s.value }))
+), t("performances.sheets.types"));
+
+// Urgency sheet (if exists)
+if (translatedUrgencyStats?.length > 0) {
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+    translatedUrgencyStats.map(s => ({ name: s.label, value: s.value }))
+  ), t("performances.sheets.urgency"));
+}
+
+// Impact sheet (if exists)
+if (translatedImpactStats?.length > 0) {
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+    translatedImpactStats.map(s => ({ name: s.label, value: s.value }))
+  ), t("performances.sheets.impact"));
+}
     XLSX.writeFile(wb, `Stats_${stats.serviceName}_${filterLabel.replace(/\s/g, '_')}.xlsx`);
   };
 
@@ -417,7 +572,16 @@ const translatedMonthlyStats = useMemo(() => {
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={stats.techPerformance} barCategoryGap="30%" barGap={3}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }} interval={0} />
+<XAxis
+  dataKey="name"
+  axisLine={false}
+  tickLine={false}
+  interval={0}
+  tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }}
+  angle={-45}
+  textAnchor="end"
+  height={80}
+/>
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                 <Bar dataKey="ferme" name={t("performances.techDetail.closed")} fill="#06b6d4" radius={[5, 5, 0, 0]} maxBarSize={22}>
                   <LabelList content={<BarTopLabel />} />

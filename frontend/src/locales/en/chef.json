@@ -93,34 +93,44 @@
     "weak":      "< 40% Weak"
   },
 
-  "pdf": {
-    "reportTitle":        "Performance Report",
-    "period":             "Period",
-    "indicator":          "Indicator",
-    "value":              "Value",
-    "totalTickets":       "Total Tickets (Service)",
-    "resolutionRate":     "Resolution Rate (Service)",
-    "slaIn":              "Tickets Within SLA",
-    "slaOut":             "Tickets Outside SLA",
-    "slaConform":         "SLA Compliant",
-    "slaExceeded":        "SLA Exceeded",
-    "techPerf":           "Technician Performance",
-    "reportFile":         "Report",
-    "resolvedTickets":    "Resolved Tickets"
-  },
+"pdf": {
+  "reportTitle":    "Performance Report",
+  "period":         "Period",
+  "indicator":      "Indicator",
+  "value":          "Value",
+  "count":          "Count",
+  "month":          "Month",
+  "status":         "Status",
+  "type":           "Type",
+  "category":       "Category",
+  "priority":       "Priority",
+  "totalTickets":   "Total Tickets (Service)",
+  "resolutionRate": "Resolution Rate (Service)",
+  "slaIn":          "Tickets Within SLA",
+  "slaOut":         "Tickets Outside SLA",
+  "slaConform":     "SLA Compliant",
+  "slaExceeded":    "SLA Exceeded",
+  "techPerf":       "Technician Performance",
+  "reportFile":     "Report",
+  "resolvedTickets":"Resolved Tickets",
+    "day":         "Day",
+  "ticketCount": "Tickets"
+},
 
-  "excel": {
-    "statuses":     "Statuses",
-    "technicians":  "Technicians",
-    "priorities":   "Priorities",
-    "trends":       "Trends",
-    "statsFile":    "Stats",
-    "services":     "Services"
-  },
+"excel": {
+  "statuses":    "Statuses",
+  "technicians": "Technicians",
+  "priorities":  "Priorities",
+  "trends":      "Trends",
+  "types":       "Types",
+  "categories":  "Categories",
+  "statsFile":   "Stats",
+  "services":    "Services"
+},
 
   "global": {
     "header": {
-      "subtitle": "Chef View · All services"
+      "subtitle": "director View · All services"
     },
     "section": {
       "flowDistributionAll": "Flow Distribution — All Services",
@@ -129,7 +139,7 @@
       "timeTrendsAll":       "Time Trends — All Services"
     },
     "pdf": {
-      "reportTitle":          "Chef Performance Report — All Services",
+      "reportTitle":          "director Performance Report — All Services",
       "totalAllServices":     "Total Tickets (All services)",
       "resolutionAllServices":"Resolution Rate (All services)",
       "reportFile":           "Performance_Chef"

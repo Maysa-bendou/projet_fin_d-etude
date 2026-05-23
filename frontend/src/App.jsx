@@ -36,9 +36,7 @@ import TicketsDetails from "./pages/manager/TicketsDetailsPage/TicketsDetailsPag
 
 /* ADMIN */
 import UsersPage from "./pages/admin/GestionUtilisateurs/UsersPage";
-import departement from "./pages/admin/Departements/Departements";
 import ParametresAdmin from "./pages/admin/Parametres/Parametres";
-import Departements from "./pages/admin/Departements/Departements";
 
 // ✅ Blocks access if not logged in or wrong role
 function PrivateRoute({ children, allowedRoles }) {
@@ -92,8 +90,8 @@ export default function App() {
         </Route>
 
         {/* ================= CHEF SERVICE ================= */}
-        <Route path="/chef" element={
-          <PrivateRoute allowedRoles={["chef_service"]}> {/* ✅ exact DB value */}
+        <Route path="/director" element={
+          <PrivateRoute allowedRoles={["director"]}>
             <ChefLayout />
           </PrivateRoute>
         }>
@@ -124,7 +122,6 @@ export default function App() {
         }>
         <Route index element={<Navigate to="utilisateurs" replace />} />
           <Route path="utilisateurs" element={<UsersPage />} />
-<Route path="departements" element={<Departements />} />
           <Route path="parametres" element={<ParametresAdmin />} />
           <Route path="profile" element={<ProfilePage />} /> 
         </Route>

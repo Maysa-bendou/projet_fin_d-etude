@@ -12,6 +12,7 @@ const {
   notifyAllTechsOfService,
   notifyTechAssigned,
   notifyEmployeeAssigned,
+  notifyEmployeeTechTook, 
   notifyTechTicketUpdated, 
 } = require("../controllers/notification.service");
 
@@ -54,15 +55,25 @@ const CATEGORY_SERVICE_MAP = {
   software:   1,  // IT Support
   network:    2,  // IT Network
   security:   3,  // IT Security
-  access:     5,  // Service Desk
+  access:     4,  // Service Desk
   
 };
 
 // ── POST /create ──────────────────────────────────────────────────────────
 router.post("/create", uploadCreate.array("files", 10), async (req, res) => {
   try {
-    const { title, description, impact, urgency, type, created_by } = req.body;
-    // ── ML classification ──────────────────────────────────────────────
+const { title, description, impact, urgency, type, created_by } = req.body;
+
+// ✅ Block non-employees from creating tickets
+const creator = await prisma.user.findUnique({
+  where: { id: parseInt(created_by) },
+  select: { role: true }
+});
+if (!creator || creator.role !== "employee") {
+  return res.status(403).json({ error: "Only employees can create tickets" });
+}
+
+// ── ML classification ──────────────────────────────────────────────
 let category = "access"; // safe default if ML fails
 
 try {
@@ -135,7 +146,7 @@ try {
     const sla_date_limite = new Date(sla_date_debut.getTime() + slaConfig.duration_hours * 3600000);
 
     // ✅ 1. Créer le ticket
-    const created = await prisma.tickets.create({
+    const created = await prisma.ticket.create({
       data: {
         title, description, category, impact, urgency, type, priority,
         created_by:     parseInt(created_by),
@@ -148,7 +159,7 @@ try {
     console.log("👉 ticket id créé:", created.id);
 
     // ✅ 2. Relire depuis la base (fix bug Prisma 5 + Timestamptz)
-    const ticket = await prisma.tickets.findUnique({ where: { id: created.id } });
+    const ticket = await prisma.ticket.findUnique({ where: { id: created.id } });
     console.log("👉 sla_date_limite relue:", ticket.sla_date_limite);
 
     // ✅ 3. Sauvegarder les pièces jointes si présentes
@@ -160,7 +171,7 @@ try {
       fs.mkdirSync(finalDir, { recursive: true });
 
       // One shared comment for all creation attachments
-      const attachmentComment = await prisma.ticket_comments.create({
+      const attachmentComment = await prisma.message.create({
         data: {
           ticket_id:    ticket.id,
           user_id:      parseInt(created_by),
@@ -205,7 +216,7 @@ try {
     }
 
    // Find service name
-const service = service_id ? await prisma.services.findUnique({
+const service = service_id ? await prisma.service.findUnique({
   where: { id: service_id },
   select: { name: true },
 }) : null;
@@ -226,11 +237,11 @@ router.get("/my/:userId", getMyTickets);
 router.get("/assigned/:techId", async (req, res) => {
   try {
     const techId = parseInt(req.params.techId);
-    const tickets = await prisma.tickets.findMany({
+    const tickets = await prisma.ticket.findMany({
       where: { assigned_to: techId },
       include: {
-        users_tickets_created_byTousers: { select: { name: true, surname: true } },
-        services: { select: { name: true } },
+        user_ticket_assigned_toTouser: { select: { name: true, surname: true } },
+        service: { select: { name: true } },
       },
       orderBy: { created_at: "desc" },
     });
@@ -241,16 +252,72 @@ router.get("/assigned/:techId", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+// ── GET all tickets by service ────────────────────────────────────────────
+router.get("/service/:serviceId", async (req, res) => {
   try {
-    const tickets = await prisma.tickets.findMany({
-      include: {
-        users_tickets_created_byTousers: true,
-        users_tickets_assigned_toTousers: true,
-        services: true,
+    const serviceId = parseInt(req.params.serviceId);
+    if (!serviceId) return res.status(400).json({ error: "serviceId invalide" });
+
+    const tickets = await prisma.ticket.findMany({
+        where: {
+    service_id: serviceId,
+    user_ticket_created_byTouser: {  // ✅ add this
+      role: "employee"
+    }
+  },
+      select: {
+        id: true, title: true, category: true,
+        priority: true, status: true,
+        created_at: true, assigned_at: true, closed_at: true,
+        sla_date_limite: true, sla_date_debut: true,
+        sla_statut: true, sla_pause_elapsed_ms: true,
+        assigned_to: true,
+        user_ticket_created_byTouser:  { select: { name: true, surname: true } },
+        user_ticket_assigned_toTouser: { select: { id: true, name: true, surname: true } },
+        service: { select: { name: true } },
       },
       orderBy: { created_at: "desc" },
     });
+
+    res.json(tickets.map(t => ({
+      id:          t.id,
+      title:       t.title,
+      category:    t.category,
+      priority:    t.priority,
+      status:      t.status,
+      created_at:  t.created_at,
+      assigned_at: t.assigned_at,
+      closed_at:   t.closed_at,
+      sla_date_limite:      t.sla_date_limite,
+      sla_date_debut:       t.sla_date_debut,
+      sla_statut:           t.sla_statut,
+      sla_pause_elapsed_ms: t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null,
+      serviceName:  t.service?.name ?? null,
+      employee:     t.user_ticket_created_byTouser,
+      technician:   t.user_ticket_assigned_toTouser,
+      technicienId: t.assigned_to,
+    })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+const tickets = await prisma.ticket.findMany({
+  where: {
+    user_ticket_created_byTouser: {
+      role: "employee"  // ✅ add this
+    }
+  },
+  include: {
+    user_ticket_created_byTouser: true,
+    user_ticket_assigned_toTouser: true,
+    service: true,
+  },
+  orderBy: { created_at: "desc" },
+});
     const formatted = tickets.map((t) => ({
       id:              t.id,
       title:           t.title,
@@ -261,7 +328,7 @@ router.get("/", async (req, res) => {
       impact:          t.impact,
       urgency:         t.urgency,
       serviceId:       t.service_id,
-      serviceName:     t.services?.name || "N/A",
+      serviceName:     t.service?.name || "N/A",
       sla:             t.sla_date_limite,
       date_expiration: t.sla_date_limite,
       sla_date_limite: t.sla_date_limite,
@@ -271,9 +338,9 @@ router.get("/", async (req, res) => {
       assigned_at:     t.assigned_at, 
       sla_pause_elapsed_ms: t.sla_pause_elapsed_ms ? Number(t.sla_pause_elapsed_ms) : null,  // ← add
       sla_statut:      t.sla_statut, 
-      createdBy:       t.users_tickets_created_byTousers?.name,
-      employee:        t.users_tickets_created_byTousers,
-      assignedTo: t.users_tickets_assigned_toTousers,
+      createdBy:       t.user_ticket_created_byTouser?.name,
+      employee:        t.user_ticket_created_byTouser,
+      assignedTo: t.user_ticket_assigned_toTouser,
       technicienId:    t.assigned_to,
     }));
     res.json(formatted);
@@ -297,12 +364,12 @@ router.put("/:id/status", async (req, res) => {
       data.closed_at = new Date();
     }
 
-    const ticket = await prisma.tickets.update({
+    const ticket = await prisma.ticket.update({
   where: { id },
   data,
 });
 
-await prisma.ticket_comments.create({
+await prisma.message.create({
   data: {
     ticket_id: id,
     user_id: req.body.user_id || null,
@@ -321,7 +388,7 @@ res.json(ticket);
 });
 router.get("/techniciens", async (req, res) => {
   try {
-    const techs = await prisma.users.findMany({
+    const techs = await prisma.user.findMany({
       where: { role: "technician" },
       select: { id: true, name: true, surname: true },
     });
@@ -333,7 +400,7 @@ router.get("/techniciens", async (req, res) => {
 router.get("/techniciens/service/:serviceId", async (req, res) => {
   try {
     const serviceId = parseInt(req.params.serviceId);
-    const techs = await prisma.users.findMany({
+    const techs = await prisma.user.findMany({
       where: {
         role: "technician",
         service_id: serviceId,
@@ -351,42 +418,42 @@ router.get("/techniciens/service/:serviceId", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id },
       include: {
-        users_tickets_created_byTousers: {
+        user_ticket_created_byTouser: {
           select: {
             name: true, surname: true, email: true,
             department: true, role: true, phone: true,
             office: true, job_title: true,
           },
         },
-        users_tickets_assigned_toTousers: {
+        user_ticket_assigned_toTouser: {
           select: { name: true, surname: true, id: true },
         },
-        services: { select: { name: true } },
-       ticket_assignments_history: {
+        service: { select: { name: true } },
+       ticket_history: {
   where: { action: { in: ["taken", "assigned", "updated"] } },
   orderBy: { created_at: "desc" },
   take: 5,
   include: {
-    users_ticket_assignments_history_assigned_byTousers: {
+    user_ticket_history_assigned_byTouser: {
       select: { id: true, name: true, surname: true },
     },
   },
 },
-        ticket_comments: {
+        message: {
           orderBy: { created_at: "asc" },
           include: {
-            users: { select: { id: true, name: true, surname: true, role: true } },
+            user: { select: { id: true, name: true, surname: true, role: true } },
             ticket_attachments: true,
           },
         },
       },
     });
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
-    console.log("🔍 history:", JSON.stringify(ticket.ticket_assignments_history, null, 2));
-    const redirectComment = ticket.ticket_comments
+    console.log("🔍 history:", JSON.stringify(ticket.ticket_history, null, 2));
+    const redirectComment = ticket.message
   .filter(c => c.comment_type === "redirect")
   .at(-1) ?? null;
     res.json({
@@ -410,27 +477,27 @@ router.get("/:id", async (req, res) => {
       redirect_note: ticket.redirect_note,
       is_resolved_confirmed:  ticket.is_resolved_confirmed,
       confirmation_requested: ticket.confirmation_requested,
-      employee:               ticket.users_tickets_created_byTousers,
+      employee:               ticket.user_ticket_created_byTouser,
       sla_pause_elapsed_ms: ticket.sla_pause_elapsed_ms ? Number(ticket.sla_pause_elapsed_ms) : null,
-      technician:             ticket.users_tickets_assigned_toTousers,
+      technician:             ticket.user_ticket_assigned_toTouser,
       assigned_at: ticket.assigned_at,
       assigned_action:
-  ticket.ticket_assignments_history?.[0]?.action ||
+  ticket.ticket_history?.[0]?.action ||
   (ticket.assigned_to ? "assigned" : null),
 assigned_by_manager:
-  ticket.ticket_assignments_history?.find(h =>
+  ticket.ticket_history?.find(h =>
     ["assigned", "updated"].includes(h.action)
-  )?.users_ticket_assignments_history_assigned_byTousers ?? null,
-      service:                ticket.services?.name,
-      comments: ticket.ticket_comments.map((c) => ({
+  )?.assigner ?? null,
+      service:                ticket.service?.name,
+      message: ticket.message.map((c) => ({
         id:           c.id,
         message:      c.comment,
         comment_type: c.comment_type ?? "comment",
-        author:       `${c.users?.name ?? ""} ${c.users?.surname ?? ""}`.trim(),
-        authorRole:   c.users?.role ?? "",
-        authorId:     c.users?.id,
+        author:       `${c.user?.name ?? ""} ${c.user?.surname ?? ""}`.trim(),
+        authorRole:   c.user?.role ?? "",
+        authorId:     c.user?.id,
         date:         c.created_at,
-        files: (c.ticket_attachments ?? []).map(a => ({
+        files: (c.ticket_attachments  ?? []).map(a => ({
           fileName: a.file_name,
           filePath: a.file_path
             ? a.file_path.replace(/^.*[\\\/]uploads[\\\/]/, "uploads/").replace(/\\/g, "/")
@@ -438,8 +505,9 @@ assigned_by_manager:
         })),
       })),
     });
-  } catch (err) {
-    res.status(500).json({ error: "Erreur serveur" });
+} catch (err) {
+    console.error("❌ TICKET DETAIL ERROR:", err);
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 });
 
@@ -450,7 +518,7 @@ router.put("/:id", async (req, res) => {
 
     const changes = [];
 
-    const existingTicket = await prisma.tickets.findUnique({
+    const existingTicket = await prisma.ticket.findUnique({
       where: { id }
     });
 
@@ -473,7 +541,7 @@ if (existingTicket.status === "closed" && status === "open") {
   }
 
   // ── Limite 2 réouvertures ──
-  const reopenCount = await prisma.ticket_comments.count({
+  const reopenCount = await prisma.message.count({
     where: { ticket_id: id, comment_type: "reopen" },
   });
   if (reopenCount >= 1) {
@@ -541,40 +609,39 @@ if (impact && urgency) {
       updateData.closed_at = null;
     }
 
-    const updatedTicket = await prisma.tickets.update({
+    const updatedTicket = await prisma.ticket.update({
       where: { id },
       data: updateData,
     });
 
-    // ✅ CREATE COMMENT IF CHANGES
+    // Compute empName BEFORE the comment creation
+const employee = user_id ? await prisma.user.findUnique({
+  where: { id: parseInt(user_id) },
+  select: { name: true, surname: true },
+}) : null;
+const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
+
+
     if (changes.length > 0) {
   const isReopen = commentType === "reopen";
-  await prisma.ticket_comments.create({
+  await prisma.message.create({
     data: {
       ticket_id: id,
       user_id: user_id || null,
-// ✅ AFTER
 comment: isReopen
-  ? "employee_reopened"
-  : `employee_updated:${changes.join(" | ")}`,  // raw changes after ":" — frontend extracts
+  ? `employee_reopened:${empName}`   // ← now includes the name
+  : `employee_updated:${changes.join(" | ")}`,
 comment_type: commentType,   // "reopen" or "update" — already correct
     },
   });
 }
-
-   // ── Notifier le technicien si réouverture ou modification ──
-    if (updatedTicket.assigned_to && changes.length > 0) {
-
-      const employee = user_id ? await prisma.users.findUnique({
-        where: { id: parseInt(user_id) },
-        select: { name: true, surname: true },
-      }) : null;
-      const empName = employee ? `${employee.name} ${employee.surname}`.trim() : "L'employé";
-     const isReopen = commentType === "reopen";
-await notifyTechTicketUpdated(
-  updatedTicket.assigned_to, id, updatedTicket.title, empName,
-  isReopen ? "reopen" : "update"
-); }
+if (updatedTicket.assigned_to && changes.length > 0) {
+  const isReopen = commentType === "reopen";
+  await notifyTechTicketUpdated(
+    updatedTicket.assigned_to, id, updatedTicket.title, empName,
+    isReopen ? "reopen" : "update"
+  );
+}
 
     res.json(updatedTicket);
 
@@ -584,8 +651,6 @@ await notifyTechTicketUpdated(
   }
 });
 
-// ── Assignation ───────────────────────────
-
 // ── Assignation ───────────────────────────────────────────────────────────
 router.put("/:id/assign", async (req, res) => {
   const ticketId = parseInt(req.params.id);
@@ -593,65 +658,77 @@ router.put("/:id/assign", async (req, res) => {
   const techId = parseInt(assigned_to || technicienId);
   if (!techId) return res.status(400).json({ error: "Technician ID is required" });
   try {
-    const ticket = await prisma.tickets.findUnique({
+    const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
       select: { title: true, created_by: true },
     });
-   if (!ticket) { // ✅ FIX 2
+    if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
     }
-  const updatedTicket = await prisma.tickets.update({
-  where: { id: ticketId },
-  data: {
-  users_tickets_assigned_toTousers: {
-    connect: { id: techId },
-  },
-  assigned_at: new Date(),
-  status: action === "taken" ? "in_progress" : "open",
-},
-});
 
-const techForComment = await prisma.users.findUnique({
-  where: { id: techId },
-  select: { name: true, surname: true },
-});
-const techFullName = techForComment
-  ? `${techForComment.name} ${techForComment.surname}`.trim()
-  : "";
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        user_ticket_assigned_toTouser: { connect: { id: techId } },
+        assigned_at: new Date(),
+        status: action === "taken" ? "in_progress" : "open",
+      },
+    });
 
-await prisma.ticket_comments.create({
-  data: {
-    ticket_id: ticketId,
-    user_id: assigned_by || null,
-    comment:      action === "taken" ? `technician_took_over:${techFullName}` : "ticket_assigned",
-    comment_type: action === "taken" ? "taken" : "assigned",
-  },
-});
+    const techForComment = await prisma.user.findUnique({
+      where: { id: techId },
+      select: { name: true, surname: true },
+    });
+    const techFullName = techForComment
+      ? `${techForComment.name} ${techForComment.surname}`.trim()
+      : "un technicien";
 
-   await prisma.ticket_assignments_history.create({
-  data: {
-    ticket_id:    ticketId,
-    from_user_id: action === "assigned" ? assigned_by : null,
-    to_user_id:   techId,
-    action:       action || "taken",
-    reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
-    assigned_by:  assigned_by ? parseInt(assigned_by) : null,
-  },
-});
+    await prisma.message.create({
+      data: {
+        ticket_id:    ticketId,
+        user_id: action === "taken" ? techId : (assigned_by || null),
+        comment:      action === "taken"
+                        ? `technician_took_over:${techFullName}`
+                        : `ticket_assigned:${techFullName}`,
+        comment_type: action === "taken" ? "taken" : "assigned",
+      },
+    });
 
-// Only notify tech if assigned by manager, not when he takes it himself
-if (action !== "taken") {
-  await notifyTechAssigned(techId, ticketId, ticket.title);
-}
-
-if (ticket.created_by) {
-  const tech = await prisma.users.findUnique({
-    where: { id: techId },
-    select: { name: true, surname: true },
-  });
-  const techName = tech ? `${tech.name} ${tech.surname}`.trim() : "un technicien";
-  await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techName);
-}
+    await prisma.ticket_history.create({
+      data: {
+        ticket_id:    ticketId,
+        from_user_id: action === "assigned" ? assigned_by : null,
+        to_user_id:   techId,
+        action:       action || "taken",
+        reason:       action === "taken" ? "Technician took charge" : "Manager assigned",
+        assigned_by:
+  action === "taken"
+    ? techId
+    : (assigned_by ? parseInt(assigned_by) : null),
+      },
+    });
+console.log("assigned_to:", assigned_to);
+console.log("technicienId:", technicienId);
+console.log("techId:", techId);
+console.log("action:", action);
+    if (action === "taken") {
+      if (ticket.created_by) {
+       
+await notifyEmployeeTechTook(ticket.created_by, ticketId, ticket.title, techFullName);
+      }
+      const ticketFull = await prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { service_id: true },
+      });
+      if (ticketFull?.service_id) {
+        await notifyAllManagersOfService(ticketFull.service_id, ticketId, ticket.title, techFullName);
+      }
+    } else {
+      await notifyTechAssigned(techId, ticketId, ticket.title);
+      if (ticket.created_by) {
+        await notifyEmployeeAssigned(ticket.created_by, ticketId, ticket.title, techFullName);
+      }
+    }
 
     res.json({
       id:          updatedTicket.id,

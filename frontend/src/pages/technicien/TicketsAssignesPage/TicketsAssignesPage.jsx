@@ -327,7 +327,7 @@ const MONTHS_LOCALIZED = useMemo(() =>
   // STAT_CARDS: icons/colors from doc1 + translated labels from doc2
   const STAT_CARDS = useMemo(() => [
   { label: t("ticketsService.stats.total"),           ...STAT_CARD_DEFS[0] },
-  { label: t("ticketsService.stats.open"),            ...STAT_CARD_DEFS[1] },
+
   { label: t("ticketsService.stats.inProgress"),      ...STAT_CARD_DEFS[2] },
   { label: t("ticketsService.stats.pending"),         ...STAT_CARD_DEFS[3] },
   { label: t("ticketsService.stats.pendingSupplier"), ...STAT_CARD_DEFS[4] },

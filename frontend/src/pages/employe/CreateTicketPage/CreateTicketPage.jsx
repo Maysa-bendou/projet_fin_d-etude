@@ -315,9 +315,15 @@ export default function CreateTicketPage() {
                 <Label required missing={isMissing("description") ? t('createTicket.required') : undefined} icon={<MdOutlineDescription size={13} />}>
                   {t('createTicket.fields.description')}
                 </Label>
-                <textarea name="description" value={form.description} onChange={handleChange} rows={8}
-                  placeholder={t('createTicket.descriptionPlaceholder')}
-                  style={{ ...inputStyle, resize: "none", height: 70, border: borderFor("description") }} />
+          <textarea
+  name="description"
+  value={form.description}
+  onChange={handleChange}
+  spellCheck={false}
+  rows={8}
+  placeholder={t('createTicket.descriptionPlaceholder')}
+  style={{ ...inputStyle, resize: "none", height: 70, border: borderFor("description") }}
+/>
                 <p style={{ fontSize: 11, color: "#94a3b8", margin: "5px 0 0", fontWeight: 500 }}>
                   {t('createTicket.hints.description')}
                 </p>

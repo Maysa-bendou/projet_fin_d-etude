@@ -16,6 +16,7 @@ import RefreshButton from "../../../components/common/RefreshButton";
 import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
 import Pill from "../../../components/common/Pill";
 import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
+import * as XLSX from "xlsx";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -45,7 +46,7 @@ const getArchiveYear  = (t) => t.closed_at  ? new Date(t.closed_at).getFullYear(
 const getMonth = (dateStr) => dateStr ? new Date(dateStr).getMonth() : null;
 
 const isArchived = (t) => {
-  if (t.status !== "closed" && t.status !== "rejected") return false;
+  if (t.status !== "closed") return false;
   const y = getArchiveYear(t);
   return y !== null && y < THIS_YEAR;
 };
@@ -709,6 +710,90 @@ const exportPDF = useCallback(async () => {
     }
   }, [tableRef, displayedTickets, serviceName, filterStatus, filterCategory, filterAssignment, filterMonth, filterYear, filterSearch, MONTHS_LOC, t, tc, tStatus, tCategory, managerName, dateLocale]);
   
+    // ── Export Excel ─────────────────────────────────────────────────────────
+  const exportExcel = useCallback(() => {
+  if (!displayedTickets.length) return;
+
+  const fmtDate = makeFmtDate(dateLocale, tc("date.long"));
+
+  const rows = displayedTickets.map(tk => {
+    const technician = tk.assignedTo || tk.assigned_to || tk.user_ticket_assigned_toTouser;
+    const empName  = tk.employee
+      ? `${tk.employee.name || ""} ${tk.employee.surname || ""}`.trim()
+      : null;
+    const techName = technician
+      ? `${technician.name || ""} ${technician.surname || ""}`.trim()
+      : t("ticketsService.unassigned");
+    const lastDateLabel = activeTab === "archives"
+      ? t("ticketsService.cols.closedAt")
+      : t("ticketsService.cols.assignedAt");
+    const lastDateValue = activeTab === "archives"
+      ? fmtDate(tk.closed_at)
+      : fmtDate(tk.assigned_at);
+
+    return {
+      [t("ticketsService.cols.id")]:         `#${tk.id}`,
+      [t("ticketsService.cols.title")]:       tk.title || "N/A",
+      [t("ticketsService.cols.category")]:    tCategory(tk.category || tk.categorie),
+      [t("ticketsService.cols.priority")]:    tc(`priority.${tk.priority}`, { defaultValue: tk.priority }),
+      [t("ticketsService.cols.status")]:      tStatus(tk.status),
+     [t("ticketsService.cols.sla")]: (() => {
+  if (!tk.sla_date_limite) return "N/A";
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const now   = Date.now();
+  const due   = new Date(tk.sla_date_limite).getTime();
+  const debut = tk.sla_date_debut ? new Date(tk.sla_date_debut).getTime() : due - 86400000;
+  const win   = due - debut;
+
+  if (TERMINAL.includes(tk.status)) {
+    const closed   = tk.closed_at ? new Date(tk.closed_at).getTime() : due;
+    const exceeded = closed > due;
+    if (!exceeded) return "CLOSED ✓";
+    const delta = closed - due;
+    const h = Math.floor(delta / 3600000);
+    const m = Math.floor((delta % 3600000) / 60000);
+    return `+${h}H ${m}M EXCEEDED`;
+  }
+
+  if (PAUSED.includes(tk.status)) {
+    const frozen = tk.sla_pause_elapsed_ms != null ? tk.sla_pause_elapsed_ms : Math.max(0, due - now);
+    const h = Math.floor(frozen / 3600000);
+    const m = Math.floor((frozen % 3600000) / 60000);
+    return `${h}H ${m}M FROZEN`;
+  }
+
+  const diffMs   = due - now;
+  const exceeded = diffMs <= 0;
+  const abs = Math.abs(diffMs);
+  const h = Math.floor(abs / 3600000);
+  const m = Math.floor((abs % 3600000) / 60000);
+  return exceeded ? `+${h}H ${m}M EXCEEDED` : `${h}H ${m}M REMAINING`;
+})(),
+      [t("ticketsService.cols.employee")]:    empName  || "—",
+      [t("ticketsService.cols.technician")]:  techName || "—",
+      [t("ticketsService.cols.createdAt")]:   fmtDate(tk.created_at),
+      [lastDateLabel]:                        lastDateValue,
+    };
+  });
+
+const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Auto-fit column widths to content
+  const colKeys = Object.keys(rows[0]);
+  ws["!cols"] = colKeys.map(key => {
+    const maxLen = Math.max(
+      key.length,
+      ...rows.map(r => String(r[key] ?? "").length)
+    );
+    return { wch: maxLen + 2 };
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Tickets");
+  XLSX.writeFile(wb, `tickets_export_${Date.now()}.xlsx`);
+  
+}, [displayedTickets, activeTab, t, tc, tStatus, tCategory, dateLocale]);
   
   
   if (loading) return (
@@ -759,6 +844,24 @@ const exportPDF = useCallback(async () => {
             <HiOutlineArrowDownTray size={15} />
             {exporting ? "Export…" : "Export PDF"}
           </button>
+          
+          <button
+  onClick={exportExcel}
+  disabled={displayedTickets.length === 0}
+  style={{
+    display: "flex", alignItems: "center", gap: 6,
+    padding: "7px 14px", borderRadius: 8, border: "1.5px solid #bbf7d0",
+    background: "#f0fdf4",
+    color: "#15803d",
+    fontSize: 12, fontWeight: 600, cursor: "pointer",
+    opacity: displayedTickets.length === 0 ? 0.45 : 1,
+    transition: "opacity 0.15s",
+  }}
+>
+  <HiOutlineArrowDownTray size={15} />
+  Export Excel
+</button>
+
           <RefreshButton onRefresh={fetchData} />
         </div>
       </div>

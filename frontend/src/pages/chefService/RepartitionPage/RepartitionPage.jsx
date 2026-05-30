@@ -783,7 +783,7 @@ const exportExcel = () => {
   textAnchor="end"
   height={80}
 />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? v : ''} />
               <Bar dataKey="resolu" name={t('table.resolved')} fill="#10b981" radius={[5, 5, 0, 0]} maxBarSize={22}>
                 <LabelList content={<BarTopLabel />} />
               </Bar>
@@ -871,7 +871,7 @@ const exportExcel = () => {
                 axisLine={false} tickLine={false} interval={0}
                 tick={{ fontSize: 10, fill: '#64748b' }} angle={-35} textAnchor="end" height={60}
               />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? v : ''} />
               <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36}>
                 {statusStatsT.map((entry, index) => (
                   <Cell key={index} fill={getDynamicColor(entry.name, index)} />
@@ -934,7 +934,7 @@ const exportExcel = () => {
               <BarChart data={categoryStatsT} barCategoryGap="35%">
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? v : ''} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
                   {categoryStatsT.map((entry, index) => (
                     <Cell key={index} fill={getDynamicColor(entry.name, index)} />
@@ -987,7 +987,7 @@ const exportExcel = () => {
               <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e0e7ff" />
               {/* FIX: dataKey is "month" — already translated to locale-aware short labels */}
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10.5, fill: '#6366f1', fontWeight: 500 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? v : ''} />
               <Area
                 type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={2.5}
                 fillOpacity={1} fill="url(#gradIndigo)"

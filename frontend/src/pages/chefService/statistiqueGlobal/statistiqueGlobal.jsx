@@ -682,7 +682,7 @@ const exportExcel = () => {
                   textAnchor="end"
                   height={60}
                 />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? v : ''} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={36}>
                   {translatedStatusStats.map((entry, index) => (
                     <Cell key={index} fill={getDynamicColor(entry.name, index)} />
@@ -818,7 +818,7 @@ const exportExcel = () => {
                 <BarChart data={translatedCategoryStats} barCategoryGap="35%">
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="displayName" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? v : ''} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={40}>
                     {translatedCategoryStats.map((entry, index) => (
                       <Cell key={index} fill={getDynamicColor(entry.name, index)} />
@@ -868,7 +868,7 @@ const exportExcel = () => {
                 <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e0e7ff" />
                 {/* x-axis uses displayMonth (translated) */}
                 <XAxis dataKey="displayMonth" axisLine={false} tickLine={false} tick={{ fontSize: 10.5, fill: '#6366f1', fontWeight: 500 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} tickFormatter={(v) => Number.isInteger(v) ? v : ''} />
                 <ReferenceLine y={avgMonthly} stroke="#a5b4fc" strokeDasharray="4 3" label={{ position: 'right', value: t('chart.avg'), fill: '#a5b4fc', fontSize: 10 }} />
                 <Area
                   type="monotone"

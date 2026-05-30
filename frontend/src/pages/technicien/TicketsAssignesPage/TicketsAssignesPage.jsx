@@ -99,7 +99,8 @@ const makeFmtDate = (locale) => (str) => {
 };
 
 const isArchived = (t) => {
-  const terminal = ["Fermé", "Rejeté"];
+  if (t.statut === "Rejeté") return true;  // ← hide from technician
+  const terminal = ["Fermé"];
   if (!terminal.includes(t.statut)) return false;
   const ref = t.closedAt || t.createdAt;
   if (!ref) return false;
@@ -111,26 +112,54 @@ const getArchiveYear = (t) => {
   return ref ? new Date(ref).getFullYear() : null;
 };
 
-// ── SLA Bar (design doc1) ─────────────────────────
+// ── Working hours helper ───────────────────────────────────────────────────
+function workingMsBetween(from, to) {
+  const WORK_START = 8;
+  const WORK_END   = 16;
+  const WORK_DAYS  = new Set([0, 1, 2, 3, 4]);
+  let ms = 0;
+  let current = new Date(from);
+  const end = new Date(to);
+  while (current < end) {
+    const day = current.getDay();
+    if (WORK_DAYS.has(day)) {
+      const dayStart = new Date(current); dayStart.setHours(WORK_START, 0, 0, 0);
+      const dayEnd   = new Date(current); dayEnd.setHours(WORK_END, 0, 0, 0);
+      const sliceFrom = current < dayStart ? dayStart : current;
+      const sliceTo   = end < dayEnd ? end : dayEnd;
+      if (sliceTo > sliceFrom) ms += sliceTo.getTime() - sliceFrom.getTime();
+    }
+    current.setDate(current.getDate() + 1);
+    current.setHours(WORK_START, 0, 0, 0);
+  }
+  return ms;
+}
+
+// ── SLA Bar ────────────────────────────────────────────────────────────────
 function SlaBar({ slaDueDate, slaDateDebut, statut, closedAt, slaPauseElapsed, t }) {
+  const [, forceUpdate] = useState(0);
+useEffect(() => {
+  const timer = setInterval(() => forceUpdate(n => n + 1), 60000);
+  return () => clearInterval(timer);
+}, []);
   if (!slaDueDate) return (
     <span style={{ color: "#94a3b8", fontSize: 11, fontStyle: "italic" }}>
       {t("ticketsService.sla.na")}
     </span>
   );
-
-  const PAUSED   = ["En attente", "En attente fournisseur"];
-  const TERMINAL = ["Résolu", "Fermé", "Rejeté"];
-  const now      = Date.now();
-  const due      = new Date(slaDueDate).getTime();
-  const debut    = slaDateDebut ? new Date(slaDateDebut).getTime() : due - 24 * 3600 * 1000;
-  const win      = Math.max(1, due - debut);
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const now   = new Date();
+  const due   = new Date(slaDueDate);
+  const debut = new Date(slaDateDebut ?? (due.getTime() - 24 * 3600000));
+  const win   = Math.max(1, workingMsBetween(debut, due));
 
   if (TERMINAL.includes(statut)) {
-    const closed   = closedAt ? new Date(closedAt).getTime() : due;
+    const closed   = closedAt ? new Date(closedAt) : due;
     const exceeded = closed > due;
-    const delta    = Math.abs(closed - due);
-    const pct      = Math.min(100, Math.max(0, (win - (due - closed)) / win * 100));
+    const delta    = Math.abs(closed.getTime() - due.getTime());
+    const used     = workingMsBetween(debut, closed);
+    const pct      = Math.min(100, Math.max(0, (used / win) * 100));
     const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -145,37 +174,36 @@ function SlaBar({ slaDueDate, slaDateDebut, statut, closedAt, slaPauseElapsed, t
   }
 
   if (PAUSED.includes(statut)) {
-  const frozen = slaPauseElapsed ?? 0; // ← this IS the remaining ms
-  const pct    = Math.min(100, Math.max(0, frozen / win * 100));
-  const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <div style={{ height: 3, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: "#a78bfa" }} />
+    const frozen = slaPauseElapsed != null ? slaPauseElapsed : workingMsBetween(now, due);
+    const pct    = Math.min(100, Math.max(0, (frozen / win) * 100));
+    const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <div style={{ height: 3, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: "#a78bfa" }} />
+        </div>
+        <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: "#7c3aed" }}>
+          {t("ticketsService.sla.frozen", { h, m })}
+        </span>
       </div>
-      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: "#7c3aed" }}>
-        {t("ticketsService.sla.frozen", { h, m })}
-      </span>
-    </div>
-  );
-}
+    );
+  }
 
-  const diffMs   = due - now;
-  const exceeded = diffMs <= 0;
-  const pct      = exceeded ? 100 : Math.max(0, Math.min(100, (Math.max(0, diffMs) / win) * 100));
-  const abs      = Math.abs(diffMs);
+  const remaining = due > now ? workingMsBetween(now, due) : 0;
+  const exceeded  = now > due;
+  const abs       = exceeded ? workingMsBetween(due, now) : remaining;
+  const used      = win - remaining;
+  const pct       = exceeded ? 100 : Math.max(0, Math.min(100, (used / win) * 100));
+  const barColor  = exceeded ? "#ef4444" : pct > 80 ? "#f87171" : pct > 50 ? "#fbbf24" : "#34d399";
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
-  const barColor   = exceeded ? "#ef4444" : h < 2 ? "#f87171" : h < 6 ? "#fbbf24" : "#34d399";
-  const labelColor = exceeded ? "#ef4444" : h < 2 ? "#c2410c" : h < 6 ? "#a16207" : "#15803d";
-  const labelText  = exceeded ? t("ticketsService.sla.alert", { h, m }) : t("ticketsService.sla.remaining", { h, m });
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ height: 3, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: barColor }} />
       </div>
-      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: labelColor }}>
-        {labelText}
+      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap",
+        color: exceeded ? "#ef4444" : pct > 80 ? "#c2410c" : pct > 50 ? "#a16207" : "#15803d" }}>
+        {exceeded ? t("ticketsService.sla.alert", { h, m }) : t("ticketsService.sla.remaining", { h, m })}
       </span>
     </div>
   );

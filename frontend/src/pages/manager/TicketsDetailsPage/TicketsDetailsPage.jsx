@@ -49,6 +49,19 @@ const TicketDetailPage = () => {
     return (tc("date.long") || "D MMMM YYYY").replace("MMMM", month).replace("D", day).replace("YYYY", year);
   };
 
+  const fmtDateTime = (str) => {
+  if (!str) return "—";
+  const d = new Date(str);
+  if (isNaN(d)) return "—";
+  const day   = String(d.getDate());
+  const month = d.toLocaleString(tc("date.locale"), { month: "long" });
+  const year  = d.getFullYear();
+  const hours   = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const date = (tc("date.long") || "D MMMM YYYY").replace("MMMM", month).replace("D", day).replace("YYYY", year);
+  return `${date} — ${hours}:${minutes}`;
+};
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const sId = user.service_id;
 
@@ -437,51 +450,50 @@ const creationFiles = attachmentComments.flatMap(c => c.files ?? []);
               </div>
             </Card>
 
-            {/* Assigned tech + assign button */}
-            <Card style={{ padding: "14px 16px" }}>
-              <SectionLabel><Icon name="tool" size={11} color="#a0a0a0" style={{ marginRight: 5 }} />{t("ticketDetail.assignedTech")}</SectionLabel>
+{/* Assigned tech + assign button */}
+<Card style={{ padding: "14px 16px" }}>
+  <SectionLabel><Icon name="tool" size={11} color="#a0a0a0" style={{ marginRight: 5 }} />{t("ticketDetail.assignedTech")}</SectionLabel>
 
-              {isAssigned ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                  <Icon name="user" size={14} color="#1d4ed8" />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{assignedTech.name} {assignedTech.surname}</span>
-                </div>
-              ) : (
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#1e3a8a", fontStyle: "italic", display: "block", marginBottom: 6 }}>{t("ticketsService.unassigned")}</span>
-              )}
+  {isAssigned ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+      <Icon name="user" size={14} color="#1d4ed8" />
+      <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{assignedTech.name} {assignedTech.surname}</span>
+    </div>
+  ) : (
+    <span style={{ fontSize: 13, fontWeight: 600, color: "#1e3a8a", fontStyle: "italic", display: "block", marginBottom: 6 }}>{t("ticketsService.unassigned")}</span>
+  )}
 
-              {isAssigned && (
-                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
-                  {tk.assigned_action === "taken" ? (
-                    <><Icon name="user" size={12} color="#3b82f6" /><span style={{ fontSize: 11, color: "#64748b" }}>{t("ticketDetail.takenByTech")}</span></>
-                  ) : (
-                    ["assigned", "updated"].includes(tk.assigned_action) && (
-                      <><Icon name="user-check" size={12} color="#7c3aed" />
-                      <span style={{ fontSize: 11, color: "#64748b" }}>
-                        {t("ticketDetail.assignedByManager")}
-                        <strong style={{ color: "#0f172a" }}>{tk.assigned_by_manager ? ` ${tk.assigned_by_manager.name} ${tk.assigned_by_manager.surname}` : t("ticketDetail.aManager")}</strong>
-                      </span></>
-                    )
-                  )}
-                </div>
-              )}
+  {isAssigned && (
+    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+      {tk.assigned_action === "taken" ? (
+        <><Icon name="user" size={12} color="#3b82f6" /><span style={{ fontSize: 11, color: "#64748b" }}>{t("ticketDetail.takenByTech")}</span></>
+      ) : (
+        ["assigned", "updated"].includes(tk.assigned_action) && (
+          <><Icon name="user-check" size={12} color="#7c3aed" />
+          <span style={{ fontSize: 11, color: "#64748b" }}>
+            {t("ticketDetail.assignedByManager")}
+            <strong style={{ color: "#0f172a" }}>{tk.assigned_by_manager ? ` ${tk.assigned_by_manager.name} ${tk.assigned_by_manager.surname}` : t("ticketDetail.aManager")}</strong>
+          </span></>
+        )
+      )}
+    </div>
+  )}
 
-              {tk.assigned_at && <p style={{ fontSize: 11, color: "#a0a0a0", margin: "2px 0" }}>{t("ticketDetail.assignedOn")} : {fmtDate(tk.assigned_at)}</p>}
-              {tk.closed_at   && <p style={{ fontSize: 11, color: "#a0a0a0", margin: "2px 0" }}>{t("ticketDetail.closedOn")} : {fmtDate(tk.closed_at)}</p>}
+  {tk.assigned_at && <p style={{ fontSize: 11, color: "#a0a0a0", margin: "2px 0" }}>{t("ticketDetail.assignedOn")} : {fmtDateTime(tk.assigned_at)}</p>}
+  {tk.closed_at   && <p style={{ fontSize: 11, color: "#a0a0a0", margin: "2px 0" }}>{t("ticketDetail.closedOn")} : {fmtDate(tk.closed_at)}</p>}
 
-              {!isAssigned && (
-                <button
-                  onClick={() => { if (!isTerminal) { setShowList(!showList); setSelectedTech(null); } }}
-                  disabled={isTerminal}
-                  style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: isTerminal ? "not-allowed" : "pointer", border: "none", background: isTerminal ? "#f0f0f0" : showList ? "#f0f0f0" : "#1e3a8a", color: isTerminal ? "#a0a0a0" : showList ? "#374151" : "#fff", transition: "background 0.15s" }}
-                  onMouseEnter={e => { if (!isTerminal && !showList) e.currentTarget.style.background = "#1e40af"; }}
-                  onMouseLeave={e => { if (!isTerminal && !showList) e.currentTarget.style.background = "#1e3a8a"; }}
-                >
-                  <Icon name={showList ? "x" : "user-plus"} size={14} color={isTerminal ? "#a0a0a0" : showList ? "#374151" : "#fff"} />
-                  {isTerminal ? t("ticketDetail.btn.alreadyAssigned") : showList ? t("ticketDetail.btn.cancel") : t("ticketDetail.btn.assignTicket")}
-                </button>
-              )}
-            </Card>
+  {!isTerminal && (
+    <button
+      onClick={() => { setShowList(!showList); setSelectedTech(null); }}
+      style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "10px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: "none", background: showList ? "#f0f0f0" : "#1e3a8a" , color: showList ? "#374151" : "#fff", transition: "background 0.15s" }}
+onMouseEnter={e => { if (!showList) e.currentTarget.style.background = "#1e40af"; }}
+onMouseLeave={e => { if (!showList) e.currentTarget.style.background = "#1e3a8a"; }}
+   >
+      <Icon name={showList ? "x" : isAssigned ? "user-edit" : "user-plus"} size={14} color={showList ? "#374151" : "#fff"} />
+      {showList ? t("ticketDetail.btn.cancel") : isAssigned ? t("ticketDetail.btn.updateTech", { defaultValue: "Update Technician" }) : t("ticketDetail.btn.assignTicket")}
+    </button>
+  )}
+</Card>
 
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Forward, Lock, Circle, XCircle, CheckCircle } from "lucide-react";
 import {
   MdTimer, MdFlag, MdCategory, MdSupportAgent, MdFlashOn, MdTrendingUp,
@@ -71,41 +71,72 @@ function MiniTooltip({ user, children }) {
   );
 }
 
-// ── SLA calculation — kept from original ───────────────────────────────────
+// ── Working-hours helpers (Sun–Thu, 08:00–16:00) ───────────────────────────
+function workingMsBetween(from, to) {
+  const WORK_START = 8;
+  const WORK_END   = 16;
+  const WORK_DAYS  = new Set([0, 1, 2, 3, 4]); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu
+  let ms = 0;
+  let current = new Date(from);
+  const end = new Date(to);
+  while (current < end) {
+    const day = current.getDay();
+    if (WORK_DAYS.has(day)) {
+      const dayStart = new Date(current); dayStart.setHours(WORK_START, 0, 0, 0);
+      const dayEnd   = new Date(current); dayEnd.setHours(WORK_END,   0, 0, 0);
+      const sliceFrom = current < dayStart ? dayStart : current;
+      const sliceTo   = end     < dayEnd   ? end      : dayEnd;
+      if (sliceTo > sliceFrom) ms += sliceTo.getTime() - sliceFrom.getTime();
+    }
+    current.setDate(current.getDate() + 1);
+    current.setHours(WORK_START, 0, 0, 0);
+  }
+  return ms;
+}
+
+// ── SLA calculation ────────────────────────────────────────────────────────
 function getSLAInfo(slaDateLimite, slaDateDebut, statut, closedAt, slaPauseElapsed) {
   if (!slaDateLimite) return null;
   const PAUSED   = ["pending", "pending_supplier"];
-  const TERMINAL = ["resolved", "closed", "rejected"];
-  const due   = new Date(slaDateLimite).getTime();
-  const debut = slaDateDebut ? new Date(slaDateDebut).getTime() : due - 24 * 3600000;
-  const win   = due - debut;
-  const now   = Date.now();
+  const TERMINAL = ["resolved", "closed ", "rejected"];
+  const due   = new Date(slaDateLimite);
+  const debut = new Date(slaDateDebut ?? (new Date(slaDateLimite).getTime() - 24 * 3600000));
+  const now   = new Date();
+  const win   = workingMsBetween(debut, due);
   if (TERMINAL.includes(statut)) {
-    const closed = closedAt ? new Date(closedAt).getTime() : due;
+    const closed   = closedAt ? new Date(closedAt) : due;
     const exceeded = closed > due;
-    const delta = Math.abs(closed - due);
-    const used = exceeded ? win + delta : win - (due - closed);
-    return { mode: "terminal", exceeded, diffH: Math.floor(delta / 3600000), diffM: Math.floor((delta % 3600000) / 60000), pct: Math.min(100, Math.max(0, (used / win) * 100)), deadline: new Date(slaDateLimite) };
+    const delta    = Math.abs(closed.getTime() - due.getTime());
+    const used     = workingMsBetween(debut, closed);
+    return { mode: "terminal", exceeded, diffH: Math.floor(delta / 3600000), diffM: Math.floor((delta % 3600000) / 60000), pct: Math.min(100, Math.max(0, (used / win) * 100)), deadline: due };
   }
+  
   if (PAUSED.includes(statut)) {
-    const frozen = slaPauseElapsed != null ? slaPauseElapsed : Math.max(0, due - now);
-    return { mode: "paused", diffH: Math.floor(frozen / 3600000), diffM: Math.floor((frozen % 3600000) / 60000), pct: Math.min(100, Math.max(0, (frozen / win) * 100)), deadline: new Date(slaDateLimite) };
+    const frozen = slaPauseElapsed != null ? slaPauseElapsed : workingMsBetween(now, due);
+    return { mode: "paused", diffH: Math.floor(frozen / 3600000), diffM: Math.floor((frozen % 3600000) / 60000), pct: Math.min(100, Math.max(0, (frozen / win) * 100)), deadline: due };
   }
-  const remaining = due - now;
-  const exceeded  = remaining <= 0;
-  const abs = Math.abs(remaining);
+
+const remaining = due > now ? workingMsBetween(now, due) : 0;
+  const exceeded  = now > due;
+  const abs       = exceeded ? workingMsBetween(due, now) : remaining;
+  const used      = win - remaining;
   return {
     mode: "active", exceeded,
     diffH: Math.floor(abs / 3600000), diffM: Math.floor((abs % 3600000) / 60000),
-    pct: exceeded ? 100 : Math.max(0, Math.min(100, (remaining / win) * 100)),
-    deadline: new Date(slaDateLimite),
+    pct: exceeded ? 100 : Math.max(0, Math.min(100, (used / win) * 100)),
+    deadline: due,
   };
 }
-
 // ── Main ───────────────────────────────────────────────────────────────────
 export default function TicketInfo({ ticket, status, savingStatus, isClosed, handleStatusChange, currentUser, actuality }) {
   const { t }     = useTranslation("technicien");
   const { t: tC } = useTranslation("common");
+
+  const [, forceUpdate] = useState(0);
+useEffect(() => {
+  const timer = setInterval(() => forceUpdate(n => n + 1), 60000);
+  return () => clearInterval(timer);
+}, []);
 
   const emp        = ticket.employee ?? {};
   const ini        = `${emp.name?.[0] ?? "?"}${emp.surname?.[0] ?? ""}`.toUpperCase();
@@ -113,6 +144,12 @@ export default function TicketInfo({ ticket, status, savingStatus, isClosed, han
   const fmtDate    = (d) => d ? new Date(d).toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" }) : "—";
   const closedAt   = ticket.closedAt ?? ticket.closed_at ?? null;
   const sla        = getSLAInfo(ticket.sla_date_limite, ticket.sla_date_debut, status, closedAt, ticket.sla_pause_elapsed_ms ?? null);
+
+
+  console.log("🕐 sla_date_debut reçu:", ticket.sla_date_debut);
+console.log("🕐 sla_date_limite reçu:", ticket.sla_date_limite);
+console.log("🕐 sla result:", sla);
+
 
   const slaColor = !sla ? "#9ca3af"
     : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
@@ -297,9 +334,9 @@ if (["assigned", "updated"].includes(ticket.assigned_action) && (ticket.assigned
                 </span>
                 <span style={{ fontSize: 11, color: "#a0a0a0", whiteSpace: "nowrap" }}>
                   {t("components.ticketInfo.sla.deadline")}{" "}
-                  {sla.deadline.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", year: "numeric" })}
-                  {" "}{t("components.ticketInfo.sla.at")}{" "}
-                  {sla.deadline.toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })}
+{sla.deadline.toLocaleDateString(dateLocale, { timeZone: "Africa/Algiers", day: "2-digit", month: "short", year: "numeric" })}
+{" "}{t("components.ticketInfo.sla.at")}{" "}
+{sla.deadline.toLocaleTimeString(dateLocale, { timeZone: "Africa/Algiers", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
             </Card>

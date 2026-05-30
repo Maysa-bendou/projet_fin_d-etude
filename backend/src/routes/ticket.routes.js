@@ -16,6 +16,67 @@ const {
   notifyTechTicketUpdated, 
 } = require("../controllers/notification.service");
 
+// ── Working hours calculator (Sun–Thu, 08:00–16:00) ───────────────────────
+// ── Working hours calculator (Sun–Thu, 08:00–16:00) ───────────────────────
+function addWorkingHours(startDate, workingHours) {
+const WORK_START = 7;  // 08:00 Algérie = 07:00 UTC
+const WORK_END   = 15; // 16:00 Algérie = 15:00 UTC
+  const WORK_DAYS  = new Set([0, 1, 2, 3, 4]); // Sun=0 Mon=1 Tue=2 Wed=3 Thu=4
+  const TZ_OFFSET  = 0; // Algeria = UTC+1
+
+  // Convert UTC ms to local hour/day
+  const localHour = (d) => ((d.getUTCHours() + TZ_OFFSET) % 24);
+  const localDay  = (d) => {
+    const localMs = d.getTime() + TZ_OFFSET * 3600000;
+    return new Date(localMs).getUTCDay();
+  };
+  const localMin  = (d) => d.getUTCMinutes();
+
+  // Set local time on a date (modifies UTC internally)
+  const setLocalHour = (d, h, m = 0) => {
+    d.setTime(d.getTime() - localHour(d) * 3600000 - localMin(d) * 60000 + h * 3600000 + m * 60000);
+  };
+
+  let current   = new Date(startDate);
+  let remaining = workingHours;
+
+  while (remaining > 0) {
+    const day  = localDay(current);
+    const hour = localHour(current);
+    const min  = localMin(current);
+
+    // Skip Friday (5) & Saturday (6)
+    if (!WORK_DAYS.has(day)) {
+      // Jump to next day 08:00 local
+      current.setTime(current.getTime() + (24 - hour + WORK_START) * 3600000 - min * 60000);
+      continue;
+    }
+
+    // Before 08:00 local → jump to 08:00
+    if (hour < WORK_START) {
+      current.setTime(current.getTime() + (WORK_START - hour) * 3600000 - min * 60000);
+      continue;
+    }
+
+    // After 16:00 local → jump to next day 08:00
+    if (hour >= WORK_END) {
+      current.setTime(current.getTime() + (24 - hour + WORK_START) * 3600000 - min * 60000);
+      continue;
+    }
+
+    // Working hours left today
+    const hoursLeftToday = WORK_END - hour - min / 60;
+    if (remaining <= hoursLeftToday) {
+      current.setTime(current.getTime() + remaining * 3600000);
+      remaining = 0;
+    } else {
+      remaining -= hoursLeftToday;
+      current.setTime(current.getTime() + hoursLeftToday * 3600000);
+    }
+  }
+
+  return current;
+}
 
 // ── Multer for existing ticket replies (id known via :id param) ───────────
 const storage = multer.diskStorage({
@@ -55,7 +116,7 @@ const CATEGORY_SERVICE_MAP = {
   software:   1,  // IT Support
   network:    2,  // IT Network
   security:   3,  // IT Security
-  access:     4,  // Service Desk
+  access:     1,  // IT Support
   
 };
 
@@ -141,26 +202,39 @@ try {
     const slaConfig = await prisma.sla_config.findFirst({ where: { priority } });
     console.log("👉 slaConfig trouvé:", slaConfig);
 
-    const service_id      = CATEGORY_SERVICE_MAP[category] ?? null;
-    const sla_date_debut  = new Date();
-    const sla_date_limite = new Date(sla_date_debut.getTime() + slaConfig.duration_hours * 3600000);
+const service_id      = CATEGORY_SERVICE_MAP[category] ?? null;
+const sla_date_debut  = new Date();
+const sla_date_limite_computed = addWorkingHours(new Date(sla_date_debut.getTime()), slaConfig.duration_hours);
+const sla_date_limite = new Date(sla_date_limite_computed.toISOString());
 
+console.log("🕐 sla_date_debut LOCAL:", sla_date_debut.toLocaleString("fr-DZ", { timeZone: "Africa/Algiers" }));
+console.log("🕐 sla_date_limite LOCAL:", sla_date_limite.toLocaleString("fr-DZ", { timeZone: "Africa/Algiers" }));
+console.log("🕐 sla_date_limite UTC:", sla_date_limite.toISOString());
     // ✅ 1. Créer le ticket
-    const created = await prisma.ticket.create({
-      data: {
-        title, description, category, impact, urgency, type, priority,
-        created_by:     parseInt(created_by),
-        service_id,
-        sla_date_debut,
-        sla_date_limite,
-        sla_statut: "en_cours",
-      },
-    });
+// ✅ 1. Créer le ticket
+const created = await prisma.ticket.create({
+  data: {
+    title, description, category, impact, urgency, type, priority,
+    created_by:  parseInt(created_by),
+    service_id,
+    sla_date_debut,
+    sla_date_limite,   // ← directement la vraie valeur, pas sla_date_debut
+    sla_statut: "en_cours",
+  },
+});
     console.log("👉 ticket id créé:", created.id);
 
-    // ✅ 2. Relire depuis la base (fix bug Prisma 5 + Timestamptz)
+    // ✅ Fix Prisma timezone bug — update sla_date_limite via raw SQL
+    await prisma.$executeRaw`
+      UPDATE ticket 
+      SET sla_date_limite = ${sla_date_limite}::timestamptz
+      WHERE id = ${created.id}
+    `;
+
+    // ✅ 2. Relire depuis la base
     const ticket = await prisma.ticket.findUnique({ where: { id: created.id } });
     console.log("👉 sla_date_limite relue:", ticket.sla_date_limite);
+    console.log("👉 ticket id créé:", created.id);
 
     // ✅ 3. Sauvegarder les pièces jointes si présentes
     const uploadedFiles = req.files ?? [];
@@ -363,7 +437,6 @@ router.put("/:id/status", async (req, res) => {
     if (status === "closed") {
       data.closed_at = new Date();
     }
-
     const ticket = await prisma.ticket.update({
   where: { id },
   data,

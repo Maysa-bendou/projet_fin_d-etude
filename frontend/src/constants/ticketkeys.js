@@ -99,16 +99,18 @@ export function formatDate(t, dateStr, format = "short") {
     return date.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
   }
 
-  if (format === "withTime") {
-    return date.toLocaleString(locale, {
-      day: "2-digit", month: "2-digit", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
-  }
+// Après
+if (format === "withTime") {
+  return date.toLocaleString(locale, {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  });
+}
 
-  if (format === "timeOnly") {
-    return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-  }
+// Après
+if (format === "timeOnly") {
+  return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", hour12: false });
+}
 
   // default: short → "15/04/2025" or "04/15/2025"
   return date.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" });

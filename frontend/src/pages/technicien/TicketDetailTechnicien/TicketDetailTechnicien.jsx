@@ -51,8 +51,7 @@ export default function TicketDetailTechnicien() {
 
   // ── Locale-aware time formatter ───────────────────────────────────────────
   // Reads date.locale from common.json so time format switches with language.
-  const fmt = (d) => new Date(d).toLocaleTimeString(tC("date.locale"), { hour: "2-digit", minute: "2-digit" });
-
+const fmt = (d) => new Date(d).toLocaleTimeString(tC("date.locale"), { hour: "2-digit", minute: "2-digit", hour12: false })
   // ── Translate legacy French DB status messages ────────────────────────────
   // DB stores status-change messages as French strings e.g. "Statut changé en : Résolu".
   // Maps them back to raw DB key → reads translated label from common.json status.*

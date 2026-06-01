@@ -63,26 +63,52 @@ function useDebounce(value, delay = 220) {
 }
 
 // ── SLA Bar ────────────────────────────────────────────────────────────────
+// ── Working hours helper (Sun–Thu, 08:00–16:00) ───────────────────────────
+function workingMsBetween(from, to) {
+  const WORK_START = 8, WORK_END = 16;
+  const WORK_DAYS  = new Set([0, 1, 2, 3, 4]);
+  let ms = 0;
+  let current = new Date(from);
+  const end = new Date(to);
+  while (current < end) {
+    const day = current.getDay();
+    if (WORK_DAYS.has(day)) {
+      const dayStart = new Date(current); dayStart.setHours(WORK_START, 0, 0, 0);
+      const dayEnd   = new Date(current); dayEnd.setHours(WORK_END,   0, 0, 0);
+      const sliceFrom = current < dayStart ? dayStart : current;
+      const sliceTo   = end < dayEnd ? end : dayEnd;
+      if (sliceTo > sliceFrom) ms += sliceTo.getTime() - sliceFrom.getTime();
+    }
+    current.setDate(current.getDate() + 1);
+    current.setHours(WORK_START, 0, 0, 0);
+  }
+  return ms;
+}
 // FIX: useTranslation("manager") — single namespace, NOT array
 const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }) => {
-  const { t } = useTranslation("manager");
+    const { t } = useTranslation("manager");
+  const [, forceUpdate] = useState(0);  // ← ajoute ici
+  useEffect(() => {                      // ← et ici
+    const timer = setInterval(() => forceUpdate(n => n + 1), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   if (!slaDueDate)
     return <span style={{ color: "#94a3b8", fontSize: 11, fontStyle: "italic" }}>N/A</span>;
 
   const PAUSED   = ["pending", "pending_supplier"];
   const TERMINAL = ["resolved", "closed", "rejected"];
-  const now      = Date.now();
-  const due      = new Date(slaDueDate).getTime();
-  const debut    = slaDebut ? new Date(slaDebut).getTime() : due - 86400000;
-  const win      = due - debut;
+const now   = new Date();
+const due   = new Date(slaDueDate);
+const debut = new Date(slaDebut ?? (new Date(slaDueDate).getTime() - 86400000));
+const win   = Math.max(1, workingMsBetween(debut, due));
 
   if (TERMINAL.includes(status)) {
-    const closed   = closedAt ? new Date(closedAt).getTime() : due;
-    const exceeded = closed > due;
-    const delta    = Math.abs(closed - due);
-    const used     = exceeded ? win + delta : win - (due - closed);
-    const pct      = Math.min(100, Math.max(0, (used / win) * 100));
+const closed   = closedAt ? new Date(closedAt) : due;
+const exceeded = closed > due;
+const delta    = Math.abs(closed.getTime() - due.getTime());
+const used     = workingMsBetween(debut, closed);
+const pct      = Math.min(100, Math.max(0, (used / win) * 100));
     const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -97,7 +123,7 @@ const SlaBar = memo(({ slaDueDate, slaDebut, status, closedAt, slaPauseElapsed }
   }
 
   if (PAUSED.includes(status)) {
-const frozen = slaPauseElapsed != null ? slaPauseElapsed : Math.max(0, due - now);
+const frozen = slaPauseElapsed != null ? slaPauseElapsed : workingMsBetween(now, due);
 const pct    = Math.min(100, Math.max(0, (frozen / win) * 100));
     const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
     return (
@@ -112,10 +138,11 @@ const pct    = Math.min(100, Math.max(0, (frozen / win) * 100));
     );
   }
 
-  const diffMs   = due - now;
-  const exceeded = diffMs <= 0;
-  const pct = exceeded ? 100 : Math.max(0, Math.min(100, (Math.max(0, diffMs) / win) * 100));
-  const abs      = Math.abs(diffMs);
+const remaining = due > now ? workingMsBetween(now, due) : 0;
+const exceeded  = now > due;
+const abs       = exceeded ? workingMsBetween(due, now) : remaining;
+const used      = win - remaining;
+const pct       = exceeded ? 100 : Math.max(0, Math.min(100, (used / win) * 100));
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
   const barColor = exceeded ? "#ef4444" : h < 2 ? "#f87171" : h < 6 ? "#fbbf24" : "#34d399";
   return (
@@ -741,31 +768,31 @@ const exportPDF = useCallback(async () => {
   if (!tk.sla_date_limite) return "N/A";
   const PAUSED   = ["pending", "pending_supplier"];
   const TERMINAL = ["resolved", "closed", "rejected"];
-  const now   = Date.now();
-  const due   = new Date(tk.sla_date_limite).getTime();
-  const debut = tk.sla_date_debut ? new Date(tk.sla_date_debut).getTime() : due - 86400000;
-  const win   = due - debut;
+const now   = new Date();
+const due   = new Date(tk.sla_date_limite);
+const debut = new Date(tk.sla_date_debut ?? (due.getTime() - 86400000));
+const win   = Math.max(1, workingMsBetween(debut, due));
 
   if (TERMINAL.includes(tk.status)) {
-    const closed   = tk.closed_at ? new Date(tk.closed_at).getTime() : due;
-    const exceeded = closed > due;
-    if (!exceeded) return "CLOSED ✓";
-    const delta = closed - due;
+const closed   = tk.closed_at ? new Date(tk.closed_at) : due;
+const exceeded = closed > due;
+if (!exceeded) return "CLOSED ✓";
+const delta = Math.abs(closed.getTime() - due.getTime());
     const h = Math.floor(delta / 3600000);
     const m = Math.floor((delta % 3600000) / 60000);
     return `+${h}H ${m}M EXCEEDED`;
   }
 
   if (PAUSED.includes(tk.status)) {
-    const frozen = tk.sla_pause_elapsed_ms != null ? tk.sla_pause_elapsed_ms : Math.max(0, due - now);
+const frozen = tk.sla_pause_elapsed_ms != null ? tk.sla_pause_elapsed_ms : workingMsBetween(now, due);
     const h = Math.floor(frozen / 3600000);
     const m = Math.floor((frozen % 3600000) / 60000);
     return `${h}H ${m}M FROZEN`;
   }
 
-  const diffMs   = due - now;
-  const exceeded = diffMs <= 0;
-  const abs = Math.abs(diffMs);
+const remaining = due > now ? workingMsBetween(now, due) : 0;
+const exceeded  = now > due;
+const abs       = exceeded ? workingMsBetween(due, now) : remaining;
   const h = Math.floor(abs / 3600000);
   const m = Math.floor((abs % 3600000) / 60000);
   return exceeded ? `+${h}H ${m}M EXCEEDED` : `${h}H ${m}M REMAINING`;

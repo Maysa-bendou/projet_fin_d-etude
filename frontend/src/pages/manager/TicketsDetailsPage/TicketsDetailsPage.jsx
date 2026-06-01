@@ -39,6 +39,12 @@ const TicketDetailPage = () => {
   const { t }     = useTranslation(["manager", "common"]);
   const { t: tc } = useTranslation("common");
 
+    const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => forceUpdate(n => n + 1), 60000);
+    return () => clearInterval(timer);
+  }, []);
+  
   const fmtDate = (str) => {
     if (!str) return "—";
     const d = new Date(str);
@@ -125,33 +131,59 @@ const TicketDetailPage = () => {
 
   const handleCloseModal = () => { setShowModal(false); navigate("/manager/tickets-service"); };
 
-  const calculateSLA = (tk) => {
-    if (!tk?.sla_date_limite) return null;
-    const PAUSED   = ["pending", "pending_supplier"];
-    const TERMINAL = ["resolved", "closed", "rejected"];
-    const now = Date.now();
-    const due = new Date(tk.sla_date_limite).getTime();
-    const debut = tk.sla_date_debut ? new Date(tk.sla_date_debut).getTime() : due - 24 * 3600000;
-    const window = due - debut;
-    if (TERMINAL.includes(tk.status)) {
-      const closed = tk.closed_at ? new Date(tk.closed_at).getTime() : due;
-      const exceeded = closed > due;
-      const delta = Math.abs(closed - due);
-      const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
-      return { mode: "terminal", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.closedOk"), pct: exceeded ? 100 : Math.min(100, Math.max(0, ((due - closed) / window) * 100)) };
+  function workingMsBetween(from, to) {
+  const WORK_START = 8, WORK_END = 16;
+  const WORK_DAYS  = new Set([0, 1, 2, 3, 4]);
+  let ms = 0;
+  let current = new Date(from);
+  const end = new Date(to);
+  while (current < end) {
+    const day = current.getDay();
+    if (WORK_DAYS.has(day)) {
+      const dayStart = new Date(current); dayStart.setHours(WORK_START, 0, 0, 0);
+      const dayEnd   = new Date(current); dayEnd.setHours(WORK_END, 0, 0, 0);
+      const sliceFrom = current < dayStart ? dayStart : current;
+      const sliceTo   = end < dayEnd ? end : dayEnd;
+      if (sliceTo > sliceFrom) ms += sliceTo.getTime() - sliceFrom.getTime();
     }
-    if (PAUSED.includes(tk.status)) {
-      const elapsed = tk.sla_pause_elapsed_ms ? Number(tk.sla_pause_elapsed_ms) : null;
-      const frozen = elapsed != null ? elapsed : Math.max(0, due - now);
-      const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
-      return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, ((window - frozen) / window) * 100) };
-    }
-    const remaining = due - now;
-    const exceeded = remaining <= 0;
-    const abs = Math.abs(remaining);
-    const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
-    return { mode: "active", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.remaining", { h, m }), pct: exceeded ? 100 : Math.min(100, Math.max(0, (remaining / window) * 100)) };
-  };
+    current.setDate(current.getDate() + 1);
+    current.setHours(WORK_START, 0, 0, 0);
+  }
+  return ms;
+}
+
+const calculateSLA = (tk) => {
+  if (!tk?.sla_date_limite) return null;
+  const PAUSED   = ["pending", "pending_supplier"];
+  const TERMINAL = ["resolved", "closed", "rejected"];
+  const now   = new Date();
+  const due   = new Date(tk.sla_date_limite);
+  const debut = new Date(tk.sla_date_debut ?? (due.getTime() - 24 * 3600000));
+  const win   = Math.max(1, workingMsBetween(debut, due));
+
+  if (TERMINAL.includes(tk.status)) {
+    const closed   = tk.closed_at ? new Date(tk.closed_at) : due;
+    const exceeded = closed > due;
+    const delta    = Math.abs(closed.getTime() - due.getTime());
+    const h = Math.floor(delta / 3600000), m = Math.floor((delta % 3600000) / 60000);
+    const used = workingMsBetween(debut, closed);
+    return { mode: "terminal", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.closedOk"), pct: Math.min(100, Math.max(0, (used / win) * 100)) };
+  }
+
+  if (PAUSED.includes(tk.status)) {
+    const elapsed = tk.sla_pause_elapsed_ms ? Number(tk.sla_pause_elapsed_ms) : null;
+    const frozen  = elapsed != null ? elapsed : workingMsBetween(now, due);
+    const h = Math.floor(frozen / 3600000), m = Math.floor((frozen % 3600000) / 60000);
+    return { mode: "paused", text: t("ticketDetail.sla.frozen", { h, m }), pct: Math.min(100, (frozen / win) * 100) };
+  }
+
+  const remaining = due > now ? workingMsBetween(now, due) : 0;
+  const exceeded  = now > due;
+  const abs       = exceeded ? workingMsBetween(due, now) : remaining;
+  const used      = win - remaining;
+  const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
+  return { mode: "active", exceeded, text: exceeded ? t("ticketDetail.sla.exceeded", { h, m }) : t("ticketDetail.sla.remaining", { h, m }), pct: exceeded ? 100 : Math.max(0, Math.min(100, (used / win) * 100)) };
+};
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>

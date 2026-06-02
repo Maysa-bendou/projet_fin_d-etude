@@ -113,7 +113,7 @@ const pct      = Math.min(100, Math.max(0, (used / win) * 100));
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <div style={{ height: 3, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: exceeded ? "#f87171" : "#34d399" }} />
+          <div style={{ height: "100%", width: `${pct}%`, background: exceeded ? "#ef4444" : "#16a34a" }} />
         </div>
         <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : "#6b7280" }}>
           {exceeded ? t("ticketsService.sla.exceeded", { h, m }) : t("ticketsService.sla.closed")}
@@ -144,13 +144,13 @@ const abs       = exceeded ? workingMsBetween(due, now) : remaining;
 const used      = win - remaining;
 const pct       = exceeded ? 100 : Math.max(0, Math.min(100, (used / win) * 100));
   const h = Math.floor(abs / 3600000), m = Math.floor((abs % 3600000) / 60000);
-  const barColor = exceeded ? "#ef4444" : h < 2 ? "#f87171" : h < 6 ? "#fbbf24" : "#34d399";
+const barColor = exceeded ? "#ef4444" : pct > 80 ? "#ef4444" : pct > 50 ? "#f59e0b" : "#22c55e";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <div style={{ height: 3, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: barColor }} />
       </div>
-      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : h < 2 ? "#c2410c" : h < 6 ? "#a16207" : "#15803d" }}>
+      <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap", color: exceeded ? "#ef4444" : pct > 80 ? "#dc2626" : pct > 50 ? "#d97706" : "#15803d" }}>
         {exceeded ? t("ticketsService.sla.alert", { h, m }) : t("ticketsService.sla.remaining", { h, m })}
       </span>
     </div>

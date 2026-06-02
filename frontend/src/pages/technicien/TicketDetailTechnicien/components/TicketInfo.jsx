@@ -151,13 +151,14 @@ console.log("🕐 sla_date_limite reçu:", ticket.sla_date_limite);
 console.log("🕐 sla result:", sla);
 
 
-  const slaColor = !sla ? "#9ca3af"
-    : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
-    : sla.mode === "paused"   ? "#7c3aed"
-    : sla.exceeded            ? "#dc2626"
-    : sla.pct > 50            ? "#16a34a"
-    : sla.pct > 20            ? "#d97706"
-    : "#f97316";
+const slaColor = !sla ? "#9ca3af"
+  : sla.mode === "terminal" ? (sla.exceeded ? "#dc2626" : "#16a34a")
+  : sla.mode === "paused"   ? "#7c3aed"
+  : sla.exceeded            ? "#dc2626"
+  : sla.pct > 80            ? "#dc2626"
+  : sla.pct > 50            ? "#d97706"
+  : "#16a34a";
+
 
   // ── assignedBy node — kept from original ────────────────────────────────
   const assignedByNode = (() => {

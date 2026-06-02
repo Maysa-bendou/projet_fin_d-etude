@@ -133,10 +133,10 @@
       "subtitle": "director View · All services"
     },
     "section": {
-      "flowDistributionAll": "Flow Distribution — All Services",
-      "techPerfAll":         "Technician Performance — All Services",
-      "categoryAll":         "Distribution by Category — All Services",
-      "timeTrendsAll":       "Time Trends — All Services"
+      "flowDistributionAll": "Flow Distribution  All Services",
+      "techPerfAll":         "Technician Performance  All Services",
+      "categoryAll":         "Distribution by Category  All Services",
+      "timeTrendsAll":       "Time Trends  All Services"
     },
     "pdf": {
       "reportTitle":          "director Performance Report — All Services",

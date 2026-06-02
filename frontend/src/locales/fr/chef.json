@@ -132,13 +132,13 @@
       "subtitle": "directeur  · Tous les services"
     },
     "section": {
-      "flowDistributionAll": "Répartition des Flux — Tous Services",
-      "techPerfAll":         "Performance des Techniciens — Tous Services",
-      "categoryAll":         "Répartition par Catégorie — Tous Services",
-      "timeTrendsAll":       "Tendances Temporelles — Tous Services"
+      "flowDistributionAll": "Répartition des Flux  Tous Services",
+      "techPerfAll":         "Performance des Techniciens  Tous Services",
+      "categoryAll":         "Répartition par Catégorie  Tous Services",
+      "timeTrendsAll":       "Tendances Temporelles  Tous Services"
     },
     "pdf": {
-      "reportTitle":          "Rapport de Performance directeur — Tous Services",
+      "reportTitle":          "Rapport de Performance directeur  Tous Services",
       "totalAllServices":     "Total Tickets (Tous services)",
       "resolutionAllServices":"Taux de Résolution (Tous services)",
       "reportFile":           "Performance_Chef"

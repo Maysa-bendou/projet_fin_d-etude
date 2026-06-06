@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import djezzyLogoImg from "../../assets/images/image.png";
+import djezzyLogoImg from "../../assets/images/djezzy-logo.png";
 
 const _preloadedLogo = new Image();
 _preloadedLogo.src = djezzyLogoImg;

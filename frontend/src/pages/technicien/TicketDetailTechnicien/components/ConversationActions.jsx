@@ -21,7 +21,7 @@ function ConfirmedCloseForm({ ticket, onClose, closing, conversation }) {
 
   const handleDeleteFile = async (fileId) => {
     try {
-      await fetch(`http://localhost:3001/api/tech/attachments/${fileId}`, {
+      await fetch(`https://ticket-backend-4uw2.onrender.com/api/tech/attachments/${fileId}`, {
         method: "DELETE",
       });
       // refresh UI
@@ -64,7 +64,7 @@ function ConfirmedCloseForm({ ticket, onClose, closing, conversation }) {
                 className="flex items-center justify-between gap-2 text-[11px] bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5"
               >
                 <a
-                  href={`http://localhost:3001/${f.filePath}`}
+                  href={`https://ticket-backend-4uw2.onrender.com/${f.filePath}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-blue-600"
@@ -130,7 +130,7 @@ export default function ConversationActions({
       setFilteredTechs(techniciens ?? []);
       return;
     }
-    fetch(`http://localhost:3001/api/tech/techniciens/service/${redirectServiceId}`)
+    fetch(`https://ticket-backend-4uw2.onrender.com/api/tech/techniciens/service/${redirectServiceId}`)
       .then(r => r.json())
       .then(setFilteredTechs)
       .catch(() => setFilteredTechs([]));
@@ -228,7 +228,7 @@ isClosed ? (
             <div className="mt-1.5 pt-2 border-t border-slate-100 flex flex-col gap-1">
               {files.map((f, i) => (
                 <a key={f.id ?? i}
-                  href={`http://localhost:3001/${f.filePath}`}
+                  href={`https://ticket-backend-4uw2.onrender.com/${f.filePath}`}
                   target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 text-[11px] text-blue-500 hover:underline px-1 truncate">
                   <Paperclip size={10} className="shrink-0"/> {f.fileName}
@@ -274,7 +274,7 @@ isClosed ? (
     <div className="flex gap-2 pt-1">
       <button
         onClick={async () => {
-          await fetch(`http://localhost:3001/api/tech/tickets/${ticket.id}/clear-solution`, {
+          await fetch(`https://ticket-backend-4uw2.onrender.com/api/tech/tickets/${ticket.id}/clear-solution`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
           });

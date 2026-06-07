@@ -160,7 +160,7 @@ export default function CreateTicketPage() {
       fd.append("created_by",  user.id);
       files.forEach(file => fd.append("files", file));
 
-      const res  = await fetch("http://localhost:3001/api/tickets/create", {
+      const res  = await fetch("https://ticket-backend-4uw2.onrender.com/api/tickets/create", {
         method: "POST",
         body: fd,
       });

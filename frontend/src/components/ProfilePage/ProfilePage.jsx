@@ -40,7 +40,7 @@ export default function ProfilePage() {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error(t("errors.notAuthenticated"));
-        const res = await fetch("http://localhost:3001/api/profile", { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch("https://ticket-backend-4uw2.onrender.com/api/profile", { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) throw new Error(t("errors.loadError"));
         setUser(await res.json());
       } catch { setError(t("errors.cannotLoad")); }

@@ -436,8 +436,8 @@ const { role, serviceId, managerName } = useMemo(() => {
     setLoading(true);
     try {
       const [enumRes, ticketsRes] = await Promise.all([
-        fetch("http://localhost:3001/api/tech/enums"),
-        fetch("http://localhost:3001/api/tickets"),
+        fetch("https://ticket-backend-4uw2.onrender.com/api/tech/enums"),
+        fetch("https://ticket-backend-4uw2.onrender.com/api/tickets"),
       ]);
 
       const enumData = await enumRes.json();

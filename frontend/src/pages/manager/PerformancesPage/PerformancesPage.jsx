@@ -136,7 +136,7 @@ export default function PerformancesPage() {
       const params = {};
       if (year) params.year = year;
       if (month) params.month = month;
-      const res = await axios.get(`http://localhost:3001/api/manager/stats/${user.id}`, { params });
+      const res = await axios.get(`https://ticket-backend-4uw2.onrender.com/api/manager/stats/${user.id}`, { params });
       setStats(res.data);
     } catch (err) {
       console.error("Erreur stats:", err);

@@ -62,7 +62,7 @@ useEffect(() => {
   return () => clearInterval(timer);
 }, []);
   useEffect(() => {
-    fetch(`http://localhost:3001/api/tickets/${id}`)
+    fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}`)
       .then(res => res.json())
       .then(data => { setTicket(data); setLoading(false); })
       .catch(err => console.error("Error fetching ticket:", err));
@@ -72,13 +72,13 @@ useEffect(() => {
     setShowConfirm(false);
     setTaking(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
+      const response = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}/assign`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ technicienId: currentUser.id, action: "taken" }),
       });
       if (response.ok) {
-        const refreshed = await fetch(`http://localhost:3001/api/tickets/${id}`);
+        const refreshed = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}`);
         const data = await refreshed.json();
 setTicket({
   ...data,
@@ -391,7 +391,7 @@ const creationFiles = attachmentComments.flatMap(c => c.files ?? []);
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
       {creationFiles.map((f, i) => (
         <a key={i}
-          href={`http://localhost:3001/${f.filePath ?? f.file_path}`}
+          href={`https://ticket-backend-4uw2.onrender.com/${f.filePath ?? f.file_path}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{

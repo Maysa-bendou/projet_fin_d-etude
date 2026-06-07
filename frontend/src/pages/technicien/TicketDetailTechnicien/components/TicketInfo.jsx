@@ -303,7 +303,7 @@ if (["assigned", "updated"].includes(ticket.assigned_action) && (ticket.assigned
               <SectionLabel><Icon name="paperclip" size={11} style={{ marginRight: 5 }} />{t("ticketDetail.initialAttachments", { defaultValue: "Pièces jointes initiales" })}</SectionLabel>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {attachments.map((f, i) => (
-                  <a key={i} href={`http://localhost:3001/${f.filePath ?? f.file_path}`} target="_blank" rel="noopener noreferrer"
+                  <a key={i} href={`https://ticket-backend-4uw2.onrender.com/${f.filePath ?? f.file_path}`} target="_blank" rel="noopener noreferrer"
                     style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "#f8fafc", border: "0.5px solid #e2e8f0", color: "#475569", textDecoration: "none", fontWeight: 500 }}>
                     <Icon name="paperclip" size={10} color="#94a3b8" /> {f.fileName ?? f.file_name}
                   </a>

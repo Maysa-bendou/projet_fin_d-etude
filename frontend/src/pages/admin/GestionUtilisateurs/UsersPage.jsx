@@ -102,8 +102,8 @@ function UsersPage() {
     setLoading(true);
     try {
       const [uRes, sRes, dRes] = await Promise.all([
-        fetch("http://localhost:3001/api/users"),
-        fetch("http://localhost:3001/api/users/services"),
+        fetch("https://ticket-backend-4uw2.onrender.com/api/users"),
+        fetch("https://ticket-backend-4uw2.onrender.com/api/users/services"),
       ]);
       if (uRes.ok) setUsers(await uRes.json());
       if (sRes.ok) setServices(await sRes.json());
@@ -119,7 +119,7 @@ function UsersPage() {
   };
 
   const addUser = async (newUser) => {
-    const res = await fetch("http://localhost:3001/api/users", {
+    const res = await fetch("https://ticket-backend-4uw2.onrender.com/api/users", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newUser),
     });
@@ -134,7 +134,7 @@ function UsersPage() {
   };
 
   const updateUser = async (updatedUser) => {
-    const res = await fetch(`http://localhost:3001/api/users/${updatedUser.id}`, {
+    const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/users/${updatedUser.id}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedUser),
     });
@@ -149,7 +149,7 @@ function UsersPage() {
 
   const toggleActive = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/users/${id}/toggle-active`, { method: "PUT" });
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/users/${id}/toggle-active`, { method: "PUT" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: !u.is_active } : u));
       setSelectedUser(null);

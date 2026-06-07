@@ -30,7 +30,7 @@ function FileLinks({ files, dark }) {
   return (
     <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:8 }}>
       {files.map((f, i) => (
-        <a key={i} href={"http://localhost:3001/" + f.filePath} target="_blank" rel="noopener noreferrer"
+        <a key={i} href={"https://ticket-backend-4uw2.onrender.com/" + f.filePath} target="_blank" rel="noopener noreferrer"
           style={{ display:"flex", alignItems:"center", gap:4, fontSize:11, borderRadius:6, padding:"2px 8px",
             background: dark ? "rgba(255,255,255,0.15)" : "#f1f5f9",
             color: dark ? "#fff" : "#64748b", textDecoration:"none", fontWeight:500,
@@ -222,7 +222,7 @@ function SolutionPanel({ ticket, t, comments }) {
           {files.length > 0 && (
             <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:8 }}>
               {files.map((f, i) => (
-                <a key={i} href={"http://localhost:3001/"+f.filePath} target="_blank" rel="noopener noreferrer"
+                <a key={i} href={"https://ticket-backend-4uw2.onrender.com/"+f.filePath} target="_blank" rel="noopener noreferrer"
                   style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 9px", borderRadius:6, background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0", textDecoration:"none", fontWeight:500}}>
                   <HiOutlinePaperClip size={10}/> {f.fileName}
                 </a>
@@ -353,7 +353,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
   const fetchTicket = async () => {
     setLoading(true); setError(null);
     try {
-      const res = await fetch("http://localhost:3001/api/tickets/" + id);
+      const res = await fetch("https://ticket-backend-4uw2.onrender.com/api/tickets/" + id);
       if (!res.ok) throw new Error(t('ticketDetails.notFound'));
       const data = await res.json();
       setTicket(data);
@@ -365,7 +365,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "null");
     if (!user?.id) return;
-    fetch(`http://localhost:3001/api/tickets/my/${user.id}`)
+    fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/my/${user.id}`)
       .then(r => r.json())
       .then(data => setAllIds((data || []).map(tk => String(tk.id))))
       .catch(() => {});
@@ -403,7 +403,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
 
   const handleReopen = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/api/tickets/${id}`, {
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}`, {
         method:"PUT", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ status:"open", user_id:currentUser.id, _reopen:true }),
       });
@@ -420,7 +420,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
   const handleUpdateTicket = async () => {
     setUpdating(true);
     try {
-      const res = await fetch("http://localhost:3001/api/tickets/" + id, {
+      const res = await fetch("https://ticket-backend-4uw2.onrender.com/api/tickets/" + id, {
         method:"PUT", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ title:editFields.titre, description:editFields.description, impact:editFields.impact, urgency:editFields.urgence, user_id:currentUser.id }),
       });
@@ -434,7 +434,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
     if (!currentUser?.id || confirming) return;
     setConfirming(true);
     try {
-      const res = await fetch(`http://localhost:3001/api/tickets/${id}/confirm-reply`, {
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}/confirm-reply`, {
         method:"PUT", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ employeeId:currentUser.id, confirmed }),
       });
@@ -453,7 +453,7 @@ if (msg === "employee_reopened" || msg.startsWith("employee_reopened:")) {
       fd.append("employeeId", currentUser.id);
       fd.append("message", replyMsg);
       replyFiles.forEach(f => fd.append("files", f));
-      const res = await fetch(`http://localhost:3001/api/tickets/${id}/employee-reply`, { method:"POST", body:fd });
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}/employee-reply`, { method:"POST", body:fd });
       if (!res.ok) throw new Error(t('common.serverError'));
       setReplyMsg(""); setReplyFiles([]); fetchTicket();
     } catch (e) { alert(e.message); }
@@ -631,7 +631,7 @@ const historyComments = comments.filter(c =>
               <span style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.08em" }}>{t('ticketDetails.initialAttachments')}</span>
               <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                 {allAttachFiles.map((f, i) => (
-                  <a key={i} href={"http://localhost:3001/"+f.filePath} target="_blank" rel="noopener noreferrer"
+                  <a key={i} href={"https://ticket-backend-4uw2.onrender.com/"+f.filePath} target="_blank" rel="noopener noreferrer"
                     style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, padding:"3px 9px", borderRadius:6, background:"#f8fafc", border:"1px solid #e2e8f0", color:"#475569", textDecoration:"none", fontWeight:500 }}>
                     <HiOutlinePaperClip size={9}/> {f.fileName}
                   </a>

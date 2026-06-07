@@ -212,7 +212,7 @@ export default function TopNavbar({ pageTitle = "" }) {
     if (!user?.id) return;
     const fetchNotifs = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/notifications/${user.id}`);
+        const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/notifications/${user.id}`);
         if (res.ok) setNotifs(await res.json());
       } catch (_) {}
     };
@@ -225,14 +225,14 @@ export default function TopNavbar({ pageTitle = "" }) {
 
   const markAllRead = async () => {
     try {
-      await fetch(`http://localhost:3001/api/notifications/read-all/${user.id}`, { method: "PUT" });
+      await fetch(`https://ticket-backend-4uw2.onrender.com/api/notifications/read-all/${user.id}`, { method: "PUT" });
       setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
     } catch (_) {}
   };
 
   const markRead = async (id) => {
     try {
-      await fetch(`http://localhost:3001/api/notifications/${id}/read`, { method: "PUT" });
+      await fetch(`https://ticket-backend-4uw2.onrender.com/api/notifications/${id}/read`, { method: "PUT" });
       setNotifs(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     } catch (_) {}
   };

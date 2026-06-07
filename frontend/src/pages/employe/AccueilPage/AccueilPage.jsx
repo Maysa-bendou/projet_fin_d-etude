@@ -21,7 +21,7 @@ const AccueilPage = () => {
     const fetchDashboard = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:3001/api/accueil/dashboard', {
+        const res = await axios.get('https://ticket-backend-4uw2.onrender.com/api/accueil/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data.type === 'employee') {

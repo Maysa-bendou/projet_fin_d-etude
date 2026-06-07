@@ -364,7 +364,7 @@ const MONTHS_LOCALIZED = useMemo(() =>
   { label: t("ticketsService.stats.rejected"),        ...STAT_CARD_DEFS[7] },
 ], [t]);
   useEffect(() => {
-    fetch("http://localhost:3001/api/tech/enums")
+    fetch("https://ticket-backend-4uw2.onrender.com/api/tech/enums")
       .then(r => r.json())
       .then(data => {
         setEnumStatuts(data.statuts.map(s => statusFR[s] ?? s));
@@ -378,7 +378,7 @@ const MONTHS_LOCALIZED = useMemo(() =>
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`http://localhost:3001/api/tech/assigned/${user.id}`);
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tech/assigned/${user.id}`);
       if (!res.ok) throw new Error("Erreur fetch");
       const data = await res.json();
       const mapped = data.map(tk => ({
@@ -424,7 +424,7 @@ const MONTHS_LOCALIZED = useMemo(() =>
       )
     );
     try {
-      await fetch(`http://localhost:3001/api/tech/tickets/${id}/status`, {
+      await fetch(`https://ticket-backend-4uw2.onrender.com/api/tech/tickets/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: statusEN[nouveauStatut], technicianId: user.id }),

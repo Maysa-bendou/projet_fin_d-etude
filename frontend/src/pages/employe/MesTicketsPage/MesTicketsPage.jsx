@@ -149,9 +149,9 @@ export default function MesTicketsPage() {
       const user = JSON.parse(localStorage.getItem("user"));
       if (!user?.id) { navigate("/login"); return; }
       const [enumRes, serviceRes, ticketRes] = await Promise.all([
-        fetch("http://localhost:3001/api/tech/enums"),
-        fetch("http://localhost:3001/api/tech/services"),
-        fetch(`http://localhost:3001/api/tickets/my/${user.id}`),
+        fetch("https://ticket-backend-4uw2.onrender.com/api/tech/enums"),
+        fetch("https://ticket-backend-4uw2.onrender.com/api/tech/services"),
+        fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/my/${user.id}`),
       ]);
       setDbEnums(await enumRes.json());
       setDbServices(await serviceRes.json());

@@ -56,7 +56,7 @@ export default function TicketsDetailsPage() {
   useEffect(() => {
     async function fetchTicket() {
       try {
-      const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}`);
         if (!res.ok) throw new Error("Erreur lors de la récupération du ticket");
         const data = await res.json();
         setTicket(data);

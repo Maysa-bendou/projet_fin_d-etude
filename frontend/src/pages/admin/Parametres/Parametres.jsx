@@ -166,9 +166,9 @@ export default function ParametresAdmin() {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         const h = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
         const [statsRes, configRes, slaRes] = await Promise.all([
-          fetch("http://localhost:3001/api/admin/stats",  { headers: h }).then(r => r.json()),
-          fetch("http://localhost:3001/api/admin/config", { headers: h }).then(r => r.json()),
-          fetch("http://localhost:3001/api/sla",          { headers: h }).then(r => r.json()),
+          fetch("https://ticket-backend-4uw2.onrender.com/api/admin/stats",  { headers: h }).then(r => r.json()),
+          fetch("https://ticket-backend-4uw2.onrender.com/api/admin/config", { headers: h }).then(r => r.json()),
+          fetch("https://ticket-backend-4uw2.onrender.com/api/sla",          { headers: h }).then(r => r.json()),
         ]);
         setStats(statsRes);
         setConfig(configRes);
@@ -185,7 +185,7 @@ export default function ParametresAdmin() {
     setSavingId(id);
     try {
       const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      await fetch(`http://localhost:3001/api/sla/${id}`, {
+      await fetch(`https://ticket-backend-4uw2.onrender.com/api/sla/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ duration_hours: parsed }),

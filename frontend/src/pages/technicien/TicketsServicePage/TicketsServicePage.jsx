@@ -391,8 +391,8 @@ const fetchData = useCallback(async () => {
         return;
       }
       const [enumRes, ticketsRes] = await Promise.all([
-        fetch("http://localhost:3001/api/tech/enums"),
-        fetch(`http://localhost:3001/api/tickets/service/${userServiceId}`),
+        fetch("https://ticket-backend-4uw2.onrender.com/api/tech/enums"),
+        fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/service/${userServiceId}`),
       ]);
       const enumData = await enumRes.json();
       setDbEnums(enumData);

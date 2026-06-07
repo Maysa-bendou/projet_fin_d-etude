@@ -89,7 +89,7 @@ const TicketDetailPage = () => {
 
   const fetchTicket = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/api/tickets/${id}`);
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}`);
       setTicket(await res.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -97,13 +97,13 @@ const TicketDetailPage = () => {
 
   const fetchTechnicians = async () => {
     try {
-      const res = await fetch(`http://localhost:3001/api/tickets/techniciens/service/${sId}`);
+      const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/techniciens/service/${sId}`);
       const data = await res.json();
       setTechnicians(data);
       const activeMap = {};
       await Promise.all(data.map(async (tech) => {
         try {
-          const r = await fetch(`http://localhost:3001/api/manager/technician/${tech.id}/active-count`);
+          const r = await fetch(`https://ticket-backend-4uw2.onrender.com/api/manager/technician/${tech.id}/active-count`);
           activeMap[tech.id] = r.ok ? (await r.json()).count ?? 0 : 0;
         } catch { activeMap[tech.id] = 0; }
       }));
@@ -113,7 +113,7 @@ const TicketDetailPage = () => {
 
   const handleAssign = async () => {
     if (!selectedTech) return;
-    const res = await fetch(`http://localhost:3001/api/tickets/${id}/assign`, {
+    const res = await fetch(`https://ticket-backend-4uw2.onrender.com/api/tickets/${id}/assign`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ technicienId: selectedTech.id, action: "assigned", assigned_by: user.id }),
@@ -378,7 +378,7 @@ const creationFiles = attachmentComments.flatMap(c => c.files ?? []);
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
       {creationFiles.map((f, i) => (
         <a key={i}
-          href={`http://localhost:3001/${f.filePath ?? f.file_path}`}
+          href={`https://ticket-backend-4uw2.onrender.com/${f.filePath ?? f.file_path}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{

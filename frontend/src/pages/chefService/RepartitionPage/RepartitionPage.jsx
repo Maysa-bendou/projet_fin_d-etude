@@ -148,7 +148,7 @@ export default function RepartitionPage() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await axios.get('http://localhost:3001/api/services');
+        const res = await axios.get('https://ticket-backend-4uw2.onrender.com/api/services');
         const data = res.data;
         const raw = Array.isArray(data) ? data : (data.services || []);
         setServices(raw.filter(s => s.id !== 0));
@@ -170,7 +170,7 @@ export default function RepartitionPage() {
       if (year)  params.year  = year;
       if (month) params.month = month;
       const res = await axios.get(
-        `http://localhost:3001/api/chef/stats/service/${serviceId}`,
+        `https://ticket-backend-4uw2.onrender.com/api/chef/stats/service/${serviceId}`,
         { params }
       );
       setStats(res.data);

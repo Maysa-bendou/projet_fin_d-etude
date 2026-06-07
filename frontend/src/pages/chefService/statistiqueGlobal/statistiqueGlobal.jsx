@@ -160,7 +160,7 @@ export default function ChefPerformancesPage() {
       const params = {};
       if (year) params.year = year;
       if (month) params.month = month;
-      const res = await axios.get(`http://localhost:3001/api/chef/stats/${user.id}`, { params });
+      const res = await axios.get(`https://ticket-backend-4uw2.onrender.com/api/chef/stats/${user.id}`, { params });
       setStats(res.data);
     } catch (err) {
       console.error("Erreur stats chef:", err);

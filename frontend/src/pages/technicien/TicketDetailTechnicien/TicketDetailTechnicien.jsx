@@ -9,7 +9,7 @@ import ConversationActions from "./components/ConversationActions";
 import ManualCloseModal from "./components/utils/ManualCloseModal";
 import { ACT_LABEL_KEYS } from "./components/constants";
 
-const API = "http://localhost:3001/api/tech";
+const API = "https://ticket-backend-4uw2.onrender.com/api/tech";
 
 export default function TicketDetailTechnicien() {
   const { t }           = useTranslation("technicien");

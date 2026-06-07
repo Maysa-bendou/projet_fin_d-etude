@@ -150,7 +150,7 @@ export default function AccueilTechnicien() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    axios.get("http://localhost:3001/api/accueil/dashboard", { headers: { Authorization: `Bearer ${token}` } })
+    axios.get("https://ticket-backend-4uw2.onrender.com/api/accueil/dashboard", { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.data.type === "technician" && setD(r.data))
       .catch(() => setD(MOCK))
       .finally(() => setLoad(false));

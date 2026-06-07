@@ -2,10 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import djezzyLogoImg from "../../assets/images/djezzy-logo.png";
 
-const _preloadedLogo = new Image();
-_preloadedLogo.src = djezzyLogoImg;
 
 export default function LoginPage() {
   const { t } = useTranslation("login");
@@ -56,8 +53,11 @@ export default function LoginPage() {
 
         {/* HEADER */}
         <div className="flex flex-col items-center gap-4 mb-6">
-         <img src={djezzyLogoImg} alt="Djezzy" style={{ width: 80, height: "auto" }} />
-
+         <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="10,5 90,50 10,95" fill="#e30613" rx="10"/>
+  <text x="25" y="45" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial">DJEZZY</text>
+  <text x="28" y="65" fill="white" fontSize="14" fontFamily="Arial">جازي</text>
+</svg>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900">
               {t("title")}

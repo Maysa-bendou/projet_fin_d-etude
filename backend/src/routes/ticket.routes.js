@@ -138,7 +138,7 @@ if (!creator || creator.role !== "employee") {
 let category = "access"; // safe default if ML fails
 
 try {
-  const mlRes = await fetch("http://127.0.0.1:8000/predict", {
+  const mlRes = await fetch("https://maysa23-ticket-api.hf.space/predict", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title, description }),

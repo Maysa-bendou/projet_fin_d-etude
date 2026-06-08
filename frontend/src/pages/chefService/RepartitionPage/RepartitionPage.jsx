@@ -10,11 +10,6 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { MdFileDownload, MdPeople, MdFilterList, MdDashboard, MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff, MdArrowBack } from 'react-icons/md';
 import { MdCalendarMonth, MdCalendarViewMonth, MdOutlineInfo  } from 'react-icons/md';
-import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
-
-
-const _preloadedLogo = new Image();
-_preloadedLogo.src = djezzyLogoImg;
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -247,28 +242,16 @@ const exportPDF = async () => {
   const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
   const MARGIN = 40;
 
-  // ── Logo + Title on one line ──
-let titleX = 40;
-try {
-  await new Promise((resolve) => {
-    if (_preloadedLogo.complete) {
-      const logoH = 32;
-      const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
-      doc.addImage(_preloadedLogo, 'PNG', 40, 28, logoW, logoH);
-      titleX = 40 + logoW + 12;
-      resolve();
-    } else {
-      _preloadedLogo.onload = () => {
-        const logoH = 32;
-        const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
-        doc.addImage(_preloadedLogo, 'PNG', 40, 28, logoW, logoH);
-        titleX = 40 + logoW + 12;
-        resolve();
-      };
-      _preloadedLogo.onerror = () => resolve();
-    }
-  });
-} catch (_) { /* skip logo */ }
+// ── Logo drawn with jsPDF ──
+doc.setFillColor(255, 1, 19);
+doc.setDrawColor(255, 1, 19);
+doc.triangle(45.4, 27.4,  45.4, 52.6,  70.6, 40, 'FD');
+doc.setFontSize(7.5);
+doc.setFont(undefined, 'bold');
+doc.setTextColor(255, 255, 255);
+doc.text('DJEZZY', 47, 41);
+doc.text('\u062C\u0627\u0632\u06CC', 48, 51);
+const titleX = 40 + 36 + 12;
 
 
   doc.setFontSize(18);

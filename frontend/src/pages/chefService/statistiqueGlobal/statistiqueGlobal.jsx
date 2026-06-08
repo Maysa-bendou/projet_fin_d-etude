@@ -14,10 +14,6 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
 import { MdCalendarMonth, MdCalendarViewMonth ,MdOutlineInfo } from 'react-icons/md';
-import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
-
-const _preloadedLogo = new Image();
-_preloadedLogo.src = djezzyLogoImg;
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -255,28 +251,22 @@ const exportPDF = async () => {
   const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
   const MARGIN = 40;
 
-  // ── Logo + Title on one line ──
-let titleX = 40;
-try {
-  await new Promise((resolve) => {
-    if (_preloadedLogo.complete) {
-      const logoH = 32;
-      const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
-      doc.addImage(_preloadedLogo, 'PNG', 40, 28, logoW, logoH);
-      titleX = 40 + logoW + 12;
-      resolve();
-    } else {
-      _preloadedLogo.onload = () => {
-        const logoH = 32;
-        const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
-        doc.addImage(_preloadedLogo, 'PNG', 40, 28, logoW, logoH);
-        titleX = 40 + logoW + 12;
-        resolve();
-      };
-      _preloadedLogo.onerror = () => resolve();
-    }
-  });
-} catch (_) { /* skip logo */ }
+// ── Logo drawn with jsPDF — matches LoginPage SVG exactly ──
+doc.setFillColor(255, 1, 19);       // #ff0113
+doc.setDrawColor(255, 1, 19);       // stroke same color
+// SVG path: M 15 85 L 85 50 L 15 15 Z  (scaled down to fit PDF header)
+// Scale: SVG is 100×100 → PDF logo ~36×36 at position x=40, y=22
+// x scale: 36/100 = 0.36,  y scale: 36/100 = 0.36,  offset x=40, y=22
+// M(15,85)→(45.4, 52.6)  L(85,50)→(70.6, 40)  L(15,15)→(45.4, 27.4)
+doc.triangle(45.4, 27.4,  45.4, 52.6,  70.6, 40, 'FD');
+//           left-top      left-bottom  right-tip
+doc.setFontSize(7.5);
+doc.setFont(undefined, 'bold');
+doc.setTextColor(255, 255, 255);
+doc.text('DJEZZY', 46, 40);
+doc.text('\u062C\u0627\u0632\u06CC', 47, 50);   // جازی  (Unicode avoids encoding issues)
+const titleX = 40 + 36 + 12;
+
   doc.setFontSize(18);
   doc.setTextColor(...RED);
   doc.setFont(undefined, 'bold');

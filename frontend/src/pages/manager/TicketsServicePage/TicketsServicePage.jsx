@@ -15,7 +15,6 @@ import jsPDF from "jspdf";
 import RefreshButton from "../../../components/common/RefreshButton";
 import { PRIORITY_CONFIG, STATUS_CONFIG, CATEGORY_CONFIG } from "../../../config/styles";
 import Pill from "../../../components/common/Pill";
-import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
 import * as XLSX from "xlsx";
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -596,23 +595,9 @@ const exportPDF = useCallback(async () => {
       // ── 4. Remove the off-screen clone
       document.body.removeChild(offscreen);
 
-      // ── 5. Pre-load logo — compute dimensions inside onload so they are never NaN
-      const { logoDataUrl, logoW, logoH } = await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          const c = document.createElement("canvas");
-          c.width  = img.naturalWidth;
-          c.height = img.naturalHeight;
-          c.getContext("2d").drawImage(img, 0, 0);
-          const dataUrl = c.toDataURL("image/png");
-          const h = 18;
-          const w = (img.naturalWidth / img.naturalHeight) * h;
-          resolve({ logoDataUrl: dataUrl, logoW: w, logoH: h });
-        };
-        img.onerror = () => resolve({ logoDataUrl: null, logoW: 0, logoH: 0 });
-        img.src = djezzyLogoImg;
-      });
+// ── 5. Draw logo with jsPDF shapes (no image)
+      const logoW = 28;
+      const logoH = 18;
 
       // ── 6. Build the PDF
       const margin  = 24;
@@ -638,9 +623,17 @@ const exportPDF = useCallback(async () => {
 
       const drawHeader = (pNum) => {
         // ── Logo (top-left, correct aspect ratio)
-        if (logoDataUrl) {
-          pdf.addImage(logoDataUrl, "PNG", margin, margin - 4, logoW, logoH);
-        }
+// Triangle rouge Djezzy
+pdf.setFillColor(255, 1, 19);
+pdf.setDrawColor(255, 1, 19);
+// Scaled smaller (26×26) to fit the compact header of this page
+// SVG M15,85 L85,50 L15,15 → scale 26/100=0.26, offset x=margin, y=margin-4
+pdf.triangle(margin + 3.9, margin - 0.1,  margin + 3.9, margin + 18.1,  margin + 22.1, margin + 9, 'FD');
+pdf.setFontSize(6);
+pdf.setFont(undefined, 'bold');
+pdf.setTextColor(255, 255, 255);
+pdf.text('DJEZZY', margin + 5, margin + 6);
+pdf.text('\u062C\u0627\u0632\u06CC', margin + 6, margin + 13);
 
         // ── Line 1: title (indented past logo) + ticket count (right)
         pdf.setFontSize(13);
@@ -649,7 +642,7 @@ const exportPDF = useCallback(async () => {
         const title = serviceName
           ? `${t("ticketsService.service")} ${serviceName}`
           : t("ticketsService.allTickets");
-        const titleX = logoDataUrl ? margin + logoW + 10 : margin;
+        const titleX = margin + 38;
         pdf.text(title, titleX, margin + 10);
         pdf.text(
           `${displayedTickets.length} ticket${displayedTickets.length !== 1 ? "s" : ""}${totalPages > 1 ? `  ${pNum}/${totalPages}` : ""}`,

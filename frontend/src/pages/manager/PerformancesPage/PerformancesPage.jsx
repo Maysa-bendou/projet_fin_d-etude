@@ -243,29 +243,26 @@ const exportPDF = async () => {
 
 // ── Logo drawn with jsPDF (no image) ──
   // Triangle rouge
-  doc.setFillColor(255, 1, 19);
-  doc.triangle(MARGIN, 20, MARGIN, 60, MARGIN + 45, 40, 'F');
-  // Text DJEZZY
-  doc.setFontSize(11);
-  doc.setFont(undefined, 'bold');
-  doc.setTextColor(255, 255, 255);
-  doc.text('DJEZZY', MARGIN + 8, 36);
-  // Text جازی
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text('جازی', MARGIN + 10, 50);
+// Triangle rouge Djezzy
+doc.setFillColor(255, 1, 19);
+doc.setDrawColor(255, 1, 19);
+// SVG: M 15 85 L 85 50 L 15 15 — scaled to 36×36 at x=MARGIN, y=20
+doc.triangle(MARGIN + 5.4, MARGIN + 7.4,  MARGIN + 5.4, MARGIN + 32.6,  MARGIN + 30.6, MARGIN + 20, 'FD');
+doc.setFontSize(7.5);
+doc.setFont(undefined, 'bold');
+doc.setTextColor(255, 255, 255);
+doc.text('DJEZZY', MARGIN + 6, 34);
+doc.text('\u062C\u0627\u0632\u06CC', MARGIN + 8, 44);
 
   doc.setFontSize(18);
   doc.setTextColor(...BLACK);
   doc.setFont(undefined, 'bold');
-  doc.text(`${t("performances.export.reportTitle")} — ${stats.serviceName}`, MARGIN + 60, 36);
-
+doc.text(`${t("performances.export.reportTitle")} — ${stats.serviceName}`, MARGIN + 48, 36);
   // ── Period subtitle ──
   doc.setFontSize(10);
   doc.setTextColor(120, 120, 120);
   doc.setFont(undefined, 'normal');
-  doc.text(`${t("performances.export.period")} : ${filterLabel}`, MARGIN + 60, 50);
-
+doc.text(`${t("performances.export.period")} : ${filterLabel}`, MARGIN + 48, 50);
   // ── Divider line ──
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.8);
@@ -279,7 +276,7 @@ const exportPDF = async () => {
     body: [
       [t("performances.export.totalService"),      stats.totalTickets],
       [t("performances.export.resolutionService"), `${stats.resolutionRate}%`],
-      [t("performances.export.resolutionGlobal"),  `${stats.globalResolutionRate}%`],
+      [t("performances.export.resolutionGlobal"),  `${stats.globalResolutionRate ?? stats.resolutionRate}%`],
       [t("performances.export.slaIn"),             stats.slaStats[0].value],
       [t("performances.export.slaOut"),            stats.slaStats[1].value],
     ],

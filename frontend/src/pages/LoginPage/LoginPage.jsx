@@ -53,10 +53,20 @@ export default function LoginPage() {
 
         {/* HEADER */}
         <div className="flex flex-col items-center gap-4 mb-6">
-         <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <polygon points="10,5 90,50 10,95" fill="#e30613" rx="10"/>
-  <text x="25" y="45" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial">DJEZZY</text>
-  <text x="28" y="65" fill="white" fontSize="14" fontFamily="Arial">جازي</text>
+<svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <path 
+    d="M 15 85 L 85 50 L 15 15 Z" 
+    fill="#ff0113" 
+    strokeLinejoin="round"
+    strokeWidth="10"
+    stroke="#ff0113"
+  />
+  <text x="18" y="50" fill="white" fontSize="12" fontWeight="black" fontFamily="Arial, sans-serif">
+    DJEZZY
+  </text>
+  <text x="18" y="70" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial, sans-serif">
+    جازی
+  </text>
 </svg>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900">

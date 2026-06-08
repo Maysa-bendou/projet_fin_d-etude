@@ -252,31 +252,40 @@ const exportPDF = async () => {
   const MARGIN = 40;
 
 // ── Logo drawn with jsPDF — matches LoginPage SVG exactly ──
-doc.setFillColor(255, 1, 19);       // #ff0113
-doc.setDrawColor(255, 1, 19);       // stroke same color
-// SVG path: M 15 85 L 85 50 L 15 15 Z  (scaled down to fit PDF header)
-// Scale: SVG is 100×100 → PDF logo ~36×36 at position x=40, y=22
-// x scale: 36/100 = 0.36,  y scale: 36/100 = 0.36,  offset x=40, y=22
-// M(15,85)→(45.4, 52.6)  L(85,50)→(70.6, 40)  L(15,15)→(45.4, 27.4)
-doc.triangle(45.4, 27.4,  45.4, 52.6,  70.6, 40, 'FD');
-//           left-top      left-bottom  right-tip
-doc.setFontSize(7.5);
-doc.setFont(undefined, 'bold');
-doc.setTextColor(255, 255, 255);
-doc.text('DJEZZY', 46, 40);
-doc.text('\u062C\u0627\u0632\u06CC', 47, 50);   // جازی  (Unicode avoids encoding issues)
-const titleX = 40 + 36 + 12;
+// ── Logo: SVG rendered as canvas image ──
+  const logoSize = 36;
+  const logoX = MARGIN;
+  const logoY = MARGIN - 20;
+  const svgString = `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 15 85 L 85 50 L 15 15 Z" fill="#ff0113" stroke="#ff0113" stroke-width="10" stroke-linejoin="round"/>
+    <text x="18" y="50" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">DJEZZY</text>
+    <text x="18" y="68" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">&#x62C;&#x627;&#x632;&#x64A;</text>
+  </svg>`;
+  await new Promise((resolve) => {
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const cvs = document.createElement('canvas');
+      cvs.width = 100; cvs.height = 100;
+      cvs.getContext('2d').drawImage(img, 0, 0);
+      doc.addImage(cvs.toDataURL('image/png'), 'PNG', logoX, logoY, logoSize, logoSize);
+      URL.revokeObjectURL(svgUrl);
+      resolve();
+    };
+    img.onerror = () => { URL.revokeObjectURL(svgUrl); resolve(); };
+    img.src = svgUrl;
+  });
 
+  const titleX = logoX + logoSize + 12;
   doc.setFontSize(18);
   doc.setTextColor(...RED);
   doc.setFont(undefined, 'bold');
-  doc.text(t('global.pdf.reportTitle'), titleX, 50);
-
+  doc.text(t('global.pdf.reportTitle'), titleX, logoY + 16);
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.setFont(undefined, 'normal');
-  doc.text(`${t('pdf.period')} : ${filterLabel}`, 40, 72);
-
+  doc.text(`${t('pdf.period')} : ${filterLabel}`, logoX, logoY + logoSize + 18);
   // ── Section title helper ──
   const sectionTitle = (label, y) => {
     doc.setFontSize(11);

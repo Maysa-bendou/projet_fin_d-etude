@@ -242,36 +242,50 @@ const exportPDF = async () => {
   };
 
 // ── Logo drawn with jsPDF (no image) ──
-  // Triangle rouge
-// Triangle rouge Djezzy
-doc.setFillColor(255, 1, 19);
-doc.setDrawColor(255, 1, 19);
-// SVG: M 15 85 L 85 50 L 15 15 — scaled to 36×36 at x=MARGIN, y=20
-doc.triangle(MARGIN + 5.4, MARGIN + 7.4,  MARGIN + 5.4, MARGIN + 32.6,  MARGIN + 30.6, MARGIN + 20, 'FD');
-doc.setFontSize(7.5);
-doc.setFont(undefined, 'bold');
-doc.setTextColor(255, 255, 255);
-doc.text('DJEZZY', MARGIN + 6, 34);
-doc.text('\u062C\u0627\u0632\u06CC', MARGIN + 8, 44);
+// ── Logo: SVG rendered as canvas image ──
+  const logoSize = 36;
+  const logoX = MARGIN;
+  const logoY = MARGIN - 20;
+  const svgString = `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 15 85 L 85 50 L 15 15 Z" fill="#ff0113" stroke="#ff0113" stroke-width="10" stroke-linejoin="round"/>
+    <text x="18" y="50" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">DJEZZY</text>
+    <text x="18" y="68" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">&#x62C;&#x627;&#x632;&#x64A;</text>
+  </svg>`;
+  await new Promise((resolve) => {
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const cvs = document.createElement('canvas');
+      cvs.width = 100; cvs.height = 100;
+      cvs.getContext('2d').drawImage(img, 0, 0);
+      doc.addImage(cvs.toDataURL('image/png'), 'PNG', logoX, logoY, logoSize, logoSize);
+      URL.revokeObjectURL(svgUrl);
+      resolve();
+    };
+    img.onerror = () => { URL.revokeObjectURL(svgUrl); resolve(); };
+    img.src = svgUrl;
+  });
 
+  // ── Title + period ──
+  const titleX = logoX + logoSize + 12;
   doc.setFontSize(18);
   doc.setTextColor(...BLACK);
   doc.setFont(undefined, 'bold');
-doc.text(`${t("performances.export.reportTitle")} — ${stats.serviceName}`, MARGIN + 48, 36);
-  // ── Period subtitle ──
+  doc.text(`${t("performances.export.reportTitle")} — ${stats.serviceName}`, titleX, logoY + 16);
   doc.setFontSize(10);
   doc.setTextColor(120, 120, 120);
   doc.setFont(undefined, 'normal');
-doc.text(`${t("performances.export.period")} : ${filterLabel}`, MARGIN + 48, 50);
+  doc.text(`${t("performances.export.period")} : ${filterLabel}`, titleX, logoY + 30);
   // ── Divider line ──
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.8);
-  doc.line(MARGIN, 70, PAGE_WIDTH - MARGIN, 70);
+  doc.line(MARGIN, logoY + logoSize + 6, PAGE_WIDTH - MARGIN, logoY + logoSize + 6);
 
   // ── KPIs ──
   autoTable(doc, {
     ...tableOptions,
-    startY: 90,
+    startY: 100,
     head: [[t("performances.export.indicator"), t("performances.export.value")]],
     body: [
       [t("performances.export.totalService"),      stats.totalTickets],

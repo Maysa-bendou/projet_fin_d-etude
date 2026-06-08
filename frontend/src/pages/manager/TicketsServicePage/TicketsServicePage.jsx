@@ -601,7 +601,7 @@ const exportPDF = useCallback(async () => {
 
       // ── 6. Build the PDF
       const margin  = 24;
-      const headerH = 55;
+      const headerH = 75;
       const pdf     = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
       const pdfW    = pdf.internal.pageSize.getWidth();
       const pdfH    = pdf.internal.pageSize.getHeight();
@@ -621,66 +621,97 @@ const exportPDF = useCallback(async () => {
         return pages;
       })();
 
-      const drawHeader = (pNum) => {
-        // ── Logo (top-left, correct aspect ratio)
-// Triangle rouge Djezzy
-pdf.setFillColor(255, 1, 19);
-pdf.setDrawColor(255, 1, 19);
-// Scaled smaller (26×26) to fit the compact header of this page
-// SVG M15,85 L85,50 L15,15 → scale 26/100=0.26, offset x=margin, y=margin-4
-pdf.triangle(margin + 3.9, margin - 0.1,  margin + 3.9, margin + 18.1,  margin + 22.1, margin + 9, 'FD');
-pdf.setFontSize(6);
-pdf.setFont(undefined, 'bold');
-pdf.setTextColor(255, 255, 255);
-pdf.text('DJEZZY', margin + 5, margin + 6);
-pdf.text('\u062C\u0627\u0632\u06CC', margin + 6, margin + 13);
+const drawHeader = async (pNum) => {
+  const logoSize = 36;
+  const logoX = margin;
+  const logoY = margin;
 
-        // ── Line 1: title (indented past logo) + ticket count (right)
-        pdf.setFontSize(13);
-        pdf.setTextColor(15, 23, 42);
-        pdf.setFont(undefined, "bold");
-        const title = serviceName
-          ? `${t("ticketsService.service")} ${serviceName}`
-          : t("ticketsService.allTickets");
-        const titleX = margin + 38;
-        pdf.text(title, titleX, margin + 10);
-        pdf.text(
-          `${displayedTickets.length} ticket${displayedTickets.length !== 1 ? "s" : ""}${totalPages > 1 ? `  ${pNum}/${totalPages}` : ""}`,
-          pdfW - margin, margin + 10, { align: "right" }
-        );
+  // ── Logo: render SVG as canvas image (supports Arabic + border)
+  const svgString = `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 15 85 L 85 50 L 15 15 Z" fill="#ff0113" stroke="#ff0113" stroke-width="10" stroke-linejoin="round"/>
+    <text x="18" y="50" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">DJEZZY</text>
+    <text x="18" y="68" fill="white" font-size="12" font-weight="bold" font-family="Arial, sans-serif">&#x62C;&#x627;&#x632;&#x64A;</text>
+  </svg>`;
 
-        // ── Separator line (black, sits below logo + title)
-        pdf.setDrawColor(0, 0, 0);
-        pdf.setLineWidth(0.5);
-        pdf.line(margin, margin + 22, pdfW - margin, margin + 22);
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const svgUrl = URL.createObjectURL(svgBlob);
 
-        // ── Line 2: Exported by + Date
-        pdf.setFontSize(8.5);
-        pdf.setFont(undefined, "normal");
-        pdf.setTextColor(100, 116, 139);
-        const exportedAt = new Date().toLocaleString(dateLocale, {
-          day: "numeric", month: "long", year: "numeric",
-          hour: "2-digit", minute: "2-digit",
-        });
-        pdf.text(`${t("ticketsService.exportedBy")}: ${managerName || "—"}`, margin, margin + 30);
-        pdf.text(`Date: ${exportedAt}`, pdfW - margin, margin + 30, { align: "right" });
+  await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const cvs = document.createElement('canvas');
+      cvs.width = 100;
+      cvs.height = 100;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = cvs.toDataURL('image/png');
+      pdf.addImage(dataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
+      URL.revokeObjectURL(svgUrl);
+      resolve();
+    };
+    img.onerror = () => {
+      // Fallback: draw triangle manually if SVG fails
+      pdf.setFillColor(255, 1, 19);
+      pdf.setDrawColor(255, 1, 19);
+      pdf.triangle(logoX, logoY, logoX, logoY + logoSize, logoX + logoSize, logoY + logoSize / 2, 'FD');
+      pdf.setFontSize(7);
+      pdf.setFont(undefined, 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('DJEZZY', logoX + 3, logoY + 14);
+      URL.revokeObjectURL(svgUrl);
+      resolve();
+    };
+    img.src = svgUrl;
+  });
 
-        // ── Line 3: Active filters evenly spaced
-        const filters = [];
-        if (filterStatus)     filters.push(`${t("ticketsService.cols.status")}: ${tStatus(filterStatus)}`);
-        if (filterCategory)   filters.push(`${t("ticketsService.cols.category")}: ${tCategory(filterCategory)}`);
-        if (filterAssignment) filters.push(`${t("ticketsService.cols.technician")}: ${filterAssignment === "assigned" ? t("ticketsService.filters.assigned") : t("ticketsService.filters.unassigned")}`);
-        if (filterMonth)      filters.push(`Month: ${MONTHS_LOC[parseInt(filterMonth)]}`);
+  // ── Title + ticket count — vertically centred with logo
+  const titleX = logoX + logoSize + 12;
+  const titleY = logoY + logoSize / 2 + 2;
+  pdf.setFontSize(13);
+  pdf.setTextColor(15, 23, 42);
+  pdf.setFont(undefined, 'bold');
+  const title = serviceName
+    ? `${t('ticketsService.service')} ${serviceName}`
+    : t('ticketsService.allTickets');
+  pdf.text(title, titleX, titleY);
+  pdf.text(
+    `${displayedTickets.length} ticket${displayedTickets.length !== 1 ? 's' : ''}${totalPages > 1 ? `  ${pNum}/${totalPages}` : ''}`,
+    pdfW - margin, titleY, { align: 'right' }
+  );
 
-        if (filters.length > 0) {
-          const step = (pdfW - margin * 2) / filters.length;
-          filters.forEach((f, i) => {
-            pdf.text(f, margin + i * step, margin + 42);
-          });
-        }
-      };
+  // ── Separator line — sits just below the logo bottom
+  const sepY = logoY + logoSize + 6;
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.5);
+  pdf.line(margin, sepY, pdfW - margin, sepY);
 
-      drawHeader(1);
+  // ── Exported by + Date — below separator
+  pdf.setFontSize(8.5);
+  pdf.setFont(undefined, 'normal');
+  pdf.setTextColor(100, 116, 139);
+  const exportedAt = new Date().toLocaleString(dateLocale, {
+    day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+  pdf.text(`${t('ticketsService.exportedBy')}: ${managerName || '—'}`, margin, sepY + 10);
+  pdf.text(`Date: ${exportedAt}`, pdfW - margin, sepY + 10, { align: 'right' });
+
+  // ── Active filters — below exported by line
+  const filters = [];
+  if (filterStatus)     filters.push(`${t('ticketsService.cols.status')}: ${tStatus(filterStatus)}`);
+  if (filterCategory)   filters.push(`${t('ticketsService.cols.category')}: ${tCategory(filterCategory)}`);
+  if (filterAssignment) filters.push(`${t('ticketsService.cols.technician')}: ${filterAssignment === 'assigned' ? t('ticketsService.filters.assigned') : t('ticketsService.filters.unassigned')}`);
+  if (filterMonth)      filters.push(`Month: ${MONTHS_LOC[parseInt(filterMonth)]}`);
+
+  if (filters.length > 0) {
+    const step = (pdfW - margin * 2) / filters.length;
+    filters.forEach((f, i) => {
+      pdf.text(f, margin + i * step, sepY + 20);
+    });
+  }
+};
+
+      await drawHeader(1);
 
       let cursorY = 0;
       let pageNum = 1;
@@ -692,7 +723,7 @@ pdf.text('\u062C\u0627\u0632\u06CC', margin + 6, margin + 13);
         if (cursorY > 0 && cursorY * ratio + rowHScaled > usableH) {
           pdf.addPage();
           pageNum++;
-          drawHeader(pageNum);
+          await drawHeader(pageNum);
           cursorY = 0;
         }
 

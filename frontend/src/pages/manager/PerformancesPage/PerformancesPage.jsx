@@ -15,10 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { MdConfirmationNumber, MdPercent, MdCheckCircle, MdTimer, MdTimerOff } from 'react-icons/md';
 import { MdCalendarMonth, MdOutlineInfo } from 'react-icons/md';
 import { MdCalendarViewMonth } from 'react-icons/md';
-import djezzyLogoImg from "../../../assets/images/djezzy-logo.png";
-
-const _preloadedLogo = new Image();
-_preloadedLogo.src = djezzyLogoImg;
 
 // ── Color map ──────────────────────────────────────────────────────────────────
 const getDynamicColor = (name, index) => {
@@ -245,40 +241,35 @@ const exportPDF = async () => {
     return currentY + 40;  // more space between tables
   };
 
-  // ── Logo + Title on same line ──
-// ── Logo + Title on same line ──
-await new Promise((resolve) => {
-  if (_preloadedLogo.complete && _preloadedLogo.naturalWidth > 0) {
-    const logoH = 40;
-    const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
-    try { doc.addImage(_preloadedLogo, 'PNG', MARGIN, 20, logoW, logoH); } catch (_) {}
-    resolve();
-  } else {
-    _preloadedLogo.onload = () => {
-      const logoH = 40;
-      const logoW = (_preloadedLogo.naturalWidth / _preloadedLogo.naturalHeight) * logoH;
-      try { doc.addImage(_preloadedLogo, 'PNG', MARGIN, 20, logoW, logoH); } catch (_) {}
-      resolve();
-    };
-    _preloadedLogo.onerror = () => resolve();
-  }
-});
+// ── Logo drawn with jsPDF (no image) ──
+  // Triangle rouge
+  doc.setFillColor(255, 1, 19);
+  doc.triangle(MARGIN, 20, MARGIN, 60, MARGIN + 45, 40, 'F');
+  // Text DJEZZY
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text('DJEZZY', MARGIN + 8, 36);
+  // Text جازی
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text('جازی', MARGIN + 10, 50);
 
   doc.setFontSize(18);
   doc.setTextColor(...BLACK);
   doc.setFont(undefined, 'bold');
-  doc.text(`${t("performances.export.reportTitle")} — ${stats.serviceName}`, MARGIN + 115, 47);
+  doc.text(`${t("performances.export.reportTitle")} — ${stats.serviceName}`, MARGIN + 60, 36);
 
   // ── Period subtitle ──
   doc.setFontSize(10);
   doc.setTextColor(120, 120, 120);
   doc.setFont(undefined, 'normal');
-  doc.text(`${t("performances.export.period")} : ${filterLabel}`, MARGIN + 115, 62);
+  doc.text(`${t("performances.export.period")} : ${filterLabel}`, MARGIN + 60, 50);
 
   // ── Divider line ──
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.8);
-  doc.line(MARGIN, 72, PAGE_WIDTH - MARGIN, 72);
+  doc.line(MARGIN, 70, PAGE_WIDTH - MARGIN, 70);
 
   // ── KPIs ──
   autoTable(doc, {
